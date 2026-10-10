@@ -35,32 +35,7 @@ class _HomePageState extends State<HomePage> {
       },
       child: Scaffold(
         drawer: const HomeDrawer(),
-        floatingActionButton: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            FloatingActionButton(
-              heroTag: 'test1',
-              onPressed: () => context.read<ActiveOrderCubit>().acceptOrder(),
-              child: const Icon(Icons.assignment),
-            ),
-            const SizedBox(height: 8),
-            FloatingActionButton(
-              heroTag: 'test2',
-              onPressed: () => context.read<ActiveOrderCubit>().confirmPickup(),
-              child: const Icon(Icons.store),
-            ),
-            const SizedBox(height: 8),
-            FloatingActionButton(
-              heroTag: 'test3',
-              onPressed: () =>
-                  context.read<ActiveOrderCubit>().confirmDelivery(),
-              child: const Icon(Icons.local_shipping),
-            ),
-            const SizedBox(height: 120), // padding above ActiveOrderCard
-          ],
-        ),
+
         body: SizedBox.expand(
           child: Stack(
             children: [
