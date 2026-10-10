@@ -4,16 +4,20 @@ class DrawerItemTile extends StatelessWidget {
   const DrawerItemTile({
     super.key,
     required this.title,
-    required this.iconAsset,
+    this.iconAsset,
+    this.iconData,
     required this.iconBgColor,
+    this.iconColor = Colors.white,
     required this.onTap,
     this.isLogout = false,
     this.showDivider = true,
   });
 
   final String title;
-  final String iconAsset;
+  final String? iconAsset;
+  final IconData? iconData;
   final Color iconBgColor;
+  final Color iconColor;
   final VoidCallback onTap;
   final bool isLogout;
   final bool showDivider;
@@ -47,13 +51,15 @@ class DrawerItemTile extends StatelessWidget {
                           borderRadius: BorderRadius.circular(19),
                         ),
                         child: Center(
-                          child: Image.asset(
-                            iconAsset,
-                            width: 22,
-                            height: 22,
-                            // White icon inside colored background looks good in both modes
-                            color: Colors.white,
-                          ),
+                          child: iconAsset != null
+                              ? Image.asset(
+                                  iconAsset!,
+                                  width: 22,
+                                  height: 22,
+                                  // White icon inside colored background looks good in both modes
+                                  color: iconColor,
+                                )
+                              : Icon(iconData, color: iconColor, size: 22),
                         ),
                       ),
                       const SizedBox(width: 12),

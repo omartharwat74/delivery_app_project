@@ -10,6 +10,7 @@ import '../../features/auth/presentation/pages/registration_pending_page.dart';
 import '../../features/auth/presentation/pages/language_page.dart';
 import '../../features/auth/presentation/pages/splash_screen.dart';
 import '../../features/home/presentation/pages/home_page.dart';
+import '../../features/home/presentation/pages/shift_screen.dart';
 import '../../features/orders/presentation/pages/orders_screen.dart';
 import '../../features/wallet/presentation/pages/wallet_screen.dart';
 import '../../features/profile/presentation/pages/profile_screen.dart';
@@ -44,6 +45,10 @@ class AppRouter {
       GoRoute(path: RouteNames.driverHome, builder: (c, s) => const HomePage()),
       GoRoute(path: RouteNames.orders, builder: (c, s) => const OrdersScreen()),
       GoRoute(path: RouteNames.wallet, builder: (c, s) => const WalletScreen()),
+      GoRoute(
+        path: RouteNames.workHours,
+        builder: (c, s) => const WorkHoursScreen(),
+      ),
       GoRoute(
         path: RouteNames.settings,
         builder: (c, s) => BlocProvider<ProfileBloc>(

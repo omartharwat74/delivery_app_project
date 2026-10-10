@@ -9,6 +9,7 @@ class RouteNames {
   static const pending = '/pending';
 
   static const driverHome = '/home';
+  static const workHours = '/work-hours';
 
   // Migrated feature routes
   static const orders = '/orders';
