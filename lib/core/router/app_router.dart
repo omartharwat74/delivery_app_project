@@ -1,7 +1,6 @@
 import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/di/injection_container.dart' as di;
-import '../../features/profile/presentation/bloc/profile_bloc.dart';
 import '../../features/home/presentation/bloc/home_cubit.dart';
 
 import '../../features/auth/presentation/pages/login_page.dart';
@@ -15,7 +14,11 @@ import '../../features/home/presentation/pages/shift_screen.dart';
 import '../../features/orders/presentation/pages/orders_screen.dart';
 import '../../features/wallet/presentation/pages/wallet_screen.dart';
 import '../../features/profile/presentation/pages/profile_screen.dart';
-import '../../features/profile/presentation/pages/settings_screen.dart';
+import '../../features/settings/presentation/bloc/settings_cubit.dart';
+import '../../features/settings/presentation/pages/settings_screen.dart';
+import '../../features/settings/presentation/pages/change_phone_screen.dart';
+import '../../features/settings/presentation/pages/verify_phone_otp_screen.dart';
+import '../../features/settings/presentation/pages/verify_phone_otp_args.dart';
 import '../../features/profile/presentation/pages/notifications_screen.dart';
 import '../../features/profile/presentation/pages/reviews_screen.dart';
 import '../../features/profile/presentation/pages/support_screen.dart';
@@ -47,6 +50,7 @@ class AppRouter {
         builder: (c, s) => const RegistrationPendingPage(),
       ),
       GoRoute(
+        name: RouteNames.home,
         path: RouteNames.driverHome,
         builder: (c, s) => BlocProvider<HomeCubit>(
           create: (context) => di.sl<HomeCubit>(),
@@ -60,11 +64,44 @@ class AppRouter {
         builder: (c, s) => const WorkHoursScreen(),
       ),
       GoRoute(
+        name: RouteNames.settings,
         path: RouteNames.settings,
-        builder: (c, s) => BlocProvider<ProfileBloc>(
-          create: (context) => di.sl<ProfileBloc>(),
+        builder: (c, s) => MultiBlocProvider(
+          providers: [
+            BlocProvider<SettingsCubit>.value(
+              value: di.sl<SettingsCubit>()..initSettings(),
+            ),
+            BlocProvider<HomeCubit>(
+              create: (context) => di.sl<HomeCubit>()..initHome(),
+            ),
+          ],
           child: const SettingsScreen(),
         ),
+        routes: [
+          GoRoute(
+            name: RouteNames.changePhone,
+            path: 'change-phone',
+            builder: (c, s) => BlocProvider<SettingsCubit>.value(
+              value: di.sl<SettingsCubit>(),
+              child: const ChangePhoneScreen(),
+            ),
+          ),
+          GoRoute(
+            name: RouteNames.verifyPhoneOtp,
+            path: 'otp',
+            builder: (c, s) {
+              final args = s.extra is VerifyPhoneOtpArgs
+                  ? s.extra as VerifyPhoneOtpArgs
+                  : VerifyPhoneOtpArgs(
+                      phoneNumber: s.extra is String ? s.extra as String : '',
+                    );
+              return BlocProvider<SettingsCubit>.value(
+                value: di.sl<SettingsCubit>(),
+                child: VerifyPhoneOtpScreen(args: args),
+              );
+            },
+          ),
+        ],
       ),
       GoRoute(
         path: RouteNames.notifications,

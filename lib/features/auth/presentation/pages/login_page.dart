@@ -185,9 +185,7 @@ class _LoginPageState extends State<LoginPage> {
                         label: l10n.loginPhoneLabel,
                         hintText: l10n.loginPhoneHint,
                         keyboardType: TextInputType.phone,
-                        textAlign: value.text.isEmpty && isAr
-                            ? TextAlign.right
-                            : TextAlign.left,
+                        textAlign: TextAlign.start,
                         textDirection: TextDirection.ltr,
                         prefixIcon: isAr ? null : flagWidget,
                         suffixIcon: isAr ? flagWidget : null,

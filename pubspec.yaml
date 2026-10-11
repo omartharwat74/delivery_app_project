@@ -57,6 +57,7 @@ flutter:
     - assets/images/support/
     - assets/images/icons/support/
     - assets/images/icons/general_settings/
+    - assets/images/icons/profile/
 
   fonts:
     - family: ExpoArabic

@@ -394,6 +394,45 @@ class AppLocalizationsEn extends AppLocalizations {
   String get changePhoneNumber => 'Change Phone Number';
 
   @override
+  String get changePhoneTitle => 'Change Phone Number';
+
+  @override
+  String get changePhoneSubtitle =>
+      'Enter your new phone number correctly to receive the verification code!';
+
+  @override
+  String get mobileNumber => 'Mobile Number';
+
+  @override
+  String get invalidPhoneMessage => 'Please enter your mobile number';
+
+  @override
+  String get invalidPhoneLengthMessage =>
+      'Mobile number must be 11 or 12 digits';
+
+  @override
+  String get verifyPhoneTitle => 'Verification Code';
+
+  @override
+  String get verifyPhoneMessage =>
+      'A verification code has been sent to your phone!';
+
+  @override
+  String get resendCode => 'Resend code?';
+
+  @override
+  String resendCodeTimer(int seconds) {
+    return '$seconds seconds';
+  }
+
+  @override
+  String get phoneChangedTitle => 'Phone Number Changed Successfully';
+
+  @override
+  String get phoneChangedMessage =>
+      'Your phone number has been updated successfully.';
+
+  @override
   String get manageOrderReception => 'Manage Order Reception';
 
   @override

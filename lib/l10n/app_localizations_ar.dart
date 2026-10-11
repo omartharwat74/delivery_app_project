@@ -389,6 +389,42 @@ class AppLocalizationsAr extends AppLocalizations {
   String get changePhoneNumber => 'تغيير رقم الجوال';
 
   @override
+  String get changePhoneTitle => 'تغيير رقم الجوال';
+
+  @override
+  String get changePhoneSubtitle =>
+      'ادخل رقمك الجديد بشكل صحيح ليصلك كود التفعيل !';
+
+  @override
+  String get mobileNumber => 'رقم الجوال';
+
+  @override
+  String get invalidPhoneMessage => 'يرجى إدخال رقم الجوال';
+
+  @override
+  String get invalidPhoneLengthMessage => 'رقم الجوال يجب أن يكون 11 أو 12 رقم';
+
+  @override
+  String get verifyPhoneTitle => 'كود التحقق';
+
+  @override
+  String get verifyPhoneMessage => 'تم إرسال كود على رقمك للتحقق !';
+
+  @override
+  String get resendCode => 'إعادة إرسال الكود ؟';
+
+  @override
+  String resendCodeTimer(int seconds) {
+    return '$seconds ثانية';
+  }
+
+  @override
+  String get phoneChangedTitle => 'تم تغيير رقم الجوال بنجاح';
+
+  @override
+  String get phoneChangedMessage => 'تم تحديث رقم الجوال بنجاح.';
+
+  @override
   String get manageOrderReception => 'التحكم في استقبال الطلبات';
 
   @override

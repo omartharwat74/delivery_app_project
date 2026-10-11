@@ -842,6 +842,72 @@ abstract class AppLocalizations {
   /// **'Change Phone Number'**
   String get changePhoneNumber;
 
+  /// No description provided for @changePhoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Phone Number'**
+  String get changePhoneTitle;
+
+  /// No description provided for @changePhoneSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your new phone number correctly to receive the verification code!'**
+  String get changePhoneSubtitle;
+
+  /// No description provided for @mobileNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile Number'**
+  String get mobileNumber;
+
+  /// No description provided for @invalidPhoneMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your mobile number'**
+  String get invalidPhoneMessage;
+
+  /// No description provided for @invalidPhoneLengthMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile number must be 11 or 12 digits'**
+  String get invalidPhoneLengthMessage;
+
+  /// No description provided for @verifyPhoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification Code'**
+  String get verifyPhoneTitle;
+
+  /// No description provided for @verifyPhoneMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'A verification code has been sent to your phone!'**
+  String get verifyPhoneMessage;
+
+  /// No description provided for @resendCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend code?'**
+  String get resendCode;
+
+  /// No description provided for @resendCodeTimer.
+  ///
+  /// In en, this message translates to:
+  /// **'{seconds} seconds'**
+  String resendCodeTimer(int seconds);
+
+  /// No description provided for @phoneChangedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone Number Changed Successfully'**
+  String get phoneChangedTitle;
+
+  /// No description provided for @phoneChangedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your phone number has been updated successfully.'**
+  String get phoneChangedMessage;
+
   /// No description provided for @manageOrderReception.
   ///
   /// In en, this message translates to:

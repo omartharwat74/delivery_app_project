@@ -31,6 +31,10 @@ import '../../features/orders/data/datasources/order_local_datasource.dart';
 import '../../features/orders/data/datasources/order_remote_datasource.dart';
 import '../../features/profile/data/datasources/profile_local_datasource.dart';
 import '../../features/profile/data/datasources/profile_remote_datasource.dart';
+import '../../features/settings/data/datasources/settings_remote_datasource.dart';
+import '../../features/settings/data/repositories/settings_repository_impl.dart';
+import '../../features/settings/domain/repositories/settings_repository.dart';
+import '../../features/settings/presentation/bloc/settings_cubit.dart';
 import '../network/api_client.dart';
 import '../network/auth_event_bus.dart';
 import '../network/network_info.dart';
@@ -122,10 +126,28 @@ Future<void> init({required SharedPreferences prefs}) async {
   sl.registerLazySingleton(() => SendDriverLoginOtpUseCase(sl()));
   sl.registerLazySingleton(() => VerifyDriverLoginOtpUseCase(sl()));
 
-  sl.registerFactory(
+  sl.registerLazySingleton<SettingsRemoteDataSource>(
+    () => SettingsRemoteDataSourceImpl(apiClient: sl()),
+  );
+
+  sl.registerLazySingleton<SettingsRepository>(
+    () => SettingsRepositoryImpl(
+      remoteDataSource: sl(),
+      authLocalDataSource: sl(),
+    ),
+  );
+
+  sl.registerLazySingleton(
     () => AuthCubit(
       authRepository: sl(),
       authEventBus: sl(),
+    ),
+  );
+
+  sl.registerLazySingleton(
+    () => SettingsCubit(
+      settingsRepository: sl(),
+      authCubit: sl<AuthCubit>(),
     ),
   );
 

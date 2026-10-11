@@ -43,4 +43,8 @@ class AppAssets {
   static const userAvatar = 'assets/images/user_avatar.png';
   static const profileAvatar = 'assets/images/profile_avatar.png';
   static const profileImageUploadIcon = 'assets/images/image-upload.png';
+  static const profilePhoneOtpIcon =
+      'assets/images/icons/profile/profile_phone_otp_icon.svg';
+  static const profileSuccessIcon =
+      'assets/images/icons/profile/profile_success_icon.gif';
 }

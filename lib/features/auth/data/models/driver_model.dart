@@ -10,6 +10,7 @@ class DriverModel {
   final bool isOnline;
   final bool isBusy;
   final bool canAcceptOrders;
+  final bool isNotify;
   final double? currentLat;
   final double? currentLng;
   final double? ratingAvg;
@@ -30,6 +31,7 @@ class DriverModel {
     this.isOnline = false,
     this.isBusy = false,
     this.canAcceptOrders = false,
+    this.isNotify = true,
     this.currentLat,
     this.currentLng,
     this.ratingAvg,
@@ -58,6 +60,11 @@ class DriverModel {
       isOnline: effectiveJson['is_online'] as bool? ?? false,
       isBusy: effectiveJson['is_busy'] as bool? ?? false,
       canAcceptOrders: effectiveJson['can_accept_orders'] as bool? ?? false,
+      isNotify: effectiveJson['is_notify'] is bool
+          ? effectiveJson['is_notify'] as bool
+          : (effectiveJson['is_notify'] == 1
+              ? true
+              : (effectiveJson['is_notify'] == 0 ? false : true)),
       currentLat: (effectiveJson['current_lat'] as num?)?.toDouble(),
       currentLng: (effectiveJson['current_lng'] as num?)?.toDouble(),
       ratingAvg: (effectiveJson['rating_avg'] as num?)?.toDouble(),
@@ -87,6 +94,7 @@ class DriverModel {
       'is_online': isOnline,
       'is_busy': isBusy,
       'can_accept_orders': canAcceptOrders,
+      'is_notify': isNotify,
       'current_lat': currentLat,
       'current_lng': currentLng,
       'rating_avg': ratingAvg,
@@ -109,6 +117,7 @@ class DriverModel {
     bool? isOnline,
     bool? isBusy,
     bool? canAcceptOrders,
+    bool? isNotify,
     double? currentLat,
     double? currentLng,
     double? ratingAvg,
@@ -129,6 +138,7 @@ class DriverModel {
       isOnline: isOnline ?? this.isOnline,
       isBusy: isBusy ?? this.isBusy,
       canAcceptOrders: canAcceptOrders ?? this.canAcceptOrders,
+      isNotify: isNotify ?? this.isNotify,
       currentLat: currentLat ?? this.currentLat,
       currentLng: currentLng ?? this.currentLng,
       ratingAvg: ratingAvg ?? this.ratingAvg,

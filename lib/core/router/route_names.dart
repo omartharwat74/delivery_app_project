@@ -9,6 +9,7 @@ class RouteNames {
   static const pending = '/pending';
 
   static const driverHome = '/home';
+  static const home = driverHome;
   static const workHours = '/work-hours';
 
   // Migrated feature routes
@@ -20,4 +21,6 @@ class RouteNames {
   static const support = '/support';
   static const termsAndConditions = '/terms-and-conditions';
   static const profile = '/profile';
+  static const changePhone = '/settings/change-phone';
+  static const verifyPhoneOtp = '/settings/otp';
 }

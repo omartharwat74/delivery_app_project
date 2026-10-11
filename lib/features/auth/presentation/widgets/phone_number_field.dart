@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../../core/constants/app_assets.dart';
-import '../../../../core/localization/context_locale_ext.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/text_styles.dart';
 import '../../../../core/widgets/app_media.dart';
@@ -28,8 +27,6 @@ class PhoneNumberField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isArabic = context.isArabic;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -74,9 +71,8 @@ class PhoneNumberField extends StatelessWidget {
                                 return TextField(
                                   controller: controller,
                                   keyboardType: TextInputType.phone,
-                                  textAlign: value.text.isEmpty && isArabic
-                                      ? TextAlign.right
-                                      : TextAlign.left,
+                                  textDirection: TextDirection.ltr,
+                                  textAlign: TextAlign.start,
                                   style: AppTextStyles.inputText(context)
                                       .copyWith(
                                         color: readOnly

@@ -304,6 +304,13 @@ class AuthCubit extends Cubit<AuthState> {
     emit(AuthUnauthenticated());
   }
 
+  /// Updates driver data in memory and notifies listeners
+  void updateDriver(DriverModel updatedDriver) {
+    final s = state;
+    final token = s is AuthAuthenticated ? s.token : '';
+    emit(AuthAuthenticated(token: token, driver: updatedDriver));
+  }
+
   @override
   Future<void> close() {
     _unauthorizedSubscription?.cancel();
