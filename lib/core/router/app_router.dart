@@ -2,6 +2,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/di/injection_container.dart' as di;
 import '../../features/profile/presentation/bloc/profile_bloc.dart';
+import '../../features/home/presentation/bloc/home_cubit.dart';
 
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/otp_page.dart';
@@ -45,7 +46,13 @@ class AppRouter {
         path: RouteNames.pending,
         builder: (c, s) => const RegistrationPendingPage(),
       ),
-      GoRoute(path: RouteNames.driverHome, builder: (c, s) => const HomePage()),
+      GoRoute(
+        path: RouteNames.driverHome,
+        builder: (c, s) => BlocProvider<HomeCubit>(
+          create: (context) => di.sl<HomeCubit>(),
+          child: const HomePage(),
+        ),
+      ),
       GoRoute(path: RouteNames.orders, builder: (c, s) => const OrdersScreen()),
       GoRoute(path: RouteNames.wallet, builder: (c, s) => const WalletScreen()),
       GoRoute(

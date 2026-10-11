@@ -96,6 +96,48 @@ class DriverModel {
       'profiles': profiles?.toJson(),
     };
   }
+
+  DriverModel copyWith({
+    int? id,
+    String? name,
+    String? phone,
+    String? email,
+    String? nationalId,
+    String? image,
+    String? vehicleType,
+    String? status,
+    bool? isOnline,
+    bool? isBusy,
+    bool? canAcceptOrders,
+    double? currentLat,
+    double? currentLng,
+    double? ratingAvg,
+    int? ratingCount,
+    DriverAreaModel? area,
+    DriverShiftModel? shift,
+    DriverProfilesModel? profiles,
+  }) {
+    return DriverModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      phone: phone ?? this.phone,
+      email: email ?? this.email,
+      nationalId: nationalId ?? this.nationalId,
+      image: image ?? this.image,
+      vehicleType: vehicleType ?? this.vehicleType,
+      status: status ?? this.status,
+      isOnline: isOnline ?? this.isOnline,
+      isBusy: isBusy ?? this.isBusy,
+      canAcceptOrders: canAcceptOrders ?? this.canAcceptOrders,
+      currentLat: currentLat ?? this.currentLat,
+      currentLng: currentLng ?? this.currentLng,
+      ratingAvg: ratingAvg ?? this.ratingAvg,
+      ratingCount: ratingCount ?? this.ratingCount,
+      area: area ?? this.area,
+      shift: shift ?? this.shift,
+      profiles: profiles ?? this.profiles,
+    );
+  }
 }
 
 class DriverAreaModel {

@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 
 import '../widgets/home_drawer.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../auth/presentation/bloc/auth_cubit.dart';
 import '../../../orders/presentation/bloc/active_order_cubit.dart';
 import '../../../orders/presentation/bloc/active_order_state.dart';
 import '../../../orders/presentation/widgets/active_order_card.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../bloc/home_cubit.dart';
+import '../bloc/home_state.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -15,7 +18,11 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  bool _isOnline = false;
+  @override
+  void initState() {
+    super.initState();
+    context.read<HomeCubit>().initHome();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,8 +95,8 @@ class _HomePageState extends State<HomePage> {
                                 borderRadius: BorderRadius.circular(12.0),
                                 onTap: () =>
                                     Scaffold.of(drawerCtx).openDrawer(),
-                                child: Center(
-                                  child: const Icon(
+                                child: const Center(
+                                  child: Icon(
                                     Icons.menu,
                                     color: Color(0xFFA3090F),
                                   ),
@@ -100,50 +107,90 @@ class _HomePageState extends State<HomePage> {
                         ),
 
                         // Online/Offline Toggle
-                        GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _isOnline = !_isOnline;
-                            });
+                        BlocConsumer<HomeCubit, HomeState>(
+                          listener: (context, state) {
+                            if (state is HomeAvailabilityError) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(state.message),
+                                  backgroundColor:
+                                      Theme.of(context).colorScheme.error,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            } else if (state is HomeAvailabilitySuccess) {
+                              // Keep driver profile in AuthCubit synchronized
+                              context.read<AuthCubit>().loadDriverProfile();
+                            }
                           },
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 300),
-                            width: 60,
-                            height: 32,
-                            padding: const EdgeInsets.all(2.0),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.surface,
-                              borderRadius: BorderRadius.circular(16.0),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Colors.black12,
-                                  blurRadius: 10,
-                                  offset: Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                AnimatedAlign(
-                                  duration: const Duration(milliseconds: 300),
-                                  alignment: _isOnline
-                                      ? AlignmentDirectional.centerEnd
-                                      : AlignmentDirectional.centerStart,
-                                  child: Container(
-                                    width: 28,
-                                    height: 28,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: _isOnline
-                                          ? const Color(0xFF0C9D61)
-                                          : const Color(0xFFD1D1D1),
+                          builder: (context, state) {
+                            final isOnline = state.isOnline;
+                            final isLoading = state is HomeAvailabilityLoading;
+
+                            return GestureDetector(
+                              onTap: isLoading
+                                  ? null
+                                  : () => context
+                                      .read<HomeCubit>()
+                                      .toggleAvailability(!isOnline),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 300),
+                                width: 60,
+                                height: 32,
+                                padding: const EdgeInsets.all(2.0),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.surface,
+                                  borderRadius: BorderRadius.circular(16.0),
+                                  boxShadow: const [
+                                    BoxShadow(
+                                      color: Colors.black12,
+                                      blurRadius: 10,
+                                      offset: Offset(0, 4),
                                     ),
-                                  ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                          ),
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    AnimatedAlign(
+                                      duration:
+                                          const Duration(milliseconds: 300),
+                                      alignment: isOnline
+                                          ? AlignmentDirectional.centerEnd
+                                          : AlignmentDirectional.centerStart,
+                                      child: Container(
+                                        width: 28,
+                                        height: 28,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: isOnline
+                                              ? const Color(0xFF0C9D61)
+                                              : const Color(0xFFD1D1D1),
+                                        ),
+                                        child: isLoading
+                                            ? const Center(
+                                                child: SizedBox(
+                                                  width: 14,
+                                                  height: 14,
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                    strokeWidth: 2,
+                                                    valueColor:
+                                                        AlwaysStoppedAnimation<
+                                                            Color>(
+                                                      Colors.white,
+                                                    ),
+                                                  ),
+                                                ),
+                                              )
+                                            : null,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),

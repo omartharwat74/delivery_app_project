@@ -21,6 +21,9 @@ import '../../features/earnings/data/datasources/earnings_local_datasource.dart'
 import '../../features/earnings/data/datasources/earnings_remote_datasource.dart';
 import '../../features/home/data/datasources/home_local_datasource.dart';
 import '../../features/home/data/datasources/home_remote_datasource.dart';
+import '../../features/home/data/repositories/home_repository_impl.dart';
+import '../../features/home/domain/repositories/home_repository.dart';
+import '../../features/home/presentation/bloc/home_cubit.dart';
 import '../../features/navigation_map/data/datasources/map_remote_datasource.dart';
 import '../../features/auth/data/datasources/auth_local_datasource.dart';
 import '../../features/auth/data/datasources/auth_remote_datasource.dart';
@@ -104,6 +107,15 @@ Future<void> init({required SharedPreferences prefs}) async {
     ),
   );
 
+  sl.registerLazySingleton<HomeRepository>(
+    () => HomeRepositoryImpl(
+      remoteDataSource: sl(),
+      authLocalDataSource: sl(),
+      homeLocalDataSource: sl(),
+      sharedPreferences: sl(),
+    ),
+  );
+
   sl.registerLazySingleton(() => CheckAuthSessionUseCase(sl()));
   sl.registerLazySingleton(() => RegisterDriverUseCase(sl()));
   sl.registerLazySingleton(() => UploadMediaUseCase(sl()));
@@ -118,6 +130,13 @@ Future<void> init({required SharedPreferences prefs}) async {
   );
 
   sl.registerFactory(() => LookupsCubit(authRepository: sl()));
+
+  sl.registerFactory(
+    () => HomeCubit(
+      homeRepository: sl(),
+      sharedPreferences: sl(),
+    ),
+  );
 
   sl.registerFactory(() => ChatCubit());
   sl.registerFactory(() => ProfileBloc());
