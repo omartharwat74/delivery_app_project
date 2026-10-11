@@ -956,6 +956,12 @@ abstract class AppLocalizations {
   /// **'National ID Image'**
   String get profileNationalIdImage;
 
+  /// No description provided for @profileVehicleFront.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle Front Image'**
+  String get profileVehicleFront;
+
   /// No description provided for @profileUploadPrompt.
   ///
   /// In en, this message translates to:

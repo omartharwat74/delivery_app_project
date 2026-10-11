@@ -40,30 +40,36 @@ class DriverModel {
   });
 
   factory DriverModel.fromJson(Map<String, dynamic> json) {
+    final effectiveJson = json['delivery'] is Map<String, dynamic>
+        ? json['delivery'] as Map<String, dynamic>
+        : (json['driver'] is Map<String, dynamic>
+            ? json['driver'] as Map<String, dynamic>
+            : json);
+
     return DriverModel(
-      id: json['id'] as int? ?? 0,
-      name: json['name'] as String? ?? '',
-      phone: json['phone'] as String? ?? '',
-      email: json['email'] as String?,
-      nationalId: json['national_id'] as String?,
-      image: json['image'] as String?,
-      vehicleType: json['vehicle_type'] as String?,
-      status: json['status'] as String? ?? 'active',
-      isOnline: json['is_online'] as bool? ?? false,
-      isBusy: json['is_busy'] as bool? ?? false,
-      canAcceptOrders: json['can_accept_orders'] as bool? ?? false,
-      currentLat: (json['current_lat'] as num?)?.toDouble(),
-      currentLng: (json['current_lng'] as num?)?.toDouble(),
-      ratingAvg: (json['rating_avg'] as num?)?.toDouble(),
-      ratingCount: json['rating_count'] as int?,
-      area: json['area'] != null && json['area'] is Map<String, dynamic>
-          ? DriverAreaModel.fromJson(json['area'] as Map<String, dynamic>)
+      id: effectiveJson['id'] as int? ?? 0,
+      name: effectiveJson['name'] as String? ?? '',
+      phone: effectiveJson['phone'] as String? ?? '',
+      email: effectiveJson['email'] as String?,
+      nationalId: effectiveJson['national_id'] as String?,
+      image: effectiveJson['image'] as String?,
+      vehicleType: effectiveJson['vehicle_type'] as String?,
+      status: effectiveJson['status'] as String? ?? 'active',
+      isOnline: effectiveJson['is_online'] as bool? ?? false,
+      isBusy: effectiveJson['is_busy'] as bool? ?? false,
+      canAcceptOrders: effectiveJson['can_accept_orders'] as bool? ?? false,
+      currentLat: (effectiveJson['current_lat'] as num?)?.toDouble(),
+      currentLng: (effectiveJson['current_lng'] as num?)?.toDouble(),
+      ratingAvg: (effectiveJson['rating_avg'] as num?)?.toDouble(),
+      ratingCount: effectiveJson['rating_count'] as int?,
+      area: effectiveJson['area'] != null && effectiveJson['area'] is Map<String, dynamic>
+          ? DriverAreaModel.fromJson(effectiveJson['area'] as Map<String, dynamic>)
           : null,
-      shift: json['shift'] != null && json['shift'] is Map<String, dynamic>
-          ? DriverShiftModel.fromJson(json['shift'] as Map<String, dynamic>)
+      shift: effectiveJson['shift'] != null && effectiveJson['shift'] is Map<String, dynamic>
+          ? DriverShiftModel.fromJson(effectiveJson['shift'] as Map<String, dynamic>)
           : null,
-      profiles: json['profiles'] != null && json['profiles'] is Map<String, dynamic>
-          ? DriverProfilesModel.fromJson(json['profiles'] as Map<String, dynamic>)
+      profiles: effectiveJson['profiles'] != null && effectiveJson['profiles'] is Map
+          ? DriverProfilesModel.fromJson(effectiveJson['profiles'] as Map)
           : null,
     );
   }
@@ -151,12 +157,33 @@ class DriverProfilesModel {
     this.vehicleFront,
   });
 
-  factory DriverProfilesModel.fromJson(Map<String, dynamic> json) {
+  String? operator [](String key) {
+    switch (key) {
+      case 'driving_license':
+      case 'drivingLicense':
+        return drivingLicense;
+      case 'vehicle_license':
+      case 'vehicleLicense':
+        return vehicleLicense;
+      case 'national_id':
+      case 'nationalId':
+        return nationalId;
+      case 'vehicle_front':
+      case 'vehicleFront':
+        return vehicleFront;
+      default:
+        return null;
+    }
+  }
+
+  factory DriverProfilesModel.fromJson(Map<dynamic, dynamic> json) {
     return DriverProfilesModel(
-      drivingLicense: json['driving_license'] as String?,
-      vehicleLicense: json['vehicle_license'] as String?,
-      nationalId: json['national_id'] as String?,
-      vehicleFront: json['vehicle_front'] as String?,
+      drivingLicense:
+          (json['driving_license'] ?? json['drivingLicense']) as String?,
+      vehicleLicense:
+          (json['vehicle_license'] ?? json['vehicleLicense']) as String?,
+      nationalId: (json['national_id'] ?? json['nationalId']) as String?,
+      vehicleFront: (json['vehicle_front'] ?? json['vehicleFront']) as String?,
     );
   }
 

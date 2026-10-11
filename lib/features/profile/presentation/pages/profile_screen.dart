@@ -1,11 +1,18 @@
 import 'dart:io';
-import 'package:delivery_app_project/core/constants/app_assets.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 
+import '../../../../core/constants/app_assets.dart';
+import '../../../../core/di/injection_container.dart' as di;
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/text_styles.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../auth/data/datasources/auth_local_datasource.dart';
+import '../../../auth/data/models/driver_model.dart';
+import '../../../auth/presentation/bloc/auth_cubit.dart';
+import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../auth/presentation/widgets/auth_back_button.dart';
 import '../../../auth/presentation/widgets/auth_image_upload_box.dart';
 import '../../../auth/presentation/widgets/auth_primary_button.dart';
@@ -23,35 +30,107 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   bool _isEditing = false;
+  final _picker = ImagePicker();
 
   late final TextEditingController _usernameController;
   late final TextEditingController _phoneController;
   late final TextEditingController _emailController;
   late final TextEditingController _nationalIdController;
 
-  String? _vehicleType = 'دراجه بخارية';
+  String? _vehicleType;
+  String? _profileImageUrl;
+  String? _driverLicenseUrl;
+  String? _vehicleLicenseUrl;
+  String? _nationalIdImageUrl;
+  String? _vehicleFrontUrl;
 
   File? _profileImage;
   File? _driverLicenseImage;
   File? _vehicleRegistrationImage;
   File? _nationalIdImage;
+  File? _vehicleFrontImage;
 
   @override
   void initState() {
     super.initState();
-    // Pre-fill with mock data for visual testing
-    _usernameController = TextEditingController(text: 'خالد على');
-    _phoneController = TextEditingController(
-      text: '1004059966',
-    ); // Phone without prefix
-    _emailController = TextEditingController(text: 'afarag870@gmail.com');
-    _nationalIdController = TextEditingController(text: '123040533234');
+    _usernameController = TextEditingController();
+    _phoneController = TextEditingController();
+    _emailController = TextEditingController();
+    _nationalIdController = TextEditingController();
 
-    // Using dummy files for mock rendering of images
-    _profileImage = null; // File('mock_profile_image.png');
-    _driverLicenseImage = null; // File('mock_license.png');
-    _vehicleRegistrationImage = null; // File('mock_vehicle.png');
-    _nationalIdImage = null; // File('mock_national_id.png');
+    _initDriverData();
+  }
+
+  void _populateDriver(DriverModel driver) {
+    _usernameController.text = driver.name;
+    _phoneController.text = _cleanPhone(driver.phone);
+    _emailController.text = driver.email ?? '';
+    _nationalIdController.text = driver.nationalId ?? '';
+    _vehicleType = _mapVehicleType(driver.vehicleType);
+    _profileImageUrl = driver.image;
+    _driverLicenseUrl =
+        driver.profiles?['driving_license'] ?? driver.profiles?.drivingLicense;
+    _vehicleLicenseUrl =
+        driver.profiles?['vehicle_license'] ?? driver.profiles?.vehicleLicense;
+    _nationalIdImageUrl =
+        driver.profiles?['national_id'] ?? driver.profiles?.nationalId;
+    _vehicleFrontUrl =
+        driver.profiles?['vehicle_front'] ?? driver.profiles?.vehicleFront;
+  }
+
+  Future<void> _initDriverData() async {
+    final authCubit = context.read<AuthCubit>();
+    final driver = authCubit.currentDriver;
+    if (driver != null) {
+      setState(() => _populateDriver(driver));
+    } else {
+      final localDs = di.sl<AuthLocalDataSource>();
+      final cached = await localDs.getDriver();
+      if (cached != null && mounted) {
+        setState(() => _populateDriver(cached));
+      }
+      authCubit.loadDriverProfile();
+    }
+  }
+
+  String _cleanPhone(String raw) {
+    var digits = raw.replaceAll(RegExp(r'\D'), '');
+    if (digits.startsWith('20')) {
+      digits = digits.substring(2);
+    }
+    if (digits.startsWith('0')) {
+      digits = digits.substring(1);
+    }
+    return digits;
+  }
+
+  String? _mapVehicleType(String? val) {
+    if (val == null || val.trim().isEmpty) return null;
+    final lower = val.toLowerCase();
+    if (lower == 'motorcycle' ||
+        lower.contains('بخار') ||
+        lower.contains('نار')) {
+      return 'motorcycle';
+    }
+    if (lower == 'regular_bike' ||
+        lower == 'bicycle' ||
+        lower.contains('هوائ') ||
+        lower.contains('عجل')) {
+      return 'regular_bike';
+    }
+    return val;
+  }
+
+  String _vehicleLabel(AppLocalizations l10n, String key) {
+    switch (key) {
+      case 'motorcycle':
+        return l10n.vehicleTypeMotorcycle;
+      case 'regular_bike':
+      case 'bicycle':
+        return l10n.vehicleTypeBicycle;
+      default:
+        return key;
+    }
   }
 
   @override
@@ -95,168 +174,259 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.only(
-                left: 16,
-                right: 16,
-                top: 24,
-                bottom: 24,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Profile Image Area
-                  Center(
-                    child: Column(
-                      children: [
-                        Text(
-                          l10n.profileProfileImage,
-                          style: AppTextStyles.inputText(context),
-                        ),
-                        const SizedBox(height: 8),
-                        AuthImageUploadBox(
-                          imageFile: _profileImage,
-                          imageAsset: AppAssets.profileAvatar,
-                          readOnly: !_isEditing,
-                          showUploadIcon: _isEditing,
-                          onTap: () {},
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Form Fields
-                  AuthTextField(
-                    controller: _usernameController,
-                    label: l10n.profileUserName,
-                    hintText: l10n.profileUserName,
-                    readOnly: !_isEditing,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Phone Number (Only in View Mode)
-                  AnimatedSize(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                    alignment: Alignment.topCenter,
-                    child: _isEditing
-                        ? const SizedBox.shrink()
-                        : Padding(
-                            padding: const EdgeInsets.only(bottom: 16),
-                            child: PhoneNumberField(
-                              controller: _phoneController,
-                              label: l10n.profilePhone,
-                              hintText: l10n.profilePhone,
-                              readOnly: true,
-                            ),
+      body: BlocListener<AuthCubit, AuthState>(
+        listenWhen: (prev, curr) => curr is AuthAuthenticated,
+        listener: (context, state) {
+          if (state is AuthAuthenticated &&
+              state.driver != null &&
+              !_isEditing) {
+            setState(() => _populateDriver(state.driver!));
+          }
+        },
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  top: 24,
+                  bottom: 24,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Profile Image Area
+                    Center(
+                      child: Column(
+                        children: [
+                          Text(
+                            l10n.profileProfileImage,
+                            style: AppTextStyles.inputText(context),
                           ),
-                  ),
+                          const SizedBox(height: 8),
+                          AuthImageUploadBox(
+                            imageFile: _profileImage,
+                            imageUrl: _profileImageUrl,
+                            imageAsset: AppAssets.profilePlaceholder,
+                            readOnly: !_isEditing,
+                            showUploadIcon: _isEditing,
+                            onTap: () async {
+                              final picked = await _picker.pickImage(
+                                source: ImageSource.gallery,
+                              );
+                              if (picked != null) {
+                                setState(
+                                  () => _profileImage = File(picked.path),
+                                );
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
 
-                  AuthTextField(
-                    controller: _emailController,
-                    label: l10n.profileEmail,
-                    hintText: l10n.profileEmail,
-                    keyboardType: TextInputType.emailAddress,
-                    readOnly: !_isEditing,
-                  ),
-                  const SizedBox(height: 16),
+                    // Form Fields
+                    AuthTextField(
+                      controller: _usernameController,
+                      label: l10n.profileUserName,
+                      hintText: l10n.profileUserName,
+                      readOnly: !_isEditing,
+                    ),
+                    const SizedBox(height: 16),
 
-                  AuthTextField(
-                    controller: _nationalIdController,
-                    label: l10n.profileNationalId,
-                    hintText: l10n.profileNationalId,
-                    keyboardType: TextInputType.number,
-                    readOnly: !_isEditing,
-                  ),
-                  const SizedBox(height: 16),
+                    // Phone Number (Always readOnly)
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      alignment: Alignment.topCenter,
+                      child: _isEditing
+                          ? const SizedBox.shrink()
+                          : Padding(
+                              padding: const EdgeInsets.only(bottom: 16),
+                              child: PhoneNumberField(
+                                controller: _phoneController,
+                                label: l10n.profilePhone,
+                                hintText: l10n.profilePhone,
+                                readOnly: true,
+                              ),
+                            ),
+                    ),
 
-                  VehicleTypeField(
-                    label: l10n.profileVehicleType,
-                    hintText: l10n.profileVehicleType,
-                    items: const ['سيارة', 'دراجه بخارية', 'عجلة'],
-                    initialValue: _vehicleType,
-                    readOnly: !_isEditing,
-                    itemLabelBuilder: (val) => val,
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                    validator: (v) => null,
-                    onChanged: (val) {
-                      setState(() => _vehicleType = val);
-                    },
-                  ),
-                  const SizedBox(height: 16),
+                    AuthTextField(
+                      controller: _emailController,
+                      label: l10n.profileEmail,
+                      hintText: l10n.profileEmail,
+                      keyboardType: TextInputType.emailAddress,
+                      readOnly: !_isEditing,
+                    ),
+                    const SizedBox(height: 16),
 
-                  // Documents
-                  DocumentUploadTile(
-                    label: l10n.profileDriverLicense,
-                    hintText: l10n.profileDriverLicense,
-                    tapToUploadLabel: l10n.profileUploadPrompt,
-                    imageFile: _driverLicenseImage,
-                    readOnly: !_isEditing,
-                    onTap: () {},
-                    onRemove: () {
-                      setState(() => _driverLicenseImage = null);
-                    },
-                  ),
-                  const SizedBox(height: 16),
+                    AuthTextField(
+                      controller: _nationalIdController,
+                      label: l10n.profileNationalId,
+                      hintText: l10n.profileNationalId,
+                      keyboardType: TextInputType.number,
+                      readOnly: !_isEditing,
+                    ),
+                    const SizedBox(height: 16),
 
-                  DocumentUploadTile(
-                    label: l10n.profileVehicleRegistration,
-                    hintText: l10n.profileVehicleRegistration,
-                    tapToUploadLabel: l10n.profileUploadPrompt,
-                    imageFile: _vehicleRegistrationImage,
-                    readOnly: !_isEditing,
-                    onTap: () {},
-                    onRemove: () {
-                      setState(() => _vehicleRegistrationImage = null);
-                    },
-                  ),
-                  const SizedBox(height: 16),
+                    VehicleTypeField(
+                      label: l10n.profileVehicleType,
+                      hintText: l10n.profileVehicleType,
+                      items: {
+                        'motorcycle',
+                        'regular_bike',
+                        if (_vehicleType != null && _vehicleType!.isNotEmpty)
+                          _vehicleType!,
+                      }.toList(),
+                      initialValue: _vehicleType,
+                      readOnly: !_isEditing,
+                      itemLabelBuilder: (val) => _vehicleLabel(l10n, val),
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      validator: (v) => null,
+                      onChanged: (val) {
+                        setState(() => _vehicleType = val);
+                      },
+                    ),
+                    const SizedBox(height: 16),
 
-                  DocumentUploadTile(
-                    label: l10n.profileNationalIdImage,
-                    hintText: l10n.profileNationalIdImage,
-                    tapToUploadLabel: l10n.profileUploadPrompt,
-                    imageFile: _nationalIdImage,
-                    readOnly: !_isEditing,
-                    onTap: () {},
-                    onRemove: () {
-                      setState(() => _nationalIdImage = null);
-                    },
+                    // Documents
+                    DocumentUploadTile(
+                      label: l10n.profileDriverLicense,
+                      hintText: l10n.profileDriverLicense,
+                      tapToUploadLabel: l10n.profileUploadPrompt,
+                      imageFile: _driverLicenseImage,
+                      imageUrl: _driverLicenseUrl,
+                      readOnly: !_isEditing,
+                      onTap: () async {
+                        final picked = await _picker.pickImage(
+                          source: ImageSource.gallery,
+                        );
+                        if (picked != null) {
+                          setState(
+                            () => _driverLicenseImage = File(picked.path),
+                          );
+                        }
+                      },
+                      onRemove: () {
+                        setState(() {
+                          _driverLicenseImage = null;
+                          _driverLicenseUrl = null;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    DocumentUploadTile(
+                      label: l10n.profileVehicleRegistration,
+                      hintText: l10n.profileVehicleRegistration,
+                      tapToUploadLabel: l10n.profileUploadPrompt,
+                      imageFile: _vehicleRegistrationImage,
+                      imageUrl: _vehicleLicenseUrl,
+                      readOnly: !_isEditing,
+                      onTap: () async {
+                        final picked = await _picker.pickImage(
+                          source: ImageSource.gallery,
+                        );
+                        if (picked != null) {
+                          setState(
+                            () =>
+                                _vehicleRegistrationImage = File(picked.path),
+                          );
+                        }
+                      },
+                      onRemove: () {
+                        setState(() {
+                          _vehicleRegistrationImage = null;
+                          _vehicleLicenseUrl = null;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    DocumentUploadTile(
+                      label: l10n.profileNationalIdImage,
+                      hintText: l10n.profileNationalIdImage,
+                      tapToUploadLabel: l10n.profileUploadPrompt,
+                      imageFile: _nationalIdImage,
+                      imageUrl: _nationalIdImageUrl,
+                      readOnly: !_isEditing,
+                      onTap: () async {
+                        final picked = await _picker.pickImage(
+                          source: ImageSource.gallery,
+                        );
+                        if (picked != null) {
+                          setState(
+                            () => _nationalIdImage = File(picked.path),
+                          );
+                        }
+                      },
+                      onRemove: () {
+                        setState(() {
+                          _nationalIdImage = null;
+                          _nationalIdImageUrl = null;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    DocumentUploadTile(
+                      label: l10n.profileVehicleFront,
+                      hintText: l10n.profileVehicleFront,
+                      tapToUploadLabel: l10n.profileUploadPrompt,
+                      imageFile: _vehicleFrontImage,
+                      imageUrl: _vehicleFrontUrl,
+                      readOnly: !_isEditing,
+                      onTap: () async {
+                        final picked = await _picker.pickImage(
+                          source: ImageSource.gallery,
+                        );
+                        if (picked != null) {
+                          setState(
+                            () => _vehicleFrontImage = File(picked.path),
+                          );
+                        }
+                      },
+                      onRemove: () {
+                        setState(() {
+                          _vehicleFrontImage = null;
+                          _vehicleFrontUrl = null;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // Bottom Pinned Button
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+              decoration: BoxDecoration(
+                color: AppColors.scaffoldBackground(context),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, -5),
                   ),
                 ],
               ),
-            ),
-          ),
-          // Bottom Pinned Button
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-            decoration: BoxDecoration(
-              color: AppColors.scaffoldBackground(context),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, -5),
+              child: SafeArea(
+                top: false,
+                child: AuthPrimaryButton(
+                  label: _isEditing ? l10n.confirm : l10n.profileRequestEdit,
+                  onPressed: () {
+                    setState(() {
+                      _isEditing = !_isEditing;
+                    });
+                  },
                 ),
-              ],
-            ),
-            child: SafeArea(
-              top: false,
-              child: AuthPrimaryButton(
-                label: _isEditing ? l10n.confirm : l10n.profileRequestEdit,
-                onPressed: () {
-                  setState(() {
-                    _isEditing = !_isEditing;
-                  });
-                },
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

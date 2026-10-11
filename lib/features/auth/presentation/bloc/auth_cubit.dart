@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/localization/app_strings.dart';
 import '../../../../core/network/auth_event_bus.dart';
+import '../../data/models/driver_model.dart';
 import '../../data/models/register_driver_request.dart';
 import '../../domain/repositories/auth_repository.dart';
 import 'auth_state.dart';
@@ -18,6 +19,13 @@ class AuthCubit extends Cubit<AuthState> {
 
   String? get phoneNumber => _phoneNumber;
   String? get registrationToken => _registrationToken;
+  DriverModel? get currentDriver {
+    final s = state;
+    if (s is AuthAuthenticated) {
+      return s.driver;
+    }
+    return null;
+  }
 
   AuthCubit({
     required this.authRepository,
@@ -62,6 +70,15 @@ class AuthCubit extends Cubit<AuthState> {
     final cachedDriver = await authRepository.getCachedDriver();
     if (cachedDriver != null) {
       emit(AuthAuthenticated(token: token, driver: cachedDriver));
+      // Silently refresh in background
+      authRepository.getMe().then((result) {
+        result.fold(
+          (_) {},
+          (driver) {
+            emit(AuthAuthenticated(token: token, driver: driver));
+          },
+        );
+      });
       return;
     }
 
@@ -72,6 +89,25 @@ class AuthCubit extends Cubit<AuthState> {
         // otherwise if network issue, proceed with token
         emit(AuthAuthenticated(token: token, driver: null));
       },
+      (driver) {
+        emit(AuthAuthenticated(token: token, driver: driver));
+      },
+    );
+  }
+
+  /// Reloads driver profile from cache and/or remote API
+  Future<void> loadDriverProfile() async {
+    final token = await authRepository.getAccessToken();
+    if (token == null || token.isEmpty) return;
+
+    final cached = await authRepository.getCachedDriver();
+    if (cached != null) {
+      emit(AuthAuthenticated(token: token, driver: cached));
+    }
+
+    final meResult = await authRepository.getMe();
+    meResult.fold(
+      (_) {},
       (driver) {
         emit(AuthAuthenticated(token: token, driver: driver));
       },
@@ -263,6 +299,8 @@ class AuthCubit extends Cubit<AuthState> {
   Future<void> logout() async {
     emit(AuthLogoutLoading());
     await authRepository.logout();
+    _phoneNumber = null;
+    _registrationToken = null;
     emit(AuthUnauthenticated());
   }
 

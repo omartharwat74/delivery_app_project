@@ -1,17 +1,19 @@
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
-import 'package:dotted_border/dotted_border.dart';
 
 /// Profile-photo style upload box with dashed border.
 ///
 /// - Displays dashed square box using [DottedBorder].
-/// - When [imageFile] is null, displays [imageAsset] (default: profile placeholder).
-/// - When [imageFile] is provided, displays [imageFile] using [Image.file] inside [ClipRRect].
-/// - If [showUploadIcon] is true, overlays the upload icon.
+/// - When [imageFile] is provided, displays [imageFile] using [Image.file].
+/// - When [imageUrl] is provided, displays [CachedNetworkImage].
+/// - Otherwise displays [imageAsset] (default: profile placeholder).
+/// - If [showUploadIcon] is true and not readOnly, overlays the upload icon.
 class AuthImageUploadBox extends StatelessWidget {
   const AuthImageUploadBox({
     super.key,
@@ -22,6 +24,7 @@ class AuthImageUploadBox extends StatelessWidget {
     this.borderRadius = 12,
     this.readOnly = false,
     this.imageAsset = AppAssets.profilePlaceholder,
+    this.imageUrl,
     this.showUploadIcon = true,
   });
 
@@ -32,7 +35,19 @@ class AuthImageUploadBox extends StatelessWidget {
   final double borderRadius;
   final bool readOnly;
   final String? imageAsset;
+  final String? imageUrl;
   final bool showUploadIcon;
+
+  static String _resolveUrl(String url) {
+    final trimmed = url.trim();
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      return trimmed;
+    }
+    if (trimmed.startsWith('/')) {
+      return 'https://mycar.msarweb.net$trimmed';
+    }
+    return 'https://mycar.msarweb.net/$trimmed';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,6 +78,19 @@ class AuthImageUploadBox extends StatelessWidget {
               children: [
                 if (hasImage)
                   Image.file(imageFile!, fit: BoxFit.cover)
+                else if (imageUrl != null && imageUrl!.trim().isNotEmpty)
+                  CachedNetworkImage(
+                    imageUrl: _resolveUrl(imageUrl!),
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Image.asset(
+                      resolvedAsset,
+                      fit: BoxFit.cover,
+                    ),
+                    errorWidget: (context, url, error) => Image.asset(
+                      resolvedAsset,
+                      fit: BoxFit.cover,
+                    ),
+                  )
                 else if (resolvedAsset.isNotEmpty)
                   Image.asset(resolvedAsset, fit: BoxFit.cover)
                 else if (readOnly)

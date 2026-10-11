@@ -32,6 +32,7 @@ dependencies:
   dotted_border: ^3.1.0
 
   intl: any
+  cached_network_image: ^4.0.3
 dev_dependencies:
   flutter_test:
     sdk: flutter

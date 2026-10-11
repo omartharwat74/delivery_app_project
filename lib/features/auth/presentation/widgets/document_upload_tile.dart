@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_assets.dart';
@@ -21,6 +22,7 @@ class DocumentUploadTile extends StatelessWidget {
     required this.onTap,
     required this.onRemove,
     this.imageFile,
+    this.imageUrl,
     this.errorText,
     this.hasError = false,
     this.readOnly = false,
@@ -32,6 +34,7 @@ class DocumentUploadTile extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onRemove;
   final File? imageFile;
+  final String? imageUrl;
   final String? errorText;
   final bool hasError;
   final bool readOnly;
@@ -79,16 +82,26 @@ class DocumentUploadTile extends StatelessWidget {
                     readOnly: readOnly,
                   ),
                 )
-              : readOnly
-                  ? const Padding(
-                      key: ValueKey('mock_view_card'),
-                      padding: EdgeInsets.only(top: 8),
-                      child: _MockViewModeBox(),
+              : (imageUrl != null && imageUrl!.trim().isNotEmpty)
+                  ? Padding(
+                      key: ValueKey('success_url_${imageUrl!}'),
+                      padding: EdgeInsets.only(top: readOnly ? 0 : 12),
+                      child: NetworkUploadSuccessCard(
+                        imageUrl: imageUrl!,
+                        onDelete: onRemove,
+                        readOnly: readOnly,
+                      ),
                     )
-                  : const SizedBox(
-                      key: ValueKey('upload_card_empty'),
-                      width: double.infinity,
-                    ),
+                  : readOnly
+                      ? const Padding(
+                          key: ValueKey('mock_view_card'),
+                          padding: EdgeInsets.only(top: 8),
+                          child: _MockViewModeBox(),
+                        )
+                      : const SizedBox(
+                          key: ValueKey('upload_card_empty'),
+                          width: double.infinity,
+                        ),
         ),
         if (errorText != null)
           Padding(
@@ -105,22 +118,21 @@ class _MockViewModeBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      height: 97,
-      decoration: BoxDecoration(
-        color: AppColors.surfaceCard(context),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border(context), width: 1),
-      ),
-      child: Align(
-        alignment: AlignmentDirectional.centerStart,
-        child: Padding(
-          padding: const EdgeInsetsDirectional.only(
-            start: 16.0,
-            top: 16.0,
-            bottom: 16.0,
-          ),
+    final isArabic = context.isArabic;
+
+    return Directionality(
+      textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+      child: Container(
+        width: double.infinity,
+        height: 88,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceCard(context),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppColors.border(context), width: 0.5),
+        ),
+        child: Align(
+          alignment: AlignmentDirectional.centerStart,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: Image.asset(
@@ -236,9 +248,7 @@ class UploadSuccessCard extends StatelessWidget {
           border: Border.all(color: AppColors.border(context), width: 0.5),
         ),
         child: Row(
-          mainAxisAlignment: readOnly
-              ? MainAxisAlignment.end
-              : MainAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.start,
           children: [
             if (!readOnly) ...[
               ClipRRect(
@@ -323,6 +333,136 @@ class _DeleteIconButton extends StatelessWidget {
         width: 20,
         height: 20,
         color: AppColors.primary,
+      ),
+    );
+  }
+}
+
+class NetworkUploadSuccessCard extends StatelessWidget {
+  const NetworkUploadSuccessCard({
+    super.key,
+    required this.imageUrl,
+    required this.onDelete,
+    this.readOnly = false,
+  });
+
+  final String imageUrl;
+  final VoidCallback onDelete;
+  final bool readOnly;
+
+  String _resolveUrl(String url) {
+    final trimmed = url.trim();
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      return trimmed;
+    }
+    if (trimmed.startsWith('/')) {
+      return 'https://mycar.msarweb.net$trimmed';
+    }
+    return 'https://mycar.msarweb.net/$trimmed';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final isArabic = context.isArabic;
+    final resolved = _resolveUrl(imageUrl);
+
+    return Directionality(
+      textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+      child: Container(
+        height: 88,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceCard(context),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppColors.border(context), width: 0.5),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            if (!readOnly) ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: CachedNetworkImage(
+                  imageUrl: resolved,
+                  width: 56,
+                  height: 56,
+                  fit: BoxFit.cover,
+                  placeholder: (c, u) => Container(
+                    width: 56,
+                    height: 56,
+                    color: Colors.grey.shade200,
+                  ),
+                  errorWidget: (c, u, e) => Image.asset(
+                    'assets/images/mock_license.png',
+                    width: 56,
+                    height: 56,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            l10n.uploadSuccessAdded,
+                            textAlign: TextAlign.start,
+                            style: AppTextStyles.inputText(context),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        _DeleteIconButton(onPressed: onDelete),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: LinearProgressIndicator(
+                        value: 1,
+                        minHeight: 6,
+                        backgroundColor: AppColors.success.withValues(
+                          alpha: 0.15,
+                        ),
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          AppColors.success,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ] else ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: CachedNetworkImage(
+                  imageUrl: resolved,
+                  width: 65,
+                  height: 65,
+                  fit: BoxFit.cover,
+                  placeholder: (c, u) => Container(
+                    width: 65,
+                    height: 65,
+                    color: Colors.grey.shade200,
+                  ),
+                  errorWidget: (c, u, e) => Image.asset(
+                    'assets/images/mock_license.png',
+                    width: 65,
+                    height: 65,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

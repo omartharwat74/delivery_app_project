@@ -297,7 +297,7 @@ void main() {
       expect(cubit.state, isA<AuthUnauthenticated>());
     });
 
-    test('logout emits [AuthLogoutLoading, AuthUnauthenticated]', () async {
+    test('logout emits [AuthLogoutLoading, AuthUnauthenticated] and clears currentDriver', () async {
       final expectedStates = [
         AuthLogoutLoading(),
         AuthUnauthenticated(),
@@ -306,6 +306,39 @@ void main() {
       expectLater(cubit.stream, emitsInOrder(expectedStates));
 
       await cubit.logout();
+      expect(cubit.currentDriver, isNull);
+    });
+
+    test('checkAuthStatus emits AuthUnauthenticated when not logged in', () async {
+      mockRepository.loggedInValue = false;
+      mockRepository.tokenValue = null;
+
+      await cubit.checkAuthStatus();
+      expect(cubit.state, isA<AuthUnauthenticated>());
+    });
+
+    test('checkAuthStatus emits AuthAuthenticated with cached driver', () async {
+      mockRepository.loggedInValue = true;
+      mockRepository.tokenValue = 'saved_token_123';
+      const driver = DriverModel(id: 42, name: 'Omar Tharwat', phone: '01064178619');
+      mockRepository.cachedDriverValue = driver;
+
+      await cubit.checkAuthStatus();
+      expect(cubit.state, isA<AuthAuthenticated>());
+      final authState = cubit.state as AuthAuthenticated;
+      expect(authState.token, 'saved_token_123');
+      expect(authState.driver?.name, 'Omar Tharwat');
+      expect(cubit.currentDriver?.name, 'Omar Tharwat');
+    });
+
+    test('loadDriverProfile updates currentDriver from cache', () async {
+      mockRepository.loggedInValue = true;
+      mockRepository.tokenValue = 'active_token';
+      const driver = DriverModel(id: 7, name: 'Delivery Captain', phone: '01099998888');
+      mockRepository.cachedDriverValue = driver;
+
+      await cubit.loadDriverProfile();
+      expect(cubit.currentDriver?.name, 'Delivery Captain');
     });
   });
 }

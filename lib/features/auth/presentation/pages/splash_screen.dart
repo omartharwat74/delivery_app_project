@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_assets.dart';
+import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../bloc/auth_cubit.dart';
 import '../bloc/auth_state.dart';
@@ -24,13 +25,26 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    Timer(_minSplashDuration, () {
-      if (!mounted) return;
+    _checkAuthAndNavigate();
+  }
 
-      // TODO: Revert this temporary auth bypass
-      context.go('/home');
-      // context.read<AuthCubit>().checkAuthStatus();
-    });
+  Future<void> _checkAuthAndNavigate() async {
+    final timerFuture = Future.delayed(_minSplashDuration);
+    final authFuture = context
+        .read<AuthCubit>()
+        .checkAuthStatus()
+        .timeout(const Duration(seconds: 5), onTimeout: () {});
+
+    await Future.wait([timerFuture, authFuture]);
+    if (!mounted || _navigated) return;
+
+    _navigated = true;
+    final state = context.read<AuthCubit>().state;
+    if (state is AuthAuthenticated) {
+      context.go(RouteNames.driverHome);
+    } else {
+      context.go(RouteNames.login);
+    }
   }
 
   @override
@@ -41,13 +55,7 @@ class _SplashScreenState extends State<SplashScreen> {
         listenWhen: (prev, curr) =>
             curr is AuthAuthenticated || curr is AuthUnauthenticated,
         listener: (context, state) {
-          if (_navigated) return;
-          _navigated = true;
-          if (state is AuthAuthenticated) {
-            context.go('/home');
-          } else if (state is AuthUnauthenticated) {
-            context.go('/login');
-          }
+          // Handled via _checkAuthAndNavigate to respect minimum splash timer
         },
         child: LayoutBuilder(
           builder: (context, constraints) {

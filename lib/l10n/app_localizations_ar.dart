@@ -446,6 +446,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get profileNationalIdImage => 'صوره الهويه الوطنيه';
 
   @override
+  String get profileVehicleFront => 'صورة الدراجة من الأمام';
+
+  @override
   String get profileUploadPrompt => 'اضغط للرفع';
 
   @override

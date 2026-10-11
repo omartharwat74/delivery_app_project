@@ -451,6 +451,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileNationalIdImage => 'National ID Image';
 
   @override
+  String get profileVehicleFront => 'Vehicle Front Image';
+
+  @override
   String get profileUploadPrompt => 'Tap to upload';
 
   @override

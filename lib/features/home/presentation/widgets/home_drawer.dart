@@ -1,7 +1,9 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/constants/app_assets.dart';
 import '../../../../core/router/route_names.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/bloc/auth_cubit.dart';
@@ -30,7 +32,10 @@ class HomeDrawer extends StatelessWidget {
       listenWhen: (prev, curr) => curr is AuthUnauthenticated,
       listener: (context, state) {
         if (state is AuthUnauthenticated) {
-          context.go('/login');
+          while (Navigator.of(context, rootNavigator: true).canPop()) {
+            Navigator.of(context, rootNavigator: true).pop();
+          }
+          context.go(RouteNames.login);
         }
       },
       child: Drawer(
@@ -196,9 +201,15 @@ class HomeDrawer extends StatelessWidget {
             child: Text(l10n.cancel),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.of(dialogContext).pop();
-              context.read<AuthCubit>().logout();
+              await context.read<AuthCubit>().logout();
+              if (context.mounted) {
+                while (Navigator.of(context, rootNavigator: true).canPop()) {
+                  Navigator.of(context, rootNavigator: true).pop();
+                }
+                context.go(RouteNames.login);
+              }
             },
             child: Text(
               l10n.confirm,
@@ -215,89 +226,156 @@ class _DrawerHeader extends StatelessWidget {
   const _DrawerHeader({required this.l10n});
   final AppLocalizations l10n;
 
+  static String _resolveUrl(String url) {
+    final trimmed = url.trim();
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      return trimmed;
+    }
+    if (trimmed.startsWith('/')) {
+      return 'https://mycar.msarweb.net$trimmed';
+    }
+    return 'https://mycar.msarweb.net/$trimmed';
+  }
+
+  static String _formatPhone(String raw) {
+    var digits = raw.replaceAll(RegExp(r'\D'), '');
+    if (digits.startsWith('20')) {
+      digits = digits.substring(2);
+    }
+    if (digits.startsWith('0')) {
+      digits = digits.substring(1);
+    }
+    return digits.isNotEmpty ? '+20 $digits' : '+20';
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return SizedBox(
-      height: 52,
-      child: Row(
-        children: [
-          // START: Avatar + Name + Phone
-          Expanded(
-            child: InkWell(
-              onTap: () {
-                Navigator.of(context).pop();
-                context.push(RouteNames.profile);
-              },
-              borderRadius: BorderRadius.circular(8),
-              child: Row(
-                children: [
-                  const CircleAvatar(
-                    radius: 20,
-                    backgroundColor: Colors.transparent,
-                    backgroundImage: AssetImage('assets/images/user_avatar.png'),
-                  ),
-                  const SizedBox(width: 12),
-                  // Name + Phone
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // User name
-                        Text(
-                          l10n.drawerGuestName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                            color:
-                                theme.textTheme.bodyMedium?.color ??
-                                theme.colorScheme.onSurface,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        // Phone
-                        Text(
-                          '+20 123 456 7890',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w400,
-                            color:
-                                theme.textTheme.bodySmall?.color ??
-                                theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+    return BlocBuilder<AuthCubit, AuthState>(
+      builder: (context, state) {
+        final driver = state is AuthAuthenticated
+            ? state.driver
+            : context.read<AuthCubit>().currentDriver;
 
-          const SizedBox(width: 8),
+        final displayName =
+            (driver?.name != null && driver!.name.trim().isNotEmpty)
+                ? driver.name
+                : l10n.drawerGuestName;
 
-          // END: back/close arrow
-          InkWell(
-            onTap: () => Navigator.of(context).pop(),
-            borderRadius: BorderRadius.circular(8),
-            child: Padding(
-              padding: const EdgeInsets.all(4.0),
-              child: Icon(
-                // Changed to arrow_forward_ios to match the other rows (< in RTL)
-                Icons.arrow_forward_ios,
-                size: 16,
-                color: theme.iconTheme.color ?? theme.colorScheme.onSurface,
+        final rawPhone = driver?.phone ?? '';
+        final displayPhone =
+            rawPhone.isNotEmpty ? _formatPhone(rawPhone) : '+20';
+
+        final imageUrl = driver?.image;
+        final resolvedImageUrl =
+            (imageUrl != null && imageUrl.trim().isNotEmpty)
+                ? _resolveUrl(imageUrl)
+                : null;
+
+        return SizedBox(
+          height: 52,
+          child: Row(
+            children: [
+              // START: Avatar + Name + Phone
+              Expanded(
+                child: InkWell(
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    context.push(RouteNames.profile);
+                  },
+                  borderRadius: BorderRadius.circular(8),
+                  child: Row(
+                    children: [
+                      ClipOval(
+                        child: SizedBox(
+                          width: 40,
+                          height: 40,
+                          child: resolvedImageUrl != null
+                              ? CachedNetworkImage(
+                                  imageUrl: resolvedImageUrl,
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) => Image.asset(
+                                    AppAssets.profilePlaceholder,
+                                    fit: BoxFit.cover,
+                                  ),
+                                  errorWidget: (context, url, error) =>
+                                      Image.asset(
+                                    AppAssets.profilePlaceholder,
+                                    fit: BoxFit.cover,
+                                  ),
+                                )
+                              : Image.asset(
+                                  AppAssets.profilePlaceholder,
+                                  fit: BoxFit.cover,
+                                ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // Name + Phone
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // User name
+                            Text(
+                              displayName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w400,
+                                color:
+                                    theme.textTheme.bodyMedium?.color ??
+                                    theme.colorScheme.onSurface,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            // Phone (forced LTR for +20 prefix)
+                            Directionality(
+                              textDirection: TextDirection.ltr,
+                              child: Text(
+                                displayPhone,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w400,
+                                  color:
+                                      theme.textTheme.bodySmall?.color ??
+                                      theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
+
+              const SizedBox(width: 8),
+
+              // END: back/close arrow
+              InkWell(
+                onTap: () => Navigator.of(context).pop(),
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: Icon(
+                    // Changed to arrow_forward_ios to match the other rows (< in RTL)
+                    Icons.arrow_forward_ios,
+                    size: 16,
+                    color: theme.iconTheme.color ?? theme.colorScheme.onSurface,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
