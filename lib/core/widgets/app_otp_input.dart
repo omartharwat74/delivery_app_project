@@ -48,6 +48,13 @@ class _AppOtpInputState extends State<AppOtpInput> {
     });
   }
 
+  void _handleResend() {
+    if (_seconds > 0) return;
+    _controller.clear();
+    _startTimer();
+    widget.onResend();
+  }
+
   @override
   void dispose() {
     _timer?.cancel();
@@ -57,6 +64,7 @@ class _AppOtpInputState extends State<AppOtpInput> {
   }
 
   void _handleSubmit() {
+    FocusManager.instance.primaryFocus?.unfocus();
     final otp = _controller.text.trim();
     if (otp.length < 6) return;
     widget.onSubmit(otp);
@@ -69,59 +77,79 @@ class _AppOtpInputState extends State<AppOtpInput> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            Opacity(
-              opacity: 0,
-              child: TextField(
-                controller: _controller,
-                focusNode: _focusNode,
-                keyboardType: TextInputType.number,
-                maxLength: 6,
-                autofocus: true,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                onChanged: (val) => setState(() {}),
-                onSubmitted: (_) => _handleSubmit(),
+        // 6 OTP boxes - strictly LTR
+        SizedBox(
+          height: 48,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: Directionality(
+                  textDirection: TextDirection.ltr,
+                  child: TextField(
+                    controller: _controller,
+                    focusNode: _focusNode,
+                    autofocus: true,
+                    keyboardType: TextInputType.number,
+                    maxLength: 6,
+                    textAlign: TextAlign.left,
+                    textDirection: TextDirection.ltr,
+                    showCursor: false,
+                    style: AppTextStyles.hiddenOtpInput,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                    ],
+                    decoration: const InputDecoration(
+                      border: InputBorder.none,
+                      counterText: '',
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    onChanged: (val) => setState(() {}),
+                    onSubmitted: (_) => _handleSubmit(),
+                  ),
+                ),
               ),
-            ),
-            GestureDetector(
-              onTap: () => _focusNode.requestFocus(),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: List.generate(6, (index) {
-                  final text = _controller.text;
-                  final hasChar = index < text.length;
-                  final char = hasChar ? text[index] : '';
-                  final isFocused = _focusNode.hasFocus && index == text.length;
+              Directionality(
+                textDirection: TextDirection.ltr,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: List.generate(6, (index) {
+                    final text = _controller.text;
+                    final isFilled = index < text.length;
+                    final char = isFilled ? text[index] : '-';
 
-                  return Container(
-                    width: 48,
-                    height: 56,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceCard(context),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isFocused
-                            ? AppColors.primary
-                            : hasChar
-                            ? AppColors.otpActiveBorder(context)
-                            : AppColors.border(context),
-                        width: isFocused ? 2 : 1,
+                    return InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      onTap: _focusNode.requestFocus,
+                      child: Container(
+                        width: 48,
+                        height: 48,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceCard(context),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: isFilled
+                                ? AppColors.otpActiveBorder(context)
+                                : AppColors.border(context),
+                            width: isFilled ? 1.0 : 0.5,
+                          ),
+                        ),
+                        child: Text(
+                          char,
+                          style: isFilled
+                              ? AppTextStyles.otpDigitActive(context).copyWith(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                )
+                              : AppTextStyles.otpDigitInactive(context),
+                        ),
                       ),
-                    ),
-                    child: Text(
-                      char,
-                      style: hasChar
-                          ? AppTextStyles.otpDigitActive(context)
-                          : AppTextStyles.otpDigitInactive(context),
-                    ),
-                  );
-                }),
+                    );
+                  }),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
 
         if (widget.errorMessage != null)
@@ -134,38 +162,11 @@ class _AppOtpInputState extends State<AppOtpInput> {
             ),
           ),
 
-        const SizedBox(height: 32),
+        const SizedBox(height: 24),
 
-        // Timer / Resend
-        Center(
-          child: _seconds > 0
-              ? Text(
-                  '${_seconds.toString().padLeft(2, '0')} ${l10n.otpSeconds}',
-                  style: AppTextStyles.body(context).copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                )
-              : TextButton(
-                  onPressed: () {
-                    _startTimer();
-                    widget.onResend();
-                  },
-                  child: Text(
-                    l10n.otpResendCode,
-                    style: AppTextStyles.body(context).copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-        ),
-
-        const SizedBox(height: 32),
-
-        // Submit Button
+        // Verify button
         SizedBox(
-          height: 56,
+          height: 52,
           child: ElevatedButton(
             onPressed: (_controller.text.length == 6 && !widget.isLoading)
                 ? _handleSubmit
@@ -176,7 +177,7 @@ class _AppOtpInputState extends State<AppOtpInput> {
               disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.5),
               disabledForegroundColor: Colors.white.withValues(alpha: 0.7),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(8),
               ),
               elevation: 0,
             ),
@@ -190,14 +191,46 @@ class _AppOtpInputState extends State<AppOtpInput> {
                     ),
                   )
                 : Text(
-                    l10n.otpVerifyButton,
+                    l10n.otpVerify,
                     style: const TextStyle(
-                      fontFamily: 'ExpoArabic',
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
           ),
+        ),
+
+        const SizedBox(height: 24),
+
+        // Countdown timer & Resend button row
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              l10n.otpTimerSeconds(_seconds),
+              style: AppTextStyles.timerText(context),
+            ),
+            const SizedBox(width: 6),
+            TextButton(
+              onPressed: _seconds == 0 ? _handleResend : null,
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                l10n.otpResend,
+                style: AppTextStyles.textLink(context).copyWith(
+                  color: _seconds == 0
+                      ? AppColors.primary
+                      : AppColors.paragraph(context),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );

@@ -15,6 +15,6 @@ class RegisterDriverUseCase
   Future<Either<Failure, DriverRegistration>> call(
     RegisterDriverParams params,
   ) {
-    return _repository.registerDriver(params);
+    return _repository.registerDriverLegacy(params);
   }
 }

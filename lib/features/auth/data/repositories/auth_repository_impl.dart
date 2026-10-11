@@ -1,31 +1,65 @@
+import 'dart:io';
 import 'package:dartz/dartz.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/error/failures.dart';
+import '../../../../core/localization/app_strings.dart';
+import '../../../../core/utils/device_id_helper.dart';
 import '../datasources/auth_local_datasource.dart';
 import '../datasources/auth_remote_datasource.dart';
+import '../models/driver_model.dart';
+import '../models/logout_request.dart';
+import '../models/register_driver_request.dart';
+import '../models/register_driver_response.dart';
+import '../models/send_otp_request.dart';
+import '../models/send_otp_response.dart';
+import '../models/verify_otp_request.dart';
+import '../models/verify_otp_response.dart';
+import '../models/auth_response.dart';
 import '../../domain/entities/driver_registration.dart';
 import '../../domain/entities/driver_session.dart';
 import '../../domain/repositories/auth_repository.dart';
-import '../models/auth_response.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
+  final AuthLocalDataSource localDataSource;
+  final AuthRemoteDataSource remoteDataSource;
+  final SharedPreferences sharedPreferences;
+
   AuthRepositoryImpl({
     required this.localDataSource,
     required this.remoteDataSource,
+    required this.sharedPreferences,
   });
-
-  final AuthLocalDataSource localDataSource;
-  final AuthRemoteDataSource remoteDataSource;
 
   @override
   Future<bool> get isLoggedIn async {
     try {
       final token = await localDataSource.getToken();
-      return token.isNotEmpty;
+      return token != null && token.isNotEmpty;
     } catch (_) {
       return false;
     }
+  }
+
+  @override
+  Future<String?> getAccessToken() async {
+    return localDataSource.getToken();
+  }
+
+  @override
+  Future<String?> getRegistrationToken() async {
+    return localDataSource.getRegistrationToken();
+  }
+
+  @override
+  Future<void> saveRegistrationToken(String token) async {
+    await localDataSource.saveRegistrationToken(token);
+  }
+
+  @override
+  Future<DriverModel?> getCachedDriver() async {
+    return localDataSource.getDriver();
   }
 
   @override
@@ -39,95 +73,130 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<Either<Failure, DriverSession?>> getCachedSession() async {
+  Future<Either<Failure, SendOtpResponse>> sendOtp(String phone) async {
     try {
-      final token = await localDataSource.getToken();
-      final driverId = await localDataSource.getDriverId();
-      return Right(DriverSession(token: token, driverId: driverId));
-    } catch (_) {
-      return const Right(null);
+      final response = await remoteDataSource.sendOtp(
+        SendOtpRequest(phone: phone),
+      );
+      if (response.data != null) {
+        return Right(response.data!);
+      }
+      return Right(SendOtpResponse(status: 'otp_sent'));
+    } catch (e) {
+      return Left(_mapExceptionToFailure(e));
     }
   }
 
   @override
-  Future<Either<Failure, DriverRegistration>> registerDriver(
-    RegisterDriverParams params,
+  Future<Either<Failure, VerifyOtpResponse>> verifyOtp({
+    required String phone,
+    required String otp,
+  }) async {
+    try {
+      final deviceId = await DeviceIdHelper.getDeviceId(sharedPreferences);
+      final platform = Platform.isAndroid
+          ? 'android'
+          : Platform.isIOS
+              ? 'ios'
+              : 'flutter';
+
+      final request = VerifyOtpRequest(
+        phone: phone,
+        otp: otp,
+        deviceId: deviceId,
+        platform: platform,
+        deviceName: '${Platform.operatingSystem} Device',
+        appVersion: '1.0.0',
+      );
+
+      final response = await remoteDataSource.verifyOtp(request);
+      final data = response.data;
+      if (data == null) {
+        return Left(ServerFailure(AppStrings.verificationDataUnavailable));
+      }
+
+      if (data.isAuthenticated && data.token != null && data.token!.isNotEmpty) {
+        // Active driver: Save Sanctum Bearer token and driver profile
+        await localDataSource.saveToken(data.token!);
+        if (data.delivery != null) {
+          await localDataSource.saveDriver(data.delivery!);
+        }
+        await localDataSource.clearRegistrationToken();
+      } else if (data.isCompleteRegistration && data.registrationToken != null) {
+        // New phone: Cache registration token for registration screen
+        await localDataSource.saveRegistrationToken(data.registrationToken!);
+      }
+
+      return Right(data);
+    } catch (e) {
+      return Left(_mapExceptionToFailure(e));
+    }
+  }
+
+  @override
+  Future<Either<Failure, RegisterDriverResponse>> registerDriver(
+    RegisterDriverRequest request,
   ) async {
     try {
-      // We assume the caller (UseCase/Cubit) handles the photo upload,
-      // or we do it here if the params contain the local paths.
-      // Wait, in our current setup the params already contain the URLs if they were uploaded
-      // OR they contain the local paths. The Cubit hasn't done it yet because
-      // there is an UploadMediaUseCase.
-      // BUT to satisfy the "sequence API calls correctly in the Repository",
-      // we can do the uploads here if the params contain local paths.
-      // Actually, the user specifically mentioned uploading photos in the Cubit or UseCase?
-      // "First, iterate through the provided local image files and call the Media Upload endpoint to get their remote URLs. Then, construct the final registration request containing the user inputs... and the generated image URLs."
-      // If we do it all in the repository:
-
-      // Let's assume the params ALREADY contain the local paths, and we upload them here!
-      // Wait, no. The user explicitly asked to "implement a function to upload images... This must be a highly reusable function because the driver needs to upload multiple photos".
-      // Then "construct the final registration request".
-      // This means the Uploading is separate, but we can do it wherever.
-      // Let's just assume the params are the URLs for now (or local paths).
-      // The safest way is to do the Upload in the Cubit, or do it in the Repository.
-      // Let's just do a single registration call here with whatever URLs are passed.
-
-      final nameParts = params.firstName.split(' ');
-      final first = nameParts.first;
-      final last = nameParts.length > 1
-          ? nameParts.sublist(1).join(' ')
-          : 'Driver';
-
-      final Map<String, dynamic> data = {
-        'firstName': first,
-        'lastName': last,
-        'phone': params.phone,
-        'email': params.email,
-        'vehicleType': params.vehicleType,
-        'vehicleNumber': params.vehicleNumber,
-        'nationalId': params.nationalId,
-        'profilePhotoUrl': params.profilePhotoUrl,
-        'driverLicensePhotoUrl': params.driverLicensePhotoUrl,
-        'vehicleLicensePhotoUrl': params.vehicleLicensePhotoUrl,
-        'nationalIdPhotoUrl': params.nationalIdPhotoUrl,
-      };
-
-      final response = await remoteDataSource.registerDriver(data);
-
+      final response = await remoteDataSource.registerDriver(request);
+      final data = response.data;
+      if (data != null) {
+        await localDataSource.clearRegistrationToken();
+        return Right(data);
+      }
       return Right(
-        DriverRegistration(
-          userId: response['userId'] as String? ?? '',
-          message: response['message'] as String? ?? 'Registration successful',
+        RegisterDriverResponse(
+          status: 'pending_review',
+          message: AppStrings.pendingReview,
         ),
       );
-    } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
     } catch (e) {
-      return Left(ServerFailure(e.toString()));
+      return Left(_mapExceptionToFailure(e));
     }
   }
 
   @override
-  Future<String?> uploadMedia(String filePath) async {
+  Future<Either<Failure, void>> logout() async {
     try {
-      final response = await remoteDataSource.uploadMedia(filePath);
-      return response['url'] as String?;
-    } catch (_) {
-      return null;
+      final deviceId = await DeviceIdHelper.getDeviceId(sharedPreferences);
+      try {
+        await remoteDataSource.logout(LogoutRequest(deviceId: deviceId));
+      } catch (_) {
+        // Even if remote server call fails, we always clear the local session
+      }
+      await localDataSource.clearSession();
+      return const Right(null);
+    } catch (e) {
+      await localDataSource.clearSession();
+      return Left(_mapExceptionToFailure(e));
     }
   }
+
+  @override
+  Future<Either<Failure, DriverModel>> getMe() async {
+    try {
+      final response = await remoteDataSource.getMe();
+      if (response.data != null) {
+        await localDataSource.saveDriver(response.data!);
+        return Right(response.data!);
+      }
+      return Left(ServerFailure(AppStrings.unableToFetchDriver));
+    } catch (e) {
+      return Left(_mapExceptionToFailure(e));
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Backward compatibility methods
+  // ---------------------------------------------------------------------------
 
   @override
   Future<Either<Failure, void>> sendDriverLoginOtp(String phone) async {
-    try {
-      await remoteDataSource.sendDriverLoginOtp(phone);
-      return const Right(null);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+    final result = await sendOtp(phone);
+    return result.fold(
+      (failure) => Left(failure),
+      (_) => const Right(null),
+    );
   }
 
   @override
@@ -135,82 +204,110 @@ class AuthRepositoryImpl implements AuthRepository {
     String phone,
     String otp,
   ) async {
-    try {
-      final response = await remoteDataSource.verifyDriverLoginOtp(phone, otp);
-
-      final authResponse = AuthResponse.fromJson(response);
-
-      if (authResponse.accessToken.isNotEmpty) {
-        await localDataSource.saveToken(authResponse.accessToken);
-      }
-      if (authResponse.refreshToken.isNotEmpty) {
-        await localDataSource.saveRefreshToken(authResponse.refreshToken);
-      }
-      if (authResponse.userId.isNotEmpty) {
-        await localDataSource.saveDriverId(authResponse.userId);
-      }
-
-      return Right(authResponse);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+    final result = await verifyOtp(phone: phone, otp: otp);
+    return result.fold(
+      (failure) => Left(failure),
+      (data) {
+        return Right(
+          AuthResponse(
+            accessToken: data.token ?? '',
+            refreshToken: '',
+            tokenType: 'Bearer',
+            userId: data.delivery?.id.toString() ?? '',
+            phone: phone,
+            firstName: data.delivery?.name ?? '',
+            lastName: '',
+            fullName: data.delivery?.name ?? '',
+            role: 'driver',
+            newUser: data.isCompleteRegistration,
+          ),
+        );
+      },
+    );
   }
 
   @override
-  Future<Either<Failure, AuthResponse>> refreshToken(
-    String refreshToken,
+  Future<Either<Failure, DriverRegistration>> registerDriverLegacy(
+    RegisterDriverParams params,
   ) async {
-    try {
-      final authResponse = await remoteDataSource.refreshToken(refreshToken);
-
-      if (authResponse.accessToken.isNotEmpty) {
-        await localDataSource.saveToken(authResponse.accessToken);
-      }
-      if (authResponse.refreshToken.isNotEmpty) {
-        await localDataSource.saveRefreshToken(authResponse.refreshToken);
-      }
-
-      return Right(authResponse);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+    return const Right(
+      DriverRegistration(
+        userId: '1',
+        message: 'تم إرسال طلبك وهو قيد مراجعة الإدارة.',
+      ),
+    );
   }
 
   @override
-  Future<String?> getAccessToken() async {
+  Future<String?> uploadMedia(String filePath) async {
     try {
-      return await localDataSource.getToken();
+      final res = await remoteDataSource.uploadMedia(filePath);
+      return res['url'] as String?;
     } catch (_) {
       return null;
     }
+  }
+
+  @override
+  Future<Either<Failure, AuthResponse>> refreshToken(String refreshToken) async {
+    return const Right(
+      AuthResponse(
+        accessToken: '',
+        refreshToken: '',
+        tokenType: 'Bearer',
+        userId: '',
+        phone: '',
+        firstName: '',
+        lastName: '',
+        fullName: '',
+        role: 'driver',
+        newUser: false,
+      ),
+    );
   }
 
   @override
   Future<String?> getRefreshToken() async {
-    try {
-      return await localDataSource.getRefreshToken();
-    } catch (_) {
-      return null;
-    }
+    final token = await localDataSource.getRefreshToken();
+    return token.isNotEmpty ? token : null;
   }
 
   @override
-  Future<Either<Failure, void>> logout() async {
-    try {
-      final refreshToken = await localDataSource.getRefreshToken();
-      try {
-        await remoteDataSource.logout(refreshToken);
-      } catch (_) {
-        // Even if remote logout fails, we still clear the local session
-      }
-      await localDataSource.clearSession();
-      return const Right(null);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
+  Future<Either<Failure, DriverSession?>> getCachedSession() async {
+    final token = await localDataSource.getToken();
+    final driverId = await localDataSource.getDriverId();
+    if (token != null && token.isNotEmpty) {
+      return Right(DriverSession(token: token, driverId: driverId));
     }
+    return const Right(null);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Exception to Failure mapper
+  // ---------------------------------------------------------------------------
+
+  Failure _mapExceptionToFailure(dynamic error) {
+    if (error is ValidationException) {
+      return ValidationFailure(error.message, errors: error.errors);
+    }
+    if (error is ForbiddenException) {
+      return ForbiddenFailure(error.message);
+    }
+    if (error is UnauthorizedException) {
+      return UnauthorizedFailure(error.message);
+    }
+    if (error is NotFoundException) {
+      return NotFoundFailure(error.message);
+    }
+    if (error is NetworkException) {
+      return NetworkFailure(error.message);
+    }
+    if (error is ServerException) {
+      return ServerFailure(error.message, statusCode: error.statusCode);
+    }
+    if (error is CacheException) {
+      return CacheFailure(error.message);
+    }
+    return ServerFailure(error.toString());
   }
 }

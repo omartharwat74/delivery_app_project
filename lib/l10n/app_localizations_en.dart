@@ -50,7 +50,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get otpSubtitle =>
-      'Enter the code sent to you to confirm your mobile number and continue.';
+      'Enter the code sent to you to verify your mobile number.';
 
   @override
   String get otpVerify => 'Verify';

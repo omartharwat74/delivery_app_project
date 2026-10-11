@@ -48,8 +48,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get otpTitle => 'كود التحقق';
 
   @override
-  String get otpSubtitle =>
-      'أدخل الكود المرسل إليك لتأكيد رقم الجوال والمتابعة.';
+  String get otpSubtitle => 'أدخل الكود المرسل إليك للتأكد من رقم جوالك .';
 
   @override
   String get otpVerify => 'تحقق';

@@ -121,6 +121,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           imageFile: _profileImage,
                           imageAsset: AppAssets.profileAvatar,
                           readOnly: !_isEditing,
+                          showUploadIcon: _isEditing,
                           onTap: () {},
                         ),
                       ],

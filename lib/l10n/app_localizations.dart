@@ -179,7 +179,7 @@ abstract class AppLocalizations {
   /// No description provided for @otpSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Enter the code sent to you to confirm your mobile number and continue.'**
+  /// **'Enter the code sent to you to verify your mobile number.'**
   String get otpSubtitle;
 
   /// No description provided for @otpVerify.

@@ -33,10 +33,13 @@ class AppRouter {
         builder: (c, s) => const LanguagePage(),
       ),
       GoRoute(path: RouteNames.login, builder: (c, s) => const LoginPage()),
-      GoRoute(path: RouteNames.otp, builder: (c, s) => const OtpPage()),
+      GoRoute(
+        path: RouteNames.otp,
+        builder: (c, s) => OtpPage(phoneNumber: s.extra as String?),
+      ),
       GoRoute(
         path: RouteNames.register,
-        builder: (c, s) => const RegisterDriverPage(),
+        builder: (c, s) => RegisterDriverPage(phone: s.extra as String?),
       ),
       GoRoute(
         path: RouteNames.pending,

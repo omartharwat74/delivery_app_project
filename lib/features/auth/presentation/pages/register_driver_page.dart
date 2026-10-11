@@ -28,7 +28,8 @@ import '../widgets/vehicle_type_field.dart';
 enum _MediaSlot { profile, driverLicense, vehicleLicense, nationalId }
 
 class RegisterDriverPage extends StatefulWidget {
-  const RegisterDriverPage({super.key});
+  final String? phone;
+  const RegisterDriverPage({super.key, this.phone});
 
   @override
   State<RegisterDriverPage> createState() => _RegisterDriverPageState();
@@ -51,6 +52,24 @@ class _RegisterDriverPageState extends State<RegisterDriverPage> {
   bool _hasAttemptedSubmit = false;
 
   static const _vehicleTypes = ['motorcycle', 'car', 'bicycle'];
+
+  @override
+  void initState() {
+    super.initState();
+    _initPhone();
+  }
+
+  void _initPhone() {
+    var phone = widget.phone ?? context.read<AuthCubit>().phoneNumber ?? '';
+    phone = phone.replaceAll(RegExp(r'\D'), '');
+    if (phone.startsWith('20')) {
+      phone = phone.substring(2);
+    }
+    if (phone.startsWith('0')) {
+      phone = phone.substring(1);
+    }
+    _phoneController.text = phone;
+  }
 
   @override
   void dispose() {
@@ -83,9 +102,13 @@ class _RegisterDriverPageState extends State<RegisterDriverPage> {
 
   String _apiPhoneNumber() {
     var digits = _phoneController.text.replaceAll(RegExp(r'\D'), '');
-    if (digits.startsWith('20')) return '+$digits';
-    if (digits.startsWith('0')) digits = digits.substring(1);
-    return '+20$digits';
+    if (digits.startsWith('20')) {
+      digits = digits.substring(2);
+    }
+    if (!digits.startsWith('0')) {
+      digits = '0$digits';
+    }
+    return digits;
   }
 
   void _onMediaChanged(_MediaSlot slot, File? file) {
@@ -141,7 +164,8 @@ class _RegisterDriverPageState extends State<RegisterDriverPage> {
 
     return BlocConsumer<AuthCubit, AuthState>(
       listener: (context, state) {
-        if (state is AuthRegistrationSubmitted) {
+        if (state is AuthRegistrationPending ||
+            state is AuthRegistrationSubmitted) {
           context.go(RouteNames.pending);
         } else if (state is AuthError) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -238,6 +262,7 @@ class _RegisterDriverPageState extends State<RegisterDriverPage> {
                       controller: _phoneController,
                       label: l10n.registerPhoneLabel,
                       hintText: l10n.registerPhoneHint,
+                      readOnly: true,
                       autovalidateMode: fieldAutovalidate,
                       validator: (v) => AuthValidators.egyptianPhone(
                         v,
@@ -386,6 +411,7 @@ class _ProfilePhotoFormField extends StatelessWidget {
             const SizedBox(height: 8),
             AuthImageUploadBox(
               imageFile: field.value,
+              imageAsset: AppAssets.profilePlaceholder,
               hasError: field.hasError,
               onTap: () async {
                 final file = await onPick();

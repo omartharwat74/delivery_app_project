@@ -2,7 +2,6 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
-import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../features/auth/data/repositories/auth_repository_impl.dart';
@@ -29,6 +28,7 @@ import '../../features/orders/data/datasources/order_remote_datasource.dart';
 import '../../features/profile/data/datasources/profile_local_datasource.dart';
 import '../../features/profile/data/datasources/profile_remote_datasource.dart';
 import '../network/api_client.dart';
+import '../network/auth_event_bus.dart';
 import '../network/network_info.dart';
 
 final sl = GetIt.instance;
@@ -39,20 +39,9 @@ Future<void> init({required SharedPreferences prefs}) async {
   const secureStorage = FlutterSecureStorage();
   sl.registerLazySingleton<FlutterSecureStorage>(() => secureStorage);
 
-  sl.registerLazySingleton(() {
-    final dio = Dio();
-    dio.interceptors.add(
-      PrettyDioLogger(
-        requestHeader: true,
-        requestBody: true,
-        responseBody: true,
-        responseHeader: false,
-        error: true,
-        compact: false,
-      ),
-    );
-    return dio;
-  });
+  sl.registerLazySingleton<AuthEventBus>(() => AuthEventBus());
+
+  sl.registerLazySingleton<Dio>(() => Dio());
   sl.registerLazySingleton(() => Connectivity());
 
   sl.registerLazySingleton<NetworkInfo>(() => NetworkInfoImpl(sl()));
@@ -61,7 +50,14 @@ Future<void> init({required SharedPreferences prefs}) async {
     () => AuthLocalDataSourceImpl(secureStorage: sl(), sharedPreferences: sl()),
   );
 
-  sl.registerLazySingleton(() => ApiClient(dio: sl(), localDataSource: sl()));
+  sl.registerLazySingleton(
+    () => ApiClient(
+      dio: sl(),
+      localDataSource: sl(),
+      sharedPreferences: sl(),
+      authEventBus: sl(),
+    ),
+  );
 
   sl.registerLazySingleton<AuthRemoteDataSource>(
     () => AuthRemoteDataSourceImpl(sl()),
@@ -100,7 +96,11 @@ Future<void> init({required SharedPreferences prefs}) async {
   );
 
   sl.registerLazySingleton<AuthRepository>(
-    () => AuthRepositoryImpl(localDataSource: sl(), remoteDataSource: sl()),
+    () => AuthRepositoryImpl(
+      localDataSource: sl(),
+      remoteDataSource: sl(),
+      sharedPreferences: sl(),
+    ),
   );
 
   sl.registerLazySingleton(() => CheckAuthSessionUseCase(sl()));
@@ -111,12 +111,8 @@ Future<void> init({required SharedPreferences prefs}) async {
 
   sl.registerFactory(
     () => AuthCubit(
-      checkAuthSession: sl(),
-      sendDriverLoginOtp: sl(),
-      verifyDriverLoginOtp: sl(),
-      registerDriver: sl(),
-      uploadMedia: sl(),
       authRepository: sl(),
+      authEventBus: sl(),
     ),
   );
 

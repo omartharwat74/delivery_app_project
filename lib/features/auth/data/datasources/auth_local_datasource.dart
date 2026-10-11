@@ -1,14 +1,24 @@
+import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/driver_model.dart';
+
 abstract class AuthLocalDataSource {
-  Future<void> saveTokens(String accessToken, String refreshToken);
   Future<void> saveToken(String token);
-  Future<void> saveRefreshToken(String token);
-  Future<String> getToken();
-  Future<String> getRefreshToken();
+  Future<String?> getToken();
+  Future<void> saveRegistrationToken(String token);
+  Future<String?> getRegistrationToken();
+  Future<void> clearRegistrationToken();
+  Future<void> saveDriver(DriverModel driver);
+  Future<DriverModel?> getDriver();
   Future<void> clearTokens();
   Future<void> clearSession();
+
+  // Backward compatibility
+  Future<void> saveTokens(String accessToken, String refreshToken);
+  Future<void> saveRefreshToken(String token);
+  Future<String> getRefreshToken();
   Future<void> saveDriverId(String driverId);
   Future<String> getDriverId();
 }
@@ -22,9 +32,79 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
     required this.sharedPreferences,
   });
 
-  static const _keyToken = 'access_token';
-  static const _keyRefreshToken = 'refresh_token';
-  static const _keyDriverId = 'driver_id';
+  static const String _keyDeliveryToken = 'delivery_token';
+  static const String _keyRegistrationToken = 'delivery_registration_token';
+  static const String _keyDriverProfile = 'driver_profile';
+  static const String _keyLegacyToken = 'access_token';
+  static const String _keyLegacyRefreshToken = 'refresh_token';
+  static const String _keyDriverId = 'driver_id';
+
+  @override
+  Future<void> saveToken(String token) async {
+    await secureStorage.write(key: _keyDeliveryToken, value: token);
+    // Also save legacy key for backward compatibility
+    await secureStorage.write(key: _keyLegacyToken, value: token);
+  }
+
+  @override
+  Future<String?> getToken() async {
+    final token = await secureStorage.read(key: _keyDeliveryToken);
+    if (token != null && token.isNotEmpty) return token;
+    return await secureStorage.read(key: _keyLegacyToken);
+  }
+
+  @override
+  Future<void> saveRegistrationToken(String token) async {
+    await secureStorage.write(key: _keyRegistrationToken, value: token);
+  }
+
+  @override
+  Future<String?> getRegistrationToken() async {
+    return await secureStorage.read(key: _keyRegistrationToken);
+  }
+
+  @override
+  Future<void> clearRegistrationToken() async {
+    await secureStorage.delete(key: _keyRegistrationToken);
+  }
+
+  @override
+  Future<void> saveDriver(DriverModel driver) async {
+    final jsonStr = jsonEncode(driver.toJson());
+    await sharedPreferences.setString(_keyDriverProfile, jsonStr);
+    await sharedPreferences.setString(_keyDriverId, driver.id.toString());
+  }
+
+  @override
+  Future<DriverModel?> getDriver() async {
+    final jsonStr = sharedPreferences.getString(_keyDriverProfile);
+    if (jsonStr == null || jsonStr.isEmpty) return null;
+    try {
+      final map = jsonDecode(jsonStr) as Map<String, dynamic>;
+      return DriverModel.fromJson(map);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Future<void> clearTokens() async {
+    await secureStorage.delete(key: _keyDeliveryToken);
+    await secureStorage.delete(key: _keyLegacyToken);
+    await secureStorage.delete(key: _keyLegacyRefreshToken);
+    await secureStorage.delete(key: _keyRegistrationToken);
+  }
+
+  @override
+  Future<void> clearSession() async {
+    await clearTokens();
+    await sharedPreferences.remove(_keyDriverProfile);
+    await sharedPreferences.remove(_keyDriverId);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Backward compatibility methods
+  // ---------------------------------------------------------------------------
 
   @override
   Future<void> saveTokens(String accessToken, String refreshToken) async {
@@ -33,39 +113,15 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   }
 
   @override
-  Future<void> saveToken(String token) async {
-    await secureStorage.write(key: _keyToken, value: token);
-  }
-
-  @override
   Future<void> saveRefreshToken(String token) async {
-    await secureStorage.write(key: _keyRefreshToken, value: token);
-  }
-
-  @override
-  Future<String> getToken() async {
-    final token = await secureStorage.read(key: _keyToken);
-    if (token != null) return token;
-    throw Exception('Token not found');
+    await secureStorage.write(key: _keyLegacyRefreshToken, value: token);
   }
 
   @override
   Future<String> getRefreshToken() async {
-    final token = await secureStorage.read(key: _keyRefreshToken);
+    final token = await secureStorage.read(key: _keyLegacyRefreshToken);
     if (token != null) return token;
-    throw Exception('Refresh token not found');
-  }
-
-  @override
-  Future<void> clearTokens() async {
-    await secureStorage.delete(key: _keyToken);
-    await secureStorage.delete(key: _keyRefreshToken);
-  }
-
-  @override
-  Future<void> clearSession() async {
-    await clearTokens();
-    await sharedPreferences.remove(_keyDriverId);
+    return '';
   }
 
   @override
@@ -77,6 +133,6 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   Future<String> getDriverId() async {
     final driverId = sharedPreferences.getString(_keyDriverId);
     if (driverId != null) return driverId;
-    throw Exception('Driver ID not found');
+    return '';
   }
 }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../bloc/auth_cubit.dart';
 import '../bloc/auth_state.dart';
@@ -50,19 +51,14 @@ class _SplashScreenState extends State<SplashScreen> {
         },
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final width = constraints.maxWidth;
-            final height = constraints.maxHeight;
-
             return Stack(
               clipBehavior: Clip.hardEdge,
               children: [
-                Positioned(
-                  left: (width - 142) / 2,
-                  top: height * 0.43,
+                Center(
                   child: Image.asset(
-                    'assets/images/splash_logo.png',
-                    width: 142,
-                    height: 114,
+                    AppAssets.splashLogo,
+                    width: 200,
+                    height: 68,
                     fit: BoxFit.contain,
                   ),
                 ),

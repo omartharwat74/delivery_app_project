@@ -19,7 +19,6 @@ class HomeDrawer extends StatelessWidget {
   static const _colorReviews = Color(0xFFEB78B0); // Pink
   static const _colorWallet = Color(0xFFF9CD13); // Yellow
   static const _colorSupport = Color(0xFFFC933C); // Orange
-  static const _colorWorkHours = Color(0xFFFFE5D0); // Light Orange for circle
   static const _colorTerms = Color(0xFF0DA8E9); // Blue
   static const _colorLogout = Color(0xFFA3090F); // Primary Red
 

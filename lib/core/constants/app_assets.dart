@@ -3,6 +3,9 @@ class AppAssets {
 
   static const appLogo = 'assets/images/app_logo.svg';
   static const loginLogo = 'assets/images/login_logo.svg';
+  static const loginLogoPng = 'assets/images/login_logo.png';
+  static const splashLogo = 'assets/images/splash_logo.png';
+  static const profilePlaceholder = 'assets/images/profile_placeholder.png';
   static const flagEg = 'assets/images/flag_eg.svg';
   static const flagUsa = 'assets/images/flag_usa.svg';
   static const icBack = 'assets/images/ic_back.svg';

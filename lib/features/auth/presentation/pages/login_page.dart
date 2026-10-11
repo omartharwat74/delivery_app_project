@@ -58,7 +58,7 @@ class _LoginPageState extends State<LoginPage> {
           listener: (context, state) {
             if (state is AuthPhoneSubmitted) {
               if (ModalRoute.of(context)?.isCurrent == true) {
-                context.push('/otp');
+                context.push('/otp', extra: state.phone);
               }
             } else if (state is AuthError) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -84,7 +84,7 @@ class _LoginPageState extends State<LoginPage> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Image.asset(
-                        'assets/images/login_header_logo.png',
+                        'assets/images/login_logo.png',
                         height: 32,
                         fit: BoxFit.contain,
                       ),

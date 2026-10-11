@@ -1,99 +1,174 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:jwt_decoder/jwt_decoder.dart';
-import '../../domain/repositories/auth_repository.dart';
-import '../../domain/usecases/check_auth_session_usecase.dart';
-import '../../domain/usecases/register_driver_usecase.dart';
-import '../../domain/usecases/send_driver_login_otp_usecase.dart';
-import '../../domain/usecases/upload_media_usecase.dart';
-import '../../domain/usecases/verify_driver_login_otp_usecase.dart';
-import 'auth_state.dart';
+import 'dart:async';
 import 'dart:io';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../../../core/localization/app_strings.dart';
+import '../../../../core/network/auth_event_bus.dart';
+import '../../data/models/register_driver_request.dart';
+import '../../domain/repositories/auth_repository.dart';
+import 'auth_state.dart';
 
 class AuthCubit extends Cubit<AuthState> {
-  AuthCubit({
-    required this.checkAuthSession,
-    required this.sendDriverLoginOtp,
-    required this.verifyDriverLoginOtp,
-    required this.registerDriver,
-    required this.uploadMedia,
-    required this.authRepository,
-  }) : super(AuthInitial());
-
-  final CheckAuthSessionUseCase checkAuthSession;
-  final SendDriverLoginOtpUseCase sendDriverLoginOtp;
-  final VerifyDriverLoginOtpUseCase verifyDriverLoginOtp;
-  final RegisterDriverUseCase registerDriver;
-  final UploadMediaUseCase uploadMedia;
   final AuthRepository authRepository;
+  final AuthEventBus authEventBus;
 
+  StreamSubscription<void>? _unauthorizedSubscription;
   String? _phoneNumber;
-  String? get phoneNumber => _phoneNumber;
+  String? _registrationToken;
 
+  String? get phoneNumber => _phoneNumber;
+  String? get registrationToken => _registrationToken;
+
+  AuthCubit({
+    required this.authRepository,
+    required this.authEventBus,
+  }) : super(AuthInitial()) {
+    // Listen for global 401 Unauthorized events from Dio Interceptor
+    _unauthorizedSubscription = authEventBus.onUnauthorized.listen((_) {
+      emit(AuthUnauthenticated());
+    });
+  }
+
+  /// Normalizes Egyptian phone number to standard format (01xxxxxxxxx)
+  String _normalizeEgyptPhone(String raw) {
+    var digits = raw.replaceAll(RegExp(r'\D'), '');
+    if (digits.startsWith('20')) {
+      digits = digits.substring(2);
+    }
+    if (!digits.startsWith('0') && digits.startsWith('1')) {
+      digits = '0$digits';
+    }
+    return digits;
+  }
+
+  /// Checks the current authentication status on splash / startup
   Future<void> checkAuthStatus() async {
     emit(AuthLoading());
 
-    final accessToken = await authRepository.getAccessToken();
-    if (accessToken == null || accessToken.isEmpty) {
+    final isLogged = await authRepository.isLoggedIn;
+    if (!isLogged) {
       emit(AuthUnauthenticated());
       return;
     }
 
-    bool isExpired = true;
-    try {
-      isExpired = JwtDecoder.isExpired(accessToken);
-    } catch (e) {
-      isExpired = true; // Default to expired if parsing fails
-    }
-
-    if (!isExpired) {
-      emit(AuthAuthenticated());
-      return;
-    }
-
-    // Token is expired, try to refresh
-    final refreshTokenStr = await authRepository.getRefreshToken();
-    if (refreshTokenStr == null || refreshTokenStr.isEmpty) {
+    final token = await authRepository.getAccessToken();
+    if (token == null || token.isEmpty) {
       await authRepository.clearSession();
       emit(AuthUnauthenticated());
       return;
     }
 
-    final result = await authRepository.refreshToken(refreshTokenStr);
-    result.fold(
-      (failure) async {
-        await authRepository.clearSession();
-        emit(AuthUnauthenticated());
-      },
-      (authResponse) {
-        emit(AuthAuthenticated());
-      },
-    );
-  }
-
-  Future<void> submitPhone(String phone) async {
-    _phoneNumber = phone;
-    emit(AuthLoading());
-    final result = await sendDriverLoginOtp(phone);
-    result.fold(
-      (failure) => emit(AuthError(failure.message)),
-      (_) => emit(AuthPhoneSubmitted(phone)),
-    );
-  }
-
-  Future<void> verifyOtp(String otp) async {
-    if (_phoneNumber == null) {
-      emit(const AuthError("Phone number is missing. Please try again."));
+    // Attempt to load driver profile
+    final cachedDriver = await authRepository.getCachedDriver();
+    if (cachedDriver != null) {
+      emit(AuthAuthenticated(token: token, driver: cachedDriver));
       return;
     }
-    emit(AuthLoading());
-    final result = await verifyDriverLoginOtp(
-      VerifyDriverLoginOtpParams(phone: _phoneNumber!, otp: otp),
+
+    final meResult = await authRepository.getMe();
+    meResult.fold(
+      (failure) {
+        // If 401, unauthenticated will be triggered by interceptor;
+        // otherwise if network issue, proceed with token
+        emit(AuthAuthenticated(token: token, driver: null));
+      },
+      (driver) {
+        emit(AuthAuthenticated(token: token, driver: driver));
+      },
     );
-    result.fold((failure) => emit(AuthError(failure.message)), (authResponse) {
-      emit(AuthOtpVerified(isNewDriver: authResponse.newUser));
-    });
   }
 
+  /// Sets or updates the pending phone number
+  void setPhoneNumber(String phone) {
+    _phoneNumber = _normalizeEgyptPhone(phone);
+  }
+
+  /// Sends OTP to phone number (POST /auth/phone/send-otp)
+  Future<void> submitPhone(String phone) async {
+    final normalized = _normalizeEgyptPhone(phone);
+    _phoneNumber = normalized;
+    emit(AuthLoading());
+
+    final result = await authRepository.sendOtp(normalized);
+    result.fold(
+      (failure) {
+        emit(AuthError(failure.message, statusCode: failure.statusCode));
+      },
+      (response) {
+        emit(AuthPhoneSubmitted(phone: normalized, debugOtp: response.debugOtp));
+      },
+    );
+  }
+
+  /// Resends OTP to phone number (POST /auth/phone/send-otp)
+  Future<void> resendOtp({String? phone}) async {
+    final target = phone != null && phone.isNotEmpty
+        ? _normalizeEgyptPhone(phone)
+        : _phoneNumber;
+    if (target == null || target.isEmpty) {
+      emit(AuthError(AppStrings.phoneRequired));
+      return;
+    }
+    await submitPhone(target);
+  }
+
+  /// Verifies OTP (POST /auth/phone/verify-otp)
+  /// Branches according to API status:
+  /// - "authenticated": Save token & driver -> AuthAuthenticated
+  /// - "complete_registration": Save registration_token -> AuthCompleteRegistration
+  /// - 422 pending or 403 blocked -> AuthError with backend msg
+  Future<void> verifyOtp(String otp) async {
+    if (_phoneNumber == null || _phoneNumber!.isEmpty) {
+      emit(AuthError(AppStrings.phoneRequired));
+      return;
+    }
+
+    emit(AuthLoading());
+    final result = await authRepository.verifyOtp(
+      phone: _phoneNumber!,
+      otp: otp.trim(),
+    );
+
+    result.fold(
+      (failure) {
+        emit(AuthError(failure.message, statusCode: failure.statusCode));
+      },
+      (data) {
+        if (data.isAuthenticated) {
+          emit(AuthAuthenticated(
+            token: data.token ?? '',
+            driver: data.delivery,
+          ));
+        } else if (data.isCompleteRegistration) {
+          _registrationToken = data.registrationToken;
+          emit(AuthCompleteRegistration(
+            registrationToken: data.registrationToken ?? '',
+            phone: _phoneNumber!,
+          ));
+        } else {
+          emit(AuthError(AppStrings.unknownState));
+        }
+      },
+    );
+  }
+
+  /// Completes driver registration with multipart/form-data (POST /auth/register)
+  Future<void> submitRegistrationRequest(RegisterDriverRequest request) async {
+    emit(AuthLoading());
+
+    final result = await authRepository.registerDriver(request);
+    result.fold(
+      (failure) {
+        emit(AuthError(failure.message, statusCode: failure.statusCode));
+      },
+      (response) {
+        emit(AuthRegistrationPending(message: response.message));
+        emit(AuthRegistrationSubmitted());
+      },
+    );
+  }
+
+  /// Legacy registration method for existing UI compatibility
   Future<void> submitRegistration({
     required String firstName,
     required String lastName,
@@ -106,62 +181,54 @@ class AuthCubit extends Cubit<AuthState> {
     required File? driverLicensePhoto,
     required File? vehicleLicensePhoto,
     required File? nationalIdPhoto,
+    File? vehicleFrontPhoto,
+    String? areaId,
+    String? shiftId,
   }) async {
     emit(AuthLoading());
 
-    try {
-      String profilePhotoUrl = '';
-      if (profilePhoto != null) {
-        final url = await uploadMedia(profilePhoto.path);
-        profilePhotoUrl = url ?? '';
-      }
+    final regToken = _registrationToken ??
+        await authRepository.getRegistrationToken() ??
+        '';
 
-      String driverLicensePhotoUrl = '';
-      if (driverLicensePhoto != null) {
-        final url = await uploadMedia(driverLicensePhoto.path);
-        driverLicensePhotoUrl = url ?? '';
-      }
-
-      String vehicleLicensePhotoUrl = '';
-      if (vehicleLicensePhoto != null) {
-        final url = await uploadMedia(vehicleLicensePhoto.path);
-        vehicleLicensePhotoUrl = url ?? '';
-      }
-
-      String nationalIdPhotoUrl = '';
-      if (nationalIdPhoto != null) {
-        final url = await uploadMedia(nationalIdPhoto.path);
-        nationalIdPhotoUrl = url ?? '';
-      }
-
-      final result = await registerDriver(
-        RegisterDriverParams(
-          firstName: firstName,
-          lastName: lastName,
-          phone: phone,
-          email: email,
-          vehicleType: vehicleType,
-          vehicleNumber: vehicleNumber,
-          nationalId: nationalId,
-          profilePhotoUrl: profilePhotoUrl,
-          driverLicensePhotoUrl: driverLicensePhotoUrl,
-          vehicleLicensePhotoUrl: vehicleLicensePhotoUrl,
-          nationalIdPhotoUrl: nationalIdPhotoUrl,
-        ),
-      );
-
-      result.fold(
-        (failure) => emit(AuthError(failure.message)),
-        (registration) => emit(AuthRegistrationSubmitted()),
-      );
-    } catch (e) {
-      emit(AuthError("Failed to upload media or register. Please try again."));
+    if (profilePhoto == null ||
+        driverLicensePhoto == null ||
+        vehicleLicensePhoto == null ||
+        nationalIdPhoto == null) {
+      emit(AuthError(AppStrings.attachAllDocuments));
+      return;
     }
+
+    final fullName = '$firstName $lastName'.trim();
+    final request = RegisterDriverRequest(
+      registrationToken: regToken,
+      name: fullName.isNotEmpty ? fullName : 'Driver',
+      phone: _normalizeEgyptPhone(phone),
+      email: email.isNotEmpty ? email : null,
+      nationalId: nationalId.isNotEmpty ? nationalId : null,
+      vehicleType: vehicleType,
+      areaId: areaId ?? '1',
+      shiftId: shiftId ?? '1',
+      image: profilePhoto,
+      drivingLicense: driverLicensePhoto,
+      vehicleLicense: vehicleLicensePhoto,
+      nationalIdImage: nationalIdPhoto,
+      vehicleFront: vehicleFrontPhoto ?? vehicleLicensePhoto,
+    );
+
+    await submitRegistrationRequest(request);
   }
 
+  /// Logs out driver (POST /auth/logout) and clears local session
   Future<void> logout() async {
     emit(AuthLogoutLoading());
     await authRepository.logout();
     emit(AuthUnauthenticated());
+  }
+
+  @override
+  Future<void> close() {
+    _unauthorizedSubscription?.cancel();
+    return super.close();
   }
 }

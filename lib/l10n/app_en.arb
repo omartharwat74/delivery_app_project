@@ -16,7 +16,7 @@
   "biometricSoon": "Biometric sign-in coming soon",
 
   "otpTitle": "Verification code",
-  "otpSubtitle": "Enter the code sent to you to confirm your mobile number and continue.",
+  "otpSubtitle": "Enter the code sent to you to verify your mobile number.",
   "otpVerify": "Verify",
   "otpTimerSeconds": "{seconds}s",
   "@otpTimerSeconds": {

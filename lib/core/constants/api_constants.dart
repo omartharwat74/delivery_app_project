@@ -1,43 +1,65 @@
 class ApiConstants {
-  static const String baseUrl = 'https://delivery-system-api-otmb.onrender.com';
+  static const String baseUrl = 'https://mycar.msarweb.net/api/delivery/v1';
   static const Duration timeout = Duration(seconds: 30);
 
-  // Auth
-  static const String sendOtp = '/driver/otp/send';
-  static const String verifyOtp = '/driver/otp/verify';
-  static const String registerDriver = '/auth/register/driver';
-  static const String logout = '/driver/logout';
+  // Auth Endpoints
+  static const String sendOtp = '/auth/phone/send-otp';
+  static const String verifyOtp = '/auth/phone/verify-otp';
+  static const String register = '/auth/register';
+  static const String me = '/auth/me';
+  static const String logout = '/auth/logout';
+  static const String updateFcm = '/auth/update-fcm';
+  static const String location = '/auth/location';
+  static const String availability = '/auth/availability';
 
-  // Documents
+  // Lookups Endpoints
+  static const String lookupsAreas = '/lookups/areas';
+  static const String lookupsShifts = '/lookups/shifts';
+
+  // General Settings
+  static const String generalSettings = '/general-settings';
+
+  // Profile Endpoints
+  static const String profile = '/profile/show';
+  static const String profileNotifications = '/profile/notifications';
+  static const String sendCurrentOtp = '/profile/phone/send-current-otp';
+  static const String verifyCurrentOtp = '/profile/phone/verify-current-otp';
+  static const String profileSendOtp = '/profile/phone/send-otp';
+  static const String profileVerifyOtp = '/profile/phone/verify-otp';
+  static const String payout = '/profile/payout';
+
+  // Notifications
+  static const String notifications = '/notifications';
+
+  // Working Hours
+  static const String workingHours = '/working-hours';
+
+  // Reviews
+  static const String reviews = '/reviews';
+  static const String reportReview = '/reviews/report';
+
+  // Support
+  static const String support = '/support';
+  static const String supportMessages = '/support/messages';
+  static const String supportHistory = '/support/history';
+
+  // Legacy mappings for backwards compatibility with existing UI/datasources
+  static const String driverStatus = availability;
+  static const String todayStats = '/today-stats';
+  static const String shifts = lookupsShifts;
+  static const String activeOrder = '/orders/active';
+  static const String acceptOrder = '/orders/{id}/accept';
+  static const String declineOrder = '/orders/{id}/decline';
+  static const String arrivedOrder = '/orders/{id}/arrived';
+  static const String confirmOrder = '/orders/{id}/confirm';
+  static const String reportIssue = '/orders/{id}/issue';
+  static const String driverLocation = location;
+  static const String earnings = '/earnings';
+  static const String earningsHistory = '/earnings/history';
+  static const String incentives = '/incentives';
+  static const String performance = '/performance';
+  static const String withdrawal = '/earnings/withdraw';
+  static const String surgeZones = '/surge-zones';
   static const String documents = '/driver/documents';
-  // TODO: Confirm the real backend upload-media endpoint when it is available.
   static const String uploadMedia = '/media/upload';
-
-  // Home
-  static const String driverStatus = '/driver/status';
-  static const String todayStats = '/driver/stats/today';
-  static const String shifts = '/driver/shifts';
-
-  // Orders
-  static const String activeOrder = '/driver/orders/active';
-  static const String acceptOrder = '/driver/orders/{id}/accept';
-  static const String declineOrder = '/driver/orders/{id}/decline';
-  static const String arrivedOrder = '/driver/orders/{id}/arrived';
-  static const String confirmOrder = '/driver/orders/{id}/confirm';
-  static const String reportIssue = '/driver/orders/{id}/issue';
-  static const String driverLocation = '/driver/location';
-
-  // Earnings
-  static const String earnings = '/driver/earnings';
-  static const String earningsHistory = '/driver/earnings/history';
-  static const String incentives = '/driver/incentives';
-  static const String performance = '/driver/performance';
-  static const String withdrawal = '/driver/earnings/withdraw';
-
-  // Map
-  static const String surgeZones = '/driver/zones';
-
-  // Profile
-  static const String profile = '/driver/profile';
-  static const String payout = '/driver/payout';
 }
