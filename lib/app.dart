@@ -9,6 +9,7 @@ import 'core/theme/app_theme.dart';
 import 'core/theme/app_theme_scope.dart';
 import 'core/theme/theme_controller.dart';
 import 'features/auth/presentation/bloc/auth_cubit.dart';
+import 'features/auth/presentation/bloc/lookups_cubit.dart';
 import 'features/orders/presentation/bloc/active_order_cubit.dart';
 import 'l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -28,6 +29,7 @@ class DriverApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider<AuthCubit>(create: (_) => sl<AuthCubit>()),
+        BlocProvider<LookupsCubit>(create: (_) => sl<LookupsCubit>()),
         BlocProvider<ActiveOrderCubit>(create: (_) => sl<ActiveOrderCubit>()),
       ],
       child: AppLocaleScope(

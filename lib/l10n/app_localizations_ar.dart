@@ -110,7 +110,19 @@ class AppLocalizationsAr extends AppLocalizations {
   String get registerVehicleNumberHint => 'رقم المركبة';
 
   @override
-  String get vehicleTypeMotorcycle => 'موتوسيكل';
+  String get registerDeliveryAreaLabel => 'منطقة التوصيل';
+
+  @override
+  String get registerDeliveryAreaHint => 'اختر منطقة التوصيل';
+
+  @override
+  String get registerDeliveryShiftLabel => 'موعد التوصيل';
+
+  @override
+  String get registerDeliveryShiftHint => 'اختر موعد التوصيل';
+
+  @override
+  String get vehicleTypeMotorcycle => 'دراجة نارية';
 
   @override
   String get vehicleTypeCar => 'سيارة';
@@ -126,6 +138,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get registerUploadNationalId => 'ارفق صوره الهويه الوطنيه';
+
+  @override
+  String get registerUploadVehicleFront => 'إرفاق صورة الدراجة من الأمام';
 
   @override
   String get uploadTapToUpload => 'اضغط للرفع';
@@ -177,10 +192,23 @@ class AppLocalizationsAr extends AppLocalizations {
   String get validationVehicleNumberRequired => 'رقم المركبة مطلوب';
 
   @override
+  String get validationAreaRequired => 'منطقة التوصيل مطلوبة';
+
+  @override
+  String get validationShiftRequired => 'موعد التوصيل مطلوب';
+
+  @override
   String get validationDocumentRequired => 'يرجى رفع هذا المستند';
 
   @override
+  String get validationVehicleFrontRequired => 'صورة الدراجة من الأمام مطلوبة';
+
+  @override
   String get validationProfilePhotoRequired => 'الصورة الشخصية مطلوبة';
+
+  @override
+  String get validationFormCheckErrors =>
+      'يرجى استكمال جميع الحقول والمستندات المطلوبة والتأكد من صحتها';
 
   @override
   String get validationOtpRequired => 'رمز التحقق مطلوب';

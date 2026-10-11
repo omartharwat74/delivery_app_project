@@ -8,12 +8,15 @@ import 'package:delivery_app_project/features/auth/presentation/pages/register_d
 import 'package:delivery_app_project/features/auth/presentation/widgets/phone_number_field.dart';
 import 'package:delivery_app_project/l10n/app_localizations.dart';
 
+import 'package:delivery_app_project/features/auth/presentation/bloc/lookups_cubit.dart';
+
 import '../../auth_flow_test.dart';
 
 void main() {
   late AuthEventBus eventBus;
   late MockAuthRepository authRepository;
   late AuthCubit authCubit;
+  late LookupsCubit lookupsCubit;
 
   setUp(() {
     eventBus = AuthEventBus();
@@ -22,10 +25,12 @@ void main() {
       authRepository: authRepository,
       authEventBus: eventBus,
     );
+    lookupsCubit = LookupsCubit(authRepository: authRepository);
   });
 
   tearDown(() {
     authCubit.close();
+    lookupsCubit.close();
     eventBus.dispose();
   });
 
@@ -34,8 +39,11 @@ void main() {
       locale: const Locale('ar'),
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
-      home: BlocProvider<AuthCubit>.value(
-        value: authCubit,
+      home: MultiBlocProvider(
+        providers: [
+          BlocProvider<AuthCubit>.value(value: authCubit),
+          BlocProvider<LookupsCubit>.value(value: lookupsCubit),
+        ],
         child: RegisterDriverPage(phone: phone),
       ),
     );
@@ -80,5 +88,24 @@ void main() {
       (w) => w is Image && w.image is AssetImage && (w.image as AssetImage).assetName == AppAssets.profilePlaceholder,
     );
     expect(placeholderImageFinder, findsOneWidget);
+  });
+
+  testWidgets('renders vehicle type, delivery area, and delivery shift dropdowns', (tester) async {
+    await tester.pumpWidget(buildTestableWidget());
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('register_vehicle_type')), findsOneWidget);
+    expect(find.byKey(const ValueKey('register_delivery_area')), findsOneWidget);
+    expect(find.byKey(const ValueKey('register_delivery_shift')), findsOneWidget);
+  });
+
+  testWidgets('renders all 4 document upload tiles including vehicle front', (tester) async {
+    await tester.pumpWidget(buildTestableWidget());
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('register_driving_license')), findsOneWidget);
+    expect(find.byKey(const ValueKey('register_vehicle_license')), findsOneWidget);
+    expect(find.byKey(const ValueKey('register_national_id_doc')), findsOneWidget);
+    expect(find.byKey(const ValueKey('register_vehicle_front')), findsOneWidget);
   });
 }

@@ -7,6 +7,8 @@ import '../models/register_driver_request.dart';
 import '../models/register_driver_response.dart';
 import '../models/send_otp_request.dart';
 import '../models/send_otp_response.dart';
+import '../models/area_model.dart';
+import '../models/shift_model.dart';
 import '../models/verify_otp_request.dart';
 import '../models/verify_otp_response.dart';
 import '../models/auth_response.dart';
@@ -19,6 +21,8 @@ abstract class AuthRemoteDataSource {
   );
   Future<ApiResponse<void>> logout(LogoutRequest request);
   Future<ApiResponse<DriverModel>> getMe();
+  Future<ApiResponse<List<AreaModel>>> getAreas();
+  Future<ApiResponse<List<ShiftModel>>> getShifts();
 
   // Legacy methods for backwards compatibility
   Future<Map<String, dynamic>> sendDriverLoginOtp(String phone);
@@ -86,6 +90,44 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
             ? map['delivery'] as Map<String, dynamic>
             : map;
         return DriverModel.fromJson(deliveryMap);
+      },
+    );
+  }
+
+  @override
+  Future<ApiResponse<List<AreaModel>>> getAreas() async {
+    return apiClient.getResponse<List<AreaModel>>(
+      ApiConstants.lookupsAreas,
+      fromJson: (data) {
+        if (data is Map<String, dynamic> && data['areas'] is List) {
+          return (data['areas'] as List)
+              .map((e) => AreaModel.fromJson(e as Map<String, dynamic>))
+              .toList();
+        } else if (data is List) {
+          return data
+              .map((e) => AreaModel.fromJson(e as Map<String, dynamic>))
+              .toList();
+        }
+        return [];
+      },
+    );
+  }
+
+  @override
+  Future<ApiResponse<List<ShiftModel>>> getShifts() async {
+    return apiClient.getResponse<List<ShiftModel>>(
+      ApiConstants.lookupsShifts,
+      fromJson: (data) {
+        if (data is Map<String, dynamic> && data['shifts'] is List) {
+          return (data['shifts'] as List)
+              .map((e) => ShiftModel.fromJson(e as Map<String, dynamic>))
+              .toList();
+        } else if (data is List) {
+          return data
+              .map((e) => ShiftModel.fromJson(e as Map<String, dynamic>))
+              .toList();
+        }
+        return [];
       },
     );
   }

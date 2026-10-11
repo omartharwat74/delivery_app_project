@@ -5,22 +5,21 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/text_styles.dart';
 import '../../../../core/widgets/app_media.dart';
 
-/// Custom vehicle-type dropdown matching the Figma design.
+/// Custom vehicle-type / dropdown selector matching the Figma design.
 ///
 /// - Label above the field (text-start aligned).
-/// - Tappable closed field: hint/value text + arrow on the directional start.
-/// - Inline list below the field that expands/collapses with animation.
-/// - Same width as the field. Connected visual feel.
+/// - Tappable closed field: hint/value text + arrow.
+/// - Opens a ModalBottomSheet on tap to pick from options.
 /// - Plays a real [FormField] so validation works with the surrounding [Form].
-class VehicleTypeField extends StatefulWidget {
+class VehicleTypeField<T> extends StatelessWidget {
   const VehicleTypeField({
     super.key,
     required this.label,
     required this.hintText,
     required this.items,
     required this.itemLabelBuilder,
-    required this.validator,
-    required this.autovalidateMode,
+    this.validator,
+    this.autovalidateMode = AutovalidateMode.disabled,
     this.initialValue,
     this.onChanged,
     this.readOnly = false,
@@ -28,61 +27,190 @@ class VehicleTypeField extends StatefulWidget {
 
   final String label;
   final String hintText;
-  final List<String> items;
-  final String Function(String value) itemLabelBuilder;
-  final String? Function(String?)? validator;
+  final List<T> items;
+  final String Function(T value) itemLabelBuilder;
+  final String? Function(T?)? validator;
   final AutovalidateMode autovalidateMode;
-  final String? initialValue;
-  final ValueChanged<String?>? onChanged;
+  final T? initialValue;
+  final ValueChanged<T?>? onChanged;
   final bool readOnly;
 
-  @override
-  State<VehicleTypeField> createState() => _VehicleTypeFieldState();
-}
-
-class _VehicleTypeFieldState extends State<VehicleTypeField> {
-  bool _isOpen = false;
+  void _showBottomSheet(BuildContext context, FormFieldState<T> field) {
+    FocusScope.of(context).unfocus();
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surfaceCard(context),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        final currentSelection = field.value;
+        return SafeArea(
+          top: false,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.65,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 12),
+                Center(
+                  child: Container(
+                    width: 48,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: AppColors.border(sheetContext),
+                      borderRadius: BorderRadius.circular(2.5),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.heading4(sheetContext),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Divider(
+                  height: 1,
+                  thickness: 0.5,
+                  color: AppColors.border(sheetContext),
+                ),
+                Flexible(
+                  child: items.isEmpty
+                      ? Padding(
+                          padding: const EdgeInsets.all(32),
+                          child: Center(
+                            child: Text(
+                              hintText,
+                              style: AppTextStyles.inputHint(sheetContext),
+                            ),
+                          ),
+                        )
+                      : ListView.separated(
+                          shrinkWrap: true,
+                          itemCount: items.length,
+                          separatorBuilder: (_, _) => Divider(
+                            height: 1,
+                            thickness: 0.5,
+                            color: AppColors.border(sheetContext),
+                          ),
+                          itemBuilder: (context, index) {
+                            final item = items[index];
+                            final isSelected = item == currentSelection;
+                            return InkWell(
+                              onTap: () {
+                                field.didChange(item);
+                                onChanged?.call(item);
+                                Navigator.of(sheetContext).pop();
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 16,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        itemLabelBuilder(item),
+                                        textAlign: TextAlign.start,
+                                        style: isSelected
+                                            ? AppTextStyles.body(context).copyWith(
+                                                color: AppColors.primary,
+                                                fontWeight: FontWeight.w700,
+                                              )
+                                            : AppTextStyles.body(context),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Container(
+                                      width: 20,
+                                      height: 20,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: isSelected
+                                              ? AppColors.primary
+                                              : AppColors.border(context),
+                                          width: isSelected ? 2 : 1,
+                                        ),
+                                      ),
+                                      child: isSelected
+                                          ? Center(
+                                              child: Container(
+                                                width: 10,
+                                                height: 10,
+                                                decoration: const BoxDecoration(
+                                                  shape: BoxShape.circle,
+                                                  color: AppColors.primary,
+                                                ),
+                                              ),
+                                            )
+                                          : null,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+                const SizedBox(height: 12),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return FormField<String>(
-      initialValue: widget.initialValue,
-      autovalidateMode: widget.autovalidateMode,
-      validator: widget.validator,
+    return FormField<T>(
+      initialValue: initialValue,
+      autovalidateMode: autovalidateMode,
+      validator: validator,
       builder: (field) {
         final hasError = field.hasError;
         final borderColor = hasError
             ? AppColors.fieldError(context)
             : AppColors.border(context);
         final selected = field.value;
-        final hasValue = selected != null && selected.isNotEmpty;
+        final hasValue = selected != null;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              widget.label,
+              label,
               textAlign: TextAlign.start,
               style: AppTextStyles.fieldLabel(context),
             ),
             const SizedBox(height: 8),
             Material(
-              color: widget.readOnly
+              color: readOnly
                   ? AppColors.scaffoldBackground(context)
                   : AppColors.surfaceCard(context),
               borderRadius: BorderRadius.circular(10),
               child: InkWell(
                 borderRadius: BorderRadius.circular(10),
-                onTap: widget.readOnly
+                onTap: readOnly
                     ? null
-                    : () => setState(() => _isOpen = !_isOpen),
+                    : () => _showBottomSheet(context, field),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 16,
                   ),
                   decoration: BoxDecoration(
-                    color: widget.readOnly
+                    color: readOnly
                         ? AppColors.scaffoldBackground(context)
                         : AppColors.surfaceCard(context),
                     borderRadius: BorderRadius.circular(10),
@@ -93,12 +221,12 @@ class _VehicleTypeFieldState extends State<VehicleTypeField> {
                       Expanded(
                         child: Text(
                           hasValue
-                              ? widget.itemLabelBuilder(selected)
-                              : widget.hintText,
+                              ? itemLabelBuilder(selected)
+                              : hintText,
                           textAlign: TextAlign.start,
                           style: hasValue
                               ? AppTextStyles.inputText(context).copyWith(
-                                  color: widget.readOnly
+                                  color: readOnly
                                       ? AppColors.paragraph(context)
                                       : AppColors.onSurface(context),
                                 )
@@ -108,42 +236,18 @@ class _VehicleTypeFieldState extends State<VehicleTypeField> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      AnimatedRotation(
-                        turns: _isOpen ? 0.5 : 0,
-                        duration: const Duration(milliseconds: 180),
-                        child: widget.readOnly
-                            ? const SizedBox(width: 16, height: 16)
-                            : AppSvgImage.asset(
-                                AppAssets.icArrowDown,
-                                width: 16,
-                                height: 16,
-                                color: AppColors.paragraph(context),
-                              ),
-                      ),
+                      readOnly
+                          ? const SizedBox(width: 16, height: 16)
+                          : AppSvgImage.asset(
+                              AppAssets.icArrowDown,
+                              width: 16,
+                              height: 16,
+                              color: AppColors.paragraph(context),
+                            ),
                     ],
                   ),
                 ),
               ),
-            ),
-            AnimatedSize(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOut,
-              alignment: AlignmentDirectional.topStart,
-              child: _isOpen
-                  ? Padding(
-                      padding: const EdgeInsetsDirectional.only(top: 6),
-                      child: _OptionsList(
-                        items: widget.items,
-                        selected: field.value,
-                        itemLabelBuilder: widget.itemLabelBuilder,
-                        onTap: (value) {
-                          field.didChange(value);
-                          widget.onChanged?.call(value);
-                          setState(() => _isOpen = false);
-                        },
-                      ),
-                    )
-                  : const SizedBox(width: double.infinity),
             ),
             if (hasError)
               Padding(
@@ -161,65 +265,5 @@ class _VehicleTypeFieldState extends State<VehicleTypeField> {
   }
 }
 
-class _OptionsList extends StatelessWidget {
-  const _OptionsList({
-    required this.items,
-    required this.selected,
-    required this.itemLabelBuilder,
-    required this.onTap,
-  });
-
-  final List<String> items;
-  final String? selected;
-  final String Function(String value) itemLabelBuilder;
-  final ValueChanged<String> onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.surfaceCard(context),
-      borderRadius: BorderRadius.circular(10),
-      clipBehavior: Clip.antiAlias,
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.surfaceCard(context),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppColors.border(context), width: 0.5),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (var i = 0; i < items.length; i++) ...[
-              if (i > 0)
-                Divider(
-                  height: 0.5,
-                  thickness: 0.5,
-                  color: AppColors.border(context),
-                ),
-              InkWell(
-                onTap: () => onTap(items[i]),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
-                  child: Text(
-                    itemLabelBuilder(items[i]),
-                    textAlign: TextAlign.start,
-                    style: items[i] == selected
-                        ? AppTextStyles.inputText(context).copyWith(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w600,
-                          )
-                        : AppTextStyles.inputText(context),
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
+/// Generic alias for reusability across all forms
+typedef AppDropdownField<T> = VehicleTypeField<T>;

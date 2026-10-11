@@ -16,6 +16,8 @@ import '../../../../core/utils/auth_validators.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../bloc/auth_cubit.dart';
 import '../bloc/auth_state.dart';
+import '../bloc/lookups_cubit.dart';
+import '../bloc/lookups_state.dart';
 import '../widgets/app_language_picker_modal.dart';
 import '../widgets/auth_image_upload_box.dart';
 import '../widgets/auth_language_chip.dart';
@@ -25,7 +27,13 @@ import '../widgets/document_upload_tile.dart';
 import '../widgets/phone_number_field.dart';
 import '../widgets/vehicle_type_field.dart';
 
-enum _MediaSlot { profile, driverLicense, vehicleLicense, nationalId }
+enum _MediaSlot {
+  profile,
+  driverLicense,
+  vehicleLicense,
+  nationalId,
+  vehicleFront,
+}
 
 class RegisterDriverPage extends StatefulWidget {
   final String? phone;
@@ -41,22 +49,31 @@ class _RegisterDriverPageState extends State<RegisterDriverPage> {
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
   final _nationalIdController = TextEditingController();
-  final _vehicleNumberController = TextEditingController();
   final _picker = ImagePicker();
 
+  int? _selectedAreaId;
+  int? _selectedShiftId;
   String? _vehicleType;
   File? _profilePhotoFile;
   File? _driverLicensePhotoFile;
   File? _vehicleLicensePhotoFile;
   File? _nationalIdPhotoFile;
+  File? _vehicleFrontPhotoFile;
   bool _hasAttemptedSubmit = false;
 
-  static const _vehicleTypes = ['motorcycle', 'car', 'bicycle'];
+  static const _vehicleTypes = ['motorcycle', 'regular_bike'];
 
   @override
   void initState() {
     super.initState();
     _initPhone();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        try {
+          context.read<LookupsCubit>().fetchAllLookups();
+        } catch (_) {}
+      }
+    });
   }
 
   void _initPhone() {
@@ -77,7 +94,6 @@ class _RegisterDriverPageState extends State<RegisterDriverPage> {
     _phoneController.dispose();
     _emailController.dispose();
     _nationalIdController.dispose();
-    _vehicleNumberController.dispose();
     super.dispose();
   }
 
@@ -85,8 +101,7 @@ class _RegisterDriverPageState extends State<RegisterDriverPage> {
     switch (key) {
       case 'motorcycle':
         return l10n.vehicleTypeMotorcycle;
-      case 'car':
-        return l10n.vehicleTypeCar;
+      case 'regular_bike':
       case 'bicycle':
         return l10n.vehicleTypeBicycle;
       default:
@@ -126,6 +141,9 @@ class _RegisterDriverPageState extends State<RegisterDriverPage> {
         case _MediaSlot.nationalId:
           _nationalIdPhotoFile = file;
           break;
+        case _MediaSlot.vehicleFront:
+          _vehicleFrontPhotoFile = file;
+          break;
       }
     });
   }
@@ -138,22 +156,46 @@ class _RegisterDriverPageState extends State<RegisterDriverPage> {
     }
 
     final isValid = _formKey.currentState?.validate() ?? false;
-    if (!isValid) return;
+    final l10n = AppLocalizations.of(context)!;
 
-    context.read<AuthCubit>().submitRegistration(
-      firstName: _usernameController.text.trim().split(' ').first,
-      lastName: _usernameController.text.trim().split(' ').length > 1
-          ? _usernameController.text.trim().split(' ').sublist(1).join(' ')
-          : '',
+    if (!isValid ||
+        _profilePhotoFile == null ||
+        _driverLicensePhotoFile == null ||
+        _vehicleLicensePhotoFile == null ||
+        _nationalIdPhotoFile == null ||
+        _vehicleFrontPhotoFile == null ||
+        _vehicleType == null ||
+        _selectedAreaId == null ||
+        _selectedShiftId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            l10n.validationFormCheckErrors,
+            style: AppTextStyles.snackBarMessage(context),
+          ),
+          backgroundColor: AppColors.fieldError(context),
+        ),
+      );
+      return;
+    }
+
+    context.read<AuthCubit>().registerDriver(
+      name: _usernameController.text.trim(),
       phone: _apiPhoneNumber(),
-      email: _emailController.text.trim(),
+      email: _emailController.text.trim().isNotEmpty
+          ? _emailController.text.trim()
+          : null,
+      nationalId: _nationalIdController.text.trim().isNotEmpty
+          ? _nationalIdController.text.trim()
+          : null,
       vehicleType: _vehicleType!,
-      vehicleNumber: _vehicleNumberController.text.trim(),
-      nationalId: _nationalIdController.text.trim(),
-      profilePhoto: _profilePhotoFile,
-      driverLicensePhoto: _driverLicensePhotoFile,
-      vehicleLicensePhoto: _vehicleLicensePhotoFile,
-      nationalIdPhoto: _nationalIdPhotoFile,
+      areaId: _selectedAreaId.toString(),
+      shiftId: _selectedShiftId.toString(),
+      image: _profilePhotoFile!,
+      drivingLicense: _driverLicensePhotoFile!,
+      vehicleLicense: _vehicleLicensePhotoFile!,
+      nationalIdImage: _nationalIdPhotoFile!,
+      vehicleFront: _vehicleFrontPhotoFile!,
     );
   }
 
@@ -236,6 +278,7 @@ class _RegisterDriverPageState extends State<RegisterDriverPage> {
                     const SizedBox(height: 24),
                     _ProfilePhotoFormField(
                       fieldKey: const ValueKey('register_profile_photo'),
+                      initialValue: _profilePhotoFile,
                       label: l10n.registerProfilePhotoLabel,
                       requiredMessage: l10n.validationProfilePhotoRequired,
                       autovalidateMode: fieldAutovalidate,
@@ -300,7 +343,7 @@ class _RegisterDriverPageState extends State<RegisterDriverPage> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    VehicleTypeField(
+                    VehicleTypeField<String>(
                       key: const ValueKey('register_vehicle_type'),
                       label: l10n.registerVehicleTypeLabel,
                       hintText: l10n.registerVehicleTypeHint,
@@ -315,20 +358,66 @@ class _RegisterDriverPageState extends State<RegisterDriverPage> {
                       onChanged: (v) => setState(() => _vehicleType = v),
                     ),
                     const SizedBox(height: 20),
-                    AuthTextField(
-                      key: const ValueKey('register_vehicle_number'),
-                      controller: _vehicleNumberController,
-                      label: l10n.registerVehicleNumberLabel,
-                      hintText: l10n.registerVehicleNumberHint,
-                      autovalidateMode: fieldAutovalidate,
-                      validator: (v) => AuthValidators.requiredText(
-                        v,
-                        requiredMessage: l10n.validationVehicleNumberRequired,
-                      ),
+                    BlocBuilder<LookupsCubit, LookupsState>(
+                      builder: (context, lookupsState) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            VehicleTypeField<int>(
+                              key: const ValueKey('register_delivery_area'),
+                              label: l10n.registerDeliveryAreaLabel,
+                              hintText: lookupsState.isLoadingAreas
+                                  ? '...'
+                                  : l10n.registerDeliveryAreaHint,
+                              items:
+                                  lookupsState.areas.map((a) => a.id).toList(),
+                              itemLabelBuilder: (id) {
+                                final matches =
+                                    lookupsState.areas.where((a) => a.id == id);
+                                return matches.isNotEmpty
+                                    ? matches.first.name
+                                    : '';
+                              },
+                              initialValue: _selectedAreaId,
+                              autovalidateMode: fieldAutovalidate,
+                              validator: (v) => v == null
+                                  ? l10n.validationAreaRequired
+                                  : null,
+                              onChanged: (id) =>
+                                  setState(() => _selectedAreaId = id),
+                            ),
+                            const SizedBox(height: 20),
+                            VehicleTypeField<int>(
+                              key: const ValueKey('register_delivery_shift'),
+                              label: l10n.registerDeliveryShiftLabel,
+                              hintText: lookupsState.isLoadingShifts
+                                  ? '...'
+                                  : l10n.registerDeliveryShiftHint,
+                              items:
+                                  lookupsState.shifts.map((s) => s.id).toList(),
+                              itemLabelBuilder: (id) {
+                                final matches = lookupsState.shifts
+                                    .where((s) => s.id == id);
+                                return matches.isNotEmpty
+                                    ? matches.first.displayLabel
+                                    : '';
+                              },
+                              initialValue: _selectedShiftId,
+                              autovalidateMode: fieldAutovalidate,
+                              validator: (v) => v == null
+                                  ? l10n.validationShiftRequired
+                                  : null,
+                              onChanged: (id) =>
+                                  setState(() => _selectedShiftId = id),
+                            ),
+                          ],
+                        );
+                      },
                     ),
                     const SizedBox(height: 20),
                     _DocumentUploadFormField(
                       fieldKey: const ValueKey('register_driving_license'),
+                      initialValue: _driverLicensePhotoFile,
                       label: l10n.registerUploadDrivingLicense,
                       hintText: l10n.registerUploadDrivingLicense,
                       tapToUploadLabel: l10n.uploadTapToUpload,
@@ -341,6 +430,7 @@ class _RegisterDriverPageState extends State<RegisterDriverPage> {
                     const SizedBox(height: 20),
                     _DocumentUploadFormField(
                       fieldKey: const ValueKey('register_vehicle_license'),
+                      initialValue: _vehicleLicensePhotoFile,
                       label: l10n.registerUploadVehicleLicense,
                       hintText: l10n.registerUploadVehicleLicense,
                       tapToUploadLabel: l10n.uploadTapToUpload,
@@ -353,6 +443,7 @@ class _RegisterDriverPageState extends State<RegisterDriverPage> {
                     const SizedBox(height: 20),
                     _DocumentUploadFormField(
                       fieldKey: const ValueKey('register_national_id_doc'),
+                      initialValue: _nationalIdPhotoFile,
                       label: l10n.registerUploadNationalId,
                       hintText: l10n.registerUploadNationalId,
                       tapToUploadLabel: l10n.uploadTapToUpload,
@@ -361,6 +452,19 @@ class _RegisterDriverPageState extends State<RegisterDriverPage> {
                       onPick: _pickImageFile,
                       onChanged: (file) =>
                           _onMediaChanged(_MediaSlot.nationalId, file),
+                    ),
+                    const SizedBox(height: 20),
+                    _DocumentUploadFormField(
+                      fieldKey: const ValueKey('register_vehicle_front'),
+                      initialValue: _vehicleFrontPhotoFile,
+                      label: l10n.registerUploadVehicleFront,
+                      hintText: l10n.registerUploadVehicleFront,
+                      tapToUploadLabel: l10n.uploadTapToUpload,
+                      requiredMessage: l10n.validationVehicleFrontRequired,
+                      autovalidateMode: fieldAutovalidate,
+                      onPick: _pickImageFile,
+                      onChanged: (file) =>
+                          _onMediaChanged(_MediaSlot.vehicleFront, file),
                     ),
                   ],
                 ),
@@ -381,6 +485,7 @@ class _ProfilePhotoFormField extends StatelessWidget {
     required this.autovalidateMode,
     required this.onPick,
     required this.onChanged,
+    this.initialValue,
   });
 
   final Key fieldKey;
@@ -389,13 +494,15 @@ class _ProfilePhotoFormField extends StatelessWidget {
   final AutovalidateMode autovalidateMode;
   final Future<File?> Function() onPick;
   final ValueChanged<File?> onChanged;
+  final File? initialValue;
 
   @override
   Widget build(BuildContext context) {
     return FormField<File>(
       key: fieldKey,
+      initialValue: initialValue,
       autovalidateMode: autovalidateMode,
-      validator: (file) => file == null ? requiredMessage : null,
+      validator: (file) => (file ?? initialValue) == null ? requiredMessage : null,
       builder: (field) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -410,9 +517,10 @@ class _ProfilePhotoFormField extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             AuthImageUploadBox(
-              imageFile: field.value,
+              imageFile: field.value ?? initialValue,
               imageAsset: AppAssets.profilePlaceholder,
               hasError: field.hasError,
+              showUploadIcon: true,
               onTap: () async {
                 final file = await onPick();
                 if (file != null) {
@@ -447,6 +555,7 @@ class _DocumentUploadFormField extends StatelessWidget {
     required this.autovalidateMode,
     required this.onPick,
     required this.onChanged,
+    this.initialValue,
   });
 
   final Key fieldKey;
@@ -457,19 +566,21 @@ class _DocumentUploadFormField extends StatelessWidget {
   final AutovalidateMode autovalidateMode;
   final Future<File?> Function() onPick;
   final ValueChanged<File?> onChanged;
+  final File? initialValue;
 
   @override
   Widget build(BuildContext context) {
     return FormField<File>(
       key: fieldKey,
+      initialValue: initialValue,
       autovalidateMode: autovalidateMode,
-      validator: (file) => file == null ? requiredMessage : null,
+      validator: (file) => (file ?? initialValue) == null ? requiredMessage : null,
       builder: (field) {
         return DocumentUploadTile(
           label: label,
           hintText: hintText,
           tapToUploadLabel: tapToUploadLabel,
-          imageFile: field.value,
+          imageFile: field.value ?? initialValue,
           hasError: field.hasError,
           errorText: field.hasError ? field.errorText : null,
           onTap: () async {

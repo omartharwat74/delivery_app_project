@@ -113,6 +113,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get registerVehicleNumberHint => 'Vehicle number';
 
   @override
+  String get registerDeliveryAreaLabel => 'Delivery Area';
+
+  @override
+  String get registerDeliveryAreaHint => 'Select delivery area';
+
+  @override
+  String get registerDeliveryShiftLabel => 'Delivery Shift';
+
+  @override
+  String get registerDeliveryShiftHint => 'Select delivery shift';
+
+  @override
   String get vehicleTypeMotorcycle => 'Motorcycle';
 
   @override
@@ -129,6 +141,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get registerUploadNationalId => 'Attach national ID photo';
+
+  @override
+  String get registerUploadVehicleFront => 'Attach vehicle front photo';
 
   @override
   String get uploadTapToUpload => 'Tap to upload';
@@ -181,10 +196,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get validationVehicleNumberRequired => 'Vehicle number is required';
 
   @override
+  String get validationAreaRequired => 'Delivery area is required';
+
+  @override
+  String get validationShiftRequired => 'Delivery shift is required';
+
+  @override
   String get validationDocumentRequired => 'Please upload this document';
 
   @override
+  String get validationVehicleFrontRequired =>
+      'Vehicle front photo is required';
+
+  @override
   String get validationProfilePhotoRequired => 'Profile photo is required';
+
+  @override
+  String get validationFormCheckErrors =>
+      'Please complete all required fields and documents correctly';
 
   @override
   String get validationOtpRequired => 'Verification code is required';

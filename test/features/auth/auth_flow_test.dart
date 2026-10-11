@@ -2,6 +2,8 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:delivery_app_project/core/error/failures.dart';
 import 'package:delivery_app_project/core/network/auth_event_bus.dart';
+import 'package:delivery_app_project/features/auth/data/models/area_model.dart';
+import 'package:delivery_app_project/features/auth/data/models/shift_model.dart';
 import 'package:delivery_app_project/features/auth/data/models/driver_model.dart';
 import 'package:delivery_app_project/features/auth/data/models/register_driver_request.dart';
 import 'package:delivery_app_project/features/auth/data/models/register_driver_response.dart';
@@ -24,6 +26,26 @@ class MockAuthRepository implements AuthRepository {
   Either<Failure, VerifyOtpResponse>? verifyOtpResult;
   Either<Failure, RegisterDriverResponse>? registerDriverResult;
   Either<Failure, void>? logoutResult;
+  Either<Failure, List<AreaModel>>? getAreasResult;
+  Either<Failure, List<ShiftModel>>? getShiftsResult;
+
+  @override
+  Future<Either<Failure, List<AreaModel>>> getAreas() async {
+    return getAreasResult ?? const Right([AreaModel(id: 1, name: 'القاهرة')]);
+  }
+
+  @override
+  Future<Either<Failure, List<ShiftModel>>> getShifts() async {
+    return getShiftsResult ??
+        const Right([
+          ShiftModel(
+            id: 1,
+            name: 'صباحي',
+            startsAt: '08:00',
+            endsAt: '16:00',
+          )
+        ]);
+  }
 
   @override
   Future<bool> get isLoggedIn async => loggedInValue;

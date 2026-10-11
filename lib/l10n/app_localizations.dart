@@ -296,6 +296,30 @@ abstract class AppLocalizations {
   /// **'Vehicle number'**
   String get registerVehicleNumberHint;
 
+  /// No description provided for @registerDeliveryAreaLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery Area'**
+  String get registerDeliveryAreaLabel;
+
+  /// No description provided for @registerDeliveryAreaHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select delivery area'**
+  String get registerDeliveryAreaHint;
+
+  /// No description provided for @registerDeliveryShiftLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery Shift'**
+  String get registerDeliveryShiftLabel;
+
+  /// No description provided for @registerDeliveryShiftHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select delivery shift'**
+  String get registerDeliveryShiftHint;
+
   /// No description provided for @vehicleTypeMotorcycle.
   ///
   /// In en, this message translates to:
@@ -331,6 +355,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Attach national ID photo'**
   String get registerUploadNationalId;
+
+  /// No description provided for @registerUploadVehicleFront.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach vehicle front photo'**
+  String get registerUploadVehicleFront;
 
   /// No description provided for @uploadTapToUpload.
   ///
@@ -428,17 +458,41 @@ abstract class AppLocalizations {
   /// **'Vehicle number is required'**
   String get validationVehicleNumberRequired;
 
+  /// No description provided for @validationAreaRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery area is required'**
+  String get validationAreaRequired;
+
+  /// No description provided for @validationShiftRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery shift is required'**
+  String get validationShiftRequired;
+
   /// No description provided for @validationDocumentRequired.
   ///
   /// In en, this message translates to:
   /// **'Please upload this document'**
   String get validationDocumentRequired;
 
+  /// No description provided for @validationVehicleFrontRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle front photo is required'**
+  String get validationVehicleFrontRequired;
+
   /// No description provided for @validationProfilePhotoRequired.
   ///
   /// In en, this message translates to:
   /// **'Profile photo is required'**
   String get validationProfilePhotoRequired;
+
+  /// No description provided for @validationFormCheckErrors.
+  ///
+  /// In en, this message translates to:
+  /// **'Please complete all required fields and documents correctly'**
+  String get validationFormCheckErrors;
 
   /// No description provided for @validationOtpRequired.
   ///

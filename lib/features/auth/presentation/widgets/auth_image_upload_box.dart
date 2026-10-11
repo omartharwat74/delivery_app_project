@@ -22,7 +22,7 @@ class AuthImageUploadBox extends StatelessWidget {
     this.borderRadius = 12,
     this.readOnly = false,
     this.imageAsset = AppAssets.profilePlaceholder,
-    this.showUploadIcon = false,
+    this.showUploadIcon = true,
   });
 
   final File? imageFile;
@@ -76,16 +76,19 @@ class AuthImageUploadBox extends StatelessWidget {
                     ),
                   ),
                 if (showUploadIcon && !readOnly) ...[
-                  const DecoratedBox(
+                  DecoratedBox(
                     decoration: BoxDecoration(
-                      color: Colors.black26,
+                      color: hasImage
+                          ? Colors.black.withValues(alpha: 0.15)
+                          : Colors.black.withValues(alpha: 0.22),
                     ),
                   ),
                   Center(
                     child: Image.asset(
                       AppAssets.profileImageUploadIcon,
-                      width: 32,
-                      height: 32,
+                      width: 36,
+                      height: 36,
+                      fit: BoxFit.contain,
                     ),
                   ),
                 ],

@@ -1,6 +1,8 @@
 import 'package:dartz/dartz.dart';
 
 import '../../../../core/error/failures.dart';
+import '../../data/models/area_model.dart';
+import '../../data/models/shift_model.dart';
 import '../../data/models/driver_model.dart';
 import '../../data/models/register_driver_request.dart';
 import '../../data/models/register_driver_response.dart';
@@ -65,6 +67,12 @@ abstract class AuthRepository {
 
   /// GET /auth/me
   Future<Either<Failure, DriverModel>> getMe();
+
+  /// GET /lookups/areas
+  Future<Either<Failure, List<AreaModel>>> getAreas();
+
+  /// GET /lookups/shifts
+  Future<Either<Failure, List<ShiftModel>>> getShifts();
 
   // Backward compatibility methods
   Future<Either<Failure, void>> sendDriverLoginOtp(String phone);

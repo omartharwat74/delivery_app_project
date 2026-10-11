@@ -168,6 +168,46 @@ class AuthCubit extends Cubit<AuthState> {
     );
   }
 
+  /// Registers driver with full API multipart request
+  Future<void> registerDriver({
+    required String name,
+    required String phone,
+    String? email,
+    String? nationalId,
+    required String vehicleType,
+    required String areaId,
+    required String shiftId,
+    required File image,
+    required File drivingLicense,
+    required File vehicleLicense,
+    required File nationalIdImage,
+    required File vehicleFront,
+    String? registrationToken,
+  }) async {
+    final regToken = registrationToken ??
+        _registrationToken ??
+        await authRepository.getRegistrationToken() ??
+        '';
+
+    final request = RegisterDriverRequest(
+      registrationToken: regToken,
+      name: name,
+      phone: _normalizeEgyptPhone(phone),
+      email: email,
+      nationalId: nationalId,
+      vehicleType: vehicleType,
+      areaId: areaId,
+      shiftId: shiftId,
+      image: image,
+      drivingLicense: drivingLicense,
+      vehicleLicense: vehicleLicense,
+      nationalIdImage: nationalIdImage,
+      vehicleFront: vehicleFront,
+    );
+
+    await submitRegistrationRequest(request);
+  }
+
   /// Legacy registration method for existing UI compatibility
   Future<void> submitRegistration({
     required String firstName,

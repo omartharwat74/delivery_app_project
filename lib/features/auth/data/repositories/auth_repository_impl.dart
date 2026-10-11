@@ -8,6 +8,8 @@ import '../../../../core/localization/app_strings.dart';
 import '../../../../core/utils/device_id_helper.dart';
 import '../datasources/auth_local_datasource.dart';
 import '../datasources/auth_remote_datasource.dart';
+import '../models/area_model.dart';
+import '../models/shift_model.dart';
 import '../models/driver_model.dart';
 import '../models/logout_request.dart';
 import '../models/register_driver_request.dart';
@@ -181,6 +183,26 @@ class AuthRepositoryImpl implements AuthRepository {
         return Right(response.data!);
       }
       return Left(ServerFailure(AppStrings.unableToFetchDriver));
+    } catch (e) {
+      return Left(_mapExceptionToFailure(e));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<AreaModel>>> getAreas() async {
+    try {
+      final response = await remoteDataSource.getAreas();
+      return Right(response.data ?? []);
+    } catch (e) {
+      return Left(_mapExceptionToFailure(e));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<ShiftModel>>> getShifts() async {
+    try {
+      final response = await remoteDataSource.getShifts();
+      return Right(response.data ?? []);
     } catch (e) {
       return Left(_mapExceptionToFailure(e));
     }
