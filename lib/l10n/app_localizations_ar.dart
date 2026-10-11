@@ -285,7 +285,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get noReviewsYet => 'لا توجد تقييمات حتى الآن.';
 
   @override
-  String get noNotificationsYet => 'لا توجد إشعارات حتى الآن.';
+  String get noNotificationsYet => 'لا يوجد اشعارات حتى الآن';
 
   @override
   String get drawerGuestName => 'مستخدم';

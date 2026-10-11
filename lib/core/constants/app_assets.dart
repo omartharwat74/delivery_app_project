@@ -47,4 +47,6 @@ class AppAssets {
       'assets/images/icons/profile/profile_phone_otp_icon.svg';
   static const profileSuccessIcon =
       'assets/images/icons/profile/profile_success_icon.gif';
+  static const emptyNotifications =
+      'assets/images/notifications/notification_bell.png';
 }
