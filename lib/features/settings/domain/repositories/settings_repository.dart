@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 
 import '../../../../core/error/failures.dart';
 import '../../../auth/data/models/driver_model.dart';
+import '../../data/models/general_settings_model.dart';
 
 abstract class SettingsRepository {
   /// Returns locally cached DriverModel
@@ -28,4 +29,7 @@ abstract class SettingsRepository {
     required String newPhone,
     required String otp,
   });
+
+  /// Fetches general settings including terms and conditions
+  Future<Either<Failure, GeneralSettingsModel>> getGeneralSettings();
 }

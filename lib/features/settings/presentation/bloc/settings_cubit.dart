@@ -257,4 +257,30 @@ class SettingsCubit extends Cubit<SettingsState> {
       clearErrorMessage: true,
     ));
   }
+
+  /// Fetches general settings including terms and conditions (GET /general-settings)
+  Future<void> loadTerms() async {
+    emit(state.copyWith(
+      isTermsLoading: true,
+      clearTermsErrorMessage: true,
+    ));
+
+    final result = await settingsRepository.getGeneralSettings();
+
+    result.fold(
+      (failure) {
+        emit(state.copyWith(
+          isTermsLoading: false,
+          termsErrorMessage: failure.message,
+        ));
+      },
+      (generalSettings) {
+        emit(state.copyWith(
+          isTermsLoading: false,
+          terms: generalSettings.terms,
+          clearTermsErrorMessage: true,
+        ));
+      },
+    );
+  }
 }

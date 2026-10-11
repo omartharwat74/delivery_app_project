@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:delivery_app_project/core/error/failures.dart';
 import 'package:delivery_app_project/features/auth/data/models/driver_model.dart';
+import 'package:delivery_app_project/features/settings/data/models/general_settings_model.dart';
 import 'package:delivery_app_project/features/settings/domain/repositories/settings_repository.dart';
 import 'package:delivery_app_project/features/settings/presentation/bloc/settings_cubit.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,6 +12,12 @@ class FakeSettingsRepository implements SettingsRepository {
   String failureMessage = 'Error occurred';
 
   String currentOtpToken = 'fake_change_token_123';
+
+  @override
+  Future<Either<Failure, GeneralSettingsModel>> getGeneralSettings() async {
+    if (shouldFail) return Left(ServerFailure(failureMessage));
+    return const Right(GeneralSettingsModel(terms: '<p>Terms</p>'));
+  }
 
   @override
   Future<DriverModel?> getCachedDriver() async => cachedDriver;

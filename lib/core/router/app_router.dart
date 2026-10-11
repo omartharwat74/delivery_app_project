@@ -19,6 +19,8 @@ import '../../features/settings/presentation/pages/settings_screen.dart';
 import '../../features/settings/presentation/pages/change_phone_screen.dart';
 import '../../features/settings/presentation/pages/verify_phone_otp_screen.dart';
 import '../../features/settings/presentation/pages/verify_phone_otp_args.dart';
+import '../../features/notifications/presentation/bloc/notifications_cubit.dart';
+import '../../features/reviews/presentation/bloc/reviews_cubit.dart';
 import '../../features/profile/presentation/pages/notifications_screen.dart';
 import '../../features/profile/presentation/pages/reviews_screen.dart';
 import '../../features/profile/presentation/pages/support_screen.dart';
@@ -105,11 +107,17 @@ class AppRouter {
       ),
       GoRoute(
         path: RouteNames.notifications,
-        builder: (c, s) => const NotificationsScreen(),
+        builder: (c, s) => BlocProvider<NotificationsCubit>(
+          create: (_) => di.sl<NotificationsCubit>()..loadNotifications(),
+          child: const NotificationsScreen(),
+        ),
       ),
       GoRoute(
         path: RouteNames.reviews,
-        builder: (c, s) => const ReviewsScreen(),
+        builder: (c, s) => BlocProvider<ReviewsCubit>(
+          create: (_) => di.sl<ReviewsCubit>()..loadReviews(),
+          child: const ReviewsScreen(),
+        ),
       ),
       GoRoute(
         path: RouteNames.support,
@@ -117,7 +125,10 @@ class AppRouter {
       ),
       GoRoute(
         path: RouteNames.termsAndConditions,
-        builder: (c, s) => const TermsAndConditionsScreen(),
+        builder: (c, s) => BlocProvider<SettingsCubit>.value(
+          value: di.sl<SettingsCubit>()..loadTerms(),
+          child: const TermsAndConditionsScreen(),
+        ),
       ),
       GoRoute(
         path: RouteNames.profile,

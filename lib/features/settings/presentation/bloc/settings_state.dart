@@ -19,6 +19,11 @@ class SettingsState extends Equatable {
   final bool sendNewOtpSuccess;
   final bool changePhoneSuccess;
 
+  // General settings (Terms & conditions)
+  final String? terms;
+  final bool isTermsLoading;
+  final String? termsErrorMessage;
+
   const SettingsState({
     this.isNotify = true,
     this.driver,
@@ -33,6 +38,9 @@ class SettingsState extends Equatable {
     this.verifyCurrentOtpSuccess = false,
     this.sendNewOtpSuccess = false,
     this.changePhoneSuccess = false,
+    this.terms,
+    this.isTermsLoading = false,
+    this.termsErrorMessage,
   });
 
   SettingsState copyWith({
@@ -52,6 +60,10 @@ class SettingsState extends Equatable {
     bool? verifyCurrentOtpSuccess,
     bool? sendNewOtpSuccess,
     bool? changePhoneSuccess,
+    String? terms,
+    bool? isTermsLoading,
+    String? termsErrorMessage,
+    bool clearTermsErrorMessage = false,
   }) {
     return SettingsState(
       isNotify: isNotify ?? this.isNotify,
@@ -73,6 +85,11 @@ class SettingsState extends Equatable {
           verifyCurrentOtpSuccess ?? this.verifyCurrentOtpSuccess,
       sendNewOtpSuccess: sendNewOtpSuccess ?? this.sendNewOtpSuccess,
       changePhoneSuccess: changePhoneSuccess ?? this.changePhoneSuccess,
+      terms: terms ?? this.terms,
+      isTermsLoading: isTermsLoading ?? this.isTermsLoading,
+      termsErrorMessage: clearTermsErrorMessage
+          ? null
+          : (termsErrorMessage ?? this.termsErrorMessage),
     );
   }
 
@@ -91,5 +108,8 @@ class SettingsState extends Equatable {
     verifyCurrentOtpSuccess,
     sendNewOtpSuccess,
     changePhoneSuccess,
+    terms,
+    isTermsLoading,
+    termsErrorMessage,
   ];
 }

@@ -6,6 +6,7 @@ import '../../../auth/data/datasources/auth_local_datasource.dart';
 import '../../../auth/data/models/driver_model.dart';
 import '../../domain/repositories/settings_repository.dart';
 import '../datasources/settings_remote_datasource.dart';
+import '../models/general_settings_model.dart';
 
 class SettingsRepositoryImpl implements SettingsRepository {
   final SettingsRemoteDataSource remoteDataSource;
@@ -108,6 +109,16 @@ class SettingsRepositoryImpl implements SettingsRepository {
       await authLocalDataSource.saveDriver(merged);
 
       return Right(merged);
+    } catch (e) {
+      return Left(_mapExceptionToFailure(e));
+    }
+  }
+
+  @override
+  Future<Either<Failure, GeneralSettingsModel>> getGeneralSettings() async {
+    try {
+      final settings = await remoteDataSource.getGeneralSettings();
+      return Right(settings);
     } catch (e) {
       return Left(_mapExceptionToFailure(e));
     }

@@ -31,6 +31,14 @@ import '../../features/orders/data/datasources/order_local_datasource.dart';
 import '../../features/orders/data/datasources/order_remote_datasource.dart';
 import '../../features/profile/data/datasources/profile_local_datasource.dart';
 import '../../features/profile/data/datasources/profile_remote_datasource.dart';
+import '../../features/notifications/data/datasources/notifications_remote_datasource.dart';
+import '../../features/notifications/data/repositories/notifications_repository_impl.dart';
+import '../../features/notifications/domain/repositories/notifications_repository.dart';
+import '../../features/notifications/presentation/bloc/notifications_cubit.dart';
+import '../../features/reviews/data/datasources/reviews_remote_datasource.dart';
+import '../../features/reviews/data/repositories/reviews_repository_impl.dart';
+import '../../features/reviews/domain/repositories/reviews_repository.dart';
+import '../../features/reviews/presentation/bloc/reviews_cubit.dart';
 import '../../features/settings/data/datasources/settings_remote_datasource.dart';
 import '../../features/settings/data/repositories/settings_repository_impl.dart';
 import '../../features/settings/domain/repositories/settings_repository.dart';
@@ -136,6 +144,24 @@ Future<void> init({required SharedPreferences prefs}) async {
       authLocalDataSource: sl(),
     ),
   );
+
+  // Notifications
+  sl.registerLazySingleton<NotificationsRemoteDataSource>(
+    () => NotificationsRemoteDataSourceImpl(apiClient: sl()),
+  );
+  sl.registerLazySingleton<NotificationsRepository>(
+    () => NotificationsRepositoryImpl(remoteDataSource: sl()),
+  );
+  sl.registerFactory(() => NotificationsCubit(repository: sl()));
+
+  // Reviews
+  sl.registerLazySingleton<ReviewsRemoteDataSource>(
+    () => ReviewsRemoteDataSourceImpl(apiClient: sl()),
+  );
+  sl.registerLazySingleton<ReviewsRepository>(
+    () => ReviewsRepositoryImpl(remoteDataSource: sl()),
+  );
+  sl.registerFactory(() => ReviewsCubit(repository: sl()));
 
   sl.registerLazySingleton(
     () => AuthCubit(

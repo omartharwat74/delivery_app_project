@@ -1,6 +1,7 @@
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../auth/data/models/driver_model.dart';
+import '../models/general_settings_model.dart';
 
 abstract class SettingsRemoteDataSource {
   /// Toggle driver push notifications (PUT /profile/notifications)
@@ -26,6 +27,9 @@ abstract class SettingsRemoteDataSource {
     required String newPhone,
     required String otp,
   });
+
+  /// Fetch general settings (terms, privacy, etc.) (GET /general-settings)
+  Future<GeneralSettingsModel> getGeneralSettings();
 }
 
 class SettingsRemoteDataSourceImpl implements SettingsRemoteDataSource {
@@ -127,5 +131,20 @@ class SettingsRemoteDataSourceImpl implements SettingsRemoteDataSource {
     throw Exception(
       response.msg.isNotEmpty ? response.msg : 'Failed to verify new phone OTP',
     );
+  }
+
+  @override
+  Future<GeneralSettingsModel> getGeneralSettings() async {
+    final response = await apiClient.getResponse<GeneralSettingsModel>(
+      ApiConstants.generalSettings,
+      fromJson: (data) {
+        if (data is Map<String, dynamic>) {
+          return GeneralSettingsModel.fromJson(data);
+        }
+        return GeneralSettingsModel(terms: data?.toString() ?? '');
+      },
+    );
+
+    return response.data ?? const GeneralSettingsModel(terms: '');
   }
 }
