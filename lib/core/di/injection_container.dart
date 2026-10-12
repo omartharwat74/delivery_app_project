@@ -46,6 +46,8 @@ import '../../features/settings/presentation/bloc/settings_cubit.dart';
 import '../network/api_client.dart';
 import '../network/auth_event_bus.dart';
 import '../network/network_info.dart';
+import '../services/location_service.dart';
+import '../services/notification_service.dart';
 
 final sl = GetIt.instance;
 
@@ -177,12 +179,17 @@ Future<void> init({required SharedPreferences prefs}) async {
     ),
   );
 
+  sl.registerLazySingleton<LocationService>(() => LocationServiceImpl());
+  sl.registerLazySingleton<NotificationService>(() => NotificationServiceImpl());
+
   sl.registerFactory(() => LookupsCubit(authRepository: sl()));
 
   sl.registerFactory(
     () => HomeCubit(
       homeRepository: sl(),
       sharedPreferences: sl(),
+      locationService: sl(),
+      notificationService: sl(),
     ),
   );
 

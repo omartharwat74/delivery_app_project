@@ -28,7 +28,12 @@ void main() {
     prefs = await SharedPreferences.getInstance();
     homeRepository = MockHomeRepository();
     authRepository = MockAuthRepository();
-    homeCubit = HomeCubit(homeRepository: homeRepository, sharedPreferences: prefs);
+    homeCubit = HomeCubit(
+      homeRepository: homeRepository,
+      sharedPreferences: prefs,
+      locationService: MockLocationService(),
+      notificationService: MockNotificationService(),
+    );
     authCubit = AuthCubit(authRepository: authRepository, authEventBus: AuthEventBus());
     activeOrderCubit = ActiveOrderCubit();
   });

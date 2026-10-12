@@ -1,17 +1,48 @@
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:delivery_app_project/core/error/failures.dart';
+import 'package:delivery_app_project/core/services/location_service.dart';
+import 'package:delivery_app_project/core/services/notification_service.dart';
 import 'package:delivery_app_project/features/auth/data/models/driver_model.dart';
 import 'package:delivery_app_project/features/home/domain/repositories/home_repository.dart';
 import 'package:delivery_app_project/features/home/presentation/bloc/home_cubit.dart';
 import 'package:delivery_app_project/features/home/presentation/bloc/home_state.dart';
 
+class MockLocationService implements LocationService {
+  Position? positionToReturn;
+  bool shouldGrantPermission = true;
+
+  @override
+  Future<bool> checkAndRequestPermission() async => shouldGrantPermission;
+
+  @override
+  Future<Position?> getCurrentPosition() async => positionToReturn;
+
+  @override
+  Future<Position?> getLastKnownPosition() async => positionToReturn;
+}
+
+class MockNotificationService implements NotificationService {
+  String? tokenToReturn = 'real_device_fcm_token_xyz';
+
+  @override
+  Future<String?> getFcmToken() async => tokenToReturn;
+
+  @override
+  Future<NotificationSettings?> requestPermission() async => null;
+}
+
 class MockHomeRepository implements HomeRepository {
   DriverModel? cachedDriver;
   bool cachedOnlineStatus = false;
   bool updateFcmCalled = false;
+  String? lastFcmToken;
   bool updateLocationCalled = false;
+  double? lastLat;
+  double? lastLng;
   bool updateAvailabilityShouldFail = false;
 
   @override
@@ -27,6 +58,7 @@ class MockHomeRepository implements HomeRepository {
     String? platform,
   }) async {
     updateFcmCalled = true;
+    lastFcmToken = fcmToken;
     return const Right(null);
   }
 
@@ -36,6 +68,8 @@ class MockHomeRepository implements HomeRepository {
     required double lng,
   }) async {
     updateLocationCalled = true;
+    lastLat = lat;
+    lastLng = lng;
     final driver = cachedDriver?.copyWith(currentLat: lat, currentLng: lng) ??
         DriverModel(id: 1, name: 'Driver', phone: '010', currentLat: lat, currentLng: lng);
     return Right(driver);
@@ -59,6 +93,8 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late MockHomeRepository repository;
+  late MockLocationService locationService;
+  late MockNotificationService notificationService;
   late SharedPreferences prefs;
   late HomeCubit cubit;
 
@@ -66,7 +102,28 @@ void main() {
     SharedPreferences.setMockInitialValues({'delivery_app_device_id': 'test-device-id'});
     prefs = await SharedPreferences.getInstance();
     repository = MockHomeRepository();
-    cubit = HomeCubit(homeRepository: repository, sharedPreferences: prefs);
+    locationService = MockLocationService();
+    notificationService = MockNotificationService();
+
+    locationService.positionToReturn = Position(
+      latitude: 31.2001,
+      longitude: 29.9187,
+      timestamp: DateTime.now(),
+      accuracy: 5.0,
+      altitude: 0.0,
+      altitudeAccuracy: 0.0,
+      heading: 0.0,
+      headingAccuracy: 0.0,
+      speed: 0.0,
+      speedAccuracy: 0.0,
+    );
+
+    cubit = HomeCubit(
+      homeRepository: repository,
+      sharedPreferences: prefs,
+      locationService: locationService,
+      notificationService: notificationService,
+    );
   });
 
   tearDown(() {
@@ -79,7 +136,7 @@ void main() {
       expect(cubit.state.isOnline, isFalse);
     });
 
-    test('initHome loads cached driver and invokes FCM + Location updates silently', () async {
+    test('initHome loads cached driver and invokes FCM + Location updates with real device data', () async {
       repository.cachedDriver = const DriverModel(
         id: 1,
         name: 'Test Driver',
@@ -93,6 +150,31 @@ void main() {
       expect(cubit.state.isOnline, isTrue);
       expect(cubit.state.driver?.name, 'Test Driver');
       expect(repository.updateFcmCalled, isTrue);
+      expect(repository.lastFcmToken, 'real_device_fcm_token_xyz');
+      expect(repository.updateLocationCalled, isTrue);
+      expect(repository.lastLat, 31.2001);
+      expect(repository.lastLng, 29.9187);
+    });
+
+    test('initHome skips location update cleanly when location is denied/null', () async {
+      locationService.positionToReturn = null;
+      repository.cachedDriver = const DriverModel(id: 1, name: 'Driver', phone: '010');
+
+      await cubit.initHome();
+
+      expect(cubit.state, isA<HomeLoaded>());
+      expect(repository.updateLocationCalled, isFalse);
+      expect(repository.updateFcmCalled, isTrue);
+    });
+
+    test('initHome skips FCM token update cleanly when token is null', () async {
+      notificationService.tokenToReturn = null;
+      repository.cachedDriver = const DriverModel(id: 1, name: 'Driver', phone: '010');
+
+      await cubit.initHome();
+
+      expect(cubit.state, isA<HomeLoaded>());
+      expect(repository.updateFcmCalled, isFalse);
       expect(repository.updateLocationCalled, isTrue);
     });
 
