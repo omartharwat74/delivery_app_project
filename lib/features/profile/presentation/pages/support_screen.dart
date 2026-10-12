@@ -1,41 +1,59 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 import 'package:delivery_app_project/core/constants/app_assets.dart';
 import 'package:delivery_app_project/core/theme/app_colors.dart';
 import 'package:delivery_app_project/core/theme/text_styles.dart';
-import 'package:delivery_app_project/l10n/app_localizations.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:delivery_app_project/core/di/injection_container.dart' as di;
-import 'package:delivery_app_project/features/profile/presentation/bloc/chat_cubit.dart';
-import 'package:delivery_app_project/features/profile/presentation/bloc/chat_state.dart';
 import 'package:delivery_app_project/core/widgets/app_directional_icons.dart';
+import 'package:delivery_app_project/l10n/app_localizations.dart';
+import 'package:delivery_app_project/core/di/injection_container.dart' as di;
+import 'package:delivery_app_project/features/support/domain/entities/support_conversation.dart';
+import 'package:delivery_app_project/features/support/presentation/cubit/support_cubit.dart';
+
+/// Thin view-model bridging [SupportChatMsg] to the UI widgets.
+class _SupportChatVm {
+  const _SupportChatVm({
+    required this.id,
+    required this.text,
+    required this.isMine,
+    required this.attachments,
+    required this.createdAt,
+  });
+
+  final String id;
+  final String text;
+  final bool isMine;
+  final List<String> attachments;
+  final DateTime createdAt;
+
+  factory _SupportChatVm.fromMsg(SupportChatMsg msg) => _SupportChatVm(
+    id: msg.id.toString(),
+    text: msg.body ?? '',
+    isMine: msg.isMine,
+    attachments: msg.attachments,
+    createdAt: msg.createdAt,
+  );
+}
 
 class SupportScreen extends StatelessWidget {
-  final String? ticketId;
-
-  const SupportScreen({super.key, this.ticketId});
+  const SupportScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) {
-        final cubit = di.sl<ChatCubit>();
-        if (ticketId != null) {
-          cubit.fetchMessages(ticketId!);
-        }
-        return cubit;
-      },
-      child: _SupportScreenContent(ticketId: ticketId),
+      create: (_) => di.sl<SupportCubit>(),
+      child: const _SupportScreenContent(),
     );
   }
 }
 
 class _SupportScreenContent extends StatefulWidget {
-  final String? ticketId;
-
-  const _SupportScreenContent({this.ticketId});
+  const _SupportScreenContent();
 
   @override
   State<_SupportScreenContent> createState() => _SupportScreenContentState();
@@ -43,69 +61,54 @@ class _SupportScreenContent extends StatefulWidget {
 
 class _SupportScreenContentState extends State<_SupportScreenContent> {
   static const _headerContentHeight = 68.0;
-  static const _composerTopPadding = 16.0;
+  static const _composerTopPadding = 20.0;
   static const _composerHorizontalPadding = 16.0;
-  static const _composerBottomPadding = 16.0;
+  static const _composerBottomPadding = 20.0;
   static const _messageHorizontalPadding = 16.0;
 
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
-  List<SupportChatMessage> _messages = [];
+  File? _selectedImage;
 
   @override
   void initState() {
     super.initState();
-    // Inject mock data exactly as shown in Figma
-    _messages = [
-      SupportChatMessage(
-        id: '1',
-        text: 'مساء الخير',
-        isMine: false,
-        createdAt: DateTime.now(),
-      ),
-      SupportChatMessage(
-        id: '2',
-        text: 'نقد نساعد حضرتك ازاي ؟',
-        isMine: false,
-        createdAt: DateTime.now(),
-      ),
-      SupportChatMessage(
-        id: '3',
-        text: 'المطعم اتاخر عليا في تسليم الطلب',
-        isMine: true,
-        createdAt: DateTime.now(),
-      ),
-    ];
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<SupportCubit>().loadInitialSupport();
+    });
   }
 
   @override
   void dispose() {
+    context.read<SupportCubit>().cleanupListeners();
     _controller.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
+  Future<void> _pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      setState(() {
+        _selectedImage = File(image.path);
+      });
+    }
+  }
+
   void _sendText() {
     final text = _controller.text.trim();
-    if (text.isEmpty) return;
-    
-    // Simulate adding message in UI
-    setState(() {
-      _messages.add(SupportChatMessage(
-        id: DateTime.now().toString(),
-        text: text,
-        isMine: true,
-        createdAt: DateTime.now(),
-      ));
-    });
-    
-    context.read<ChatCubit>().sendMessage(text);
+    if (text.isEmpty && _selectedImage == null) return;
+    context.read<SupportCubit>().sendMessage(text: text, image: _selectedImage);
     _controller.clear();
-    _scrollToBottom();
+    setState(() {
+      _selectedImage = null;
+    });
   }
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       if (!_scrollController.hasClients) return;
       _scrollController.animateTo(
         _scrollController.position.maxScrollExtent,
@@ -124,123 +127,108 @@ class _SupportScreenContentState extends State<_SupportScreenContent> {
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       child: Scaffold(
         backgroundColor: AppColors.scaffoldBackground(context),
-        body: Column(
-          children: [
-            _SupportChatHeader(title: l10n.supportChatTitle),
-            Expanded(
-              child: ListView.builder(
-                controller: _scrollController,
-                physics: const ClampingScrollPhysics(),
-                reverse: false,
-                padding: const EdgeInsetsDirectional.fromSTEB(
-                  _messageHorizontalPadding,
-                  24,
-                  _messageHorizontalPadding,
-                  24,
+        body: BlocConsumer<SupportCubit, SupportState>(
+          listenWhen: (prev, curr) => prev != curr,
+          listener: (context, state) {
+            if (!mounted) return;
+            if (state.messages.isNotEmpty) _scrollToBottom();
+            if (state.errorMessage != null) {
+              ScaffoldMessenger.of(context)
+                ..clearSnackBars()
+                ..showSnackBar(
+                  SnackBar(
+                    content: Text(state.errorMessage!),
+                    backgroundColor: AppColors.error,
+                  ),
+                );
+            }
+          },
+          builder: (context, state) {
+            final msgs = state.messages.map(_SupportChatVm.fromMsg).toList();
+            final chatWidgets = <Widget>[];
+            int i = 0;
+            while (i < msgs.length) {
+              if (msgs[i].isMine) {
+                chatWidgets.add(
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _ChatMessageBubble(message: msgs[i]),
+                  ),
+                );
+                i++;
+              } else {
+                final group = <_SupportChatVm>[];
+                while (i < msgs.length && !msgs[i].isMine) {
+                  group.add(msgs[i]);
+                  i++;
+                }
+                chatWidgets.add(
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _SupportMessageGroup(messages: group),
+                  ),
+                );
+              }
+            }
+
+            return Column(
+              children: [
+                _SupportChatHeader(title: l10n.supportChatTitle),
+                Expanded(
+                  child: state.isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : ListView(
+                          controller: _scrollController,
+                          physics: const ClampingScrollPhysics(),
+                          padding: const EdgeInsetsDirectional.fromSTEB(
+                            _messageHorizontalPadding,
+                            20,
+                            _messageHorizontalPadding,
+                            24,
+                          ),
+                          children: [
+                            _DateSeparator(label: l10n.supportToday),
+                            const SizedBox(height: 20),
+                            ...chatWidgets,
+                            if (state.isSending)
+                              const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 8),
+                                child: Align(
+                                  alignment: Alignment.centerRight,
+                                  child: SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
                 ),
-                itemCount: _messages.length + 1,
-                itemBuilder: (context, index) {
-                  if (index == 0) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 24),
-                      child: _DateSeparator(label: l10n.supportToday),
-                    );
-                  }
-                  final message = _messages[index - 1];
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: _FigmaChatBubble(message: message),
-                  );
-                },
-              ),
-            ),
-            _SupportComposer(controller: _controller, onSend: _sendText),
-          ],
+                _SupportComposer(
+                  controller: _controller,
+                  onSend: state.isSending ? () {} : _sendText,
+                  selectedImage: _selectedImage,
+                  onPickImage: _pickImage,
+                  onRemoveImage: () {
+                    setState(() {
+                      _selectedImage = null;
+                    });
+                  },
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
   }
 }
 
-class _FigmaChatBubble extends StatelessWidget {
-  const _FigmaChatBubble({required this.message});
-
-  final SupportChatMessage message;
-
-  @override
-  Widget build(BuildContext context) {
-    final isMine = message.isMine;
-
-    return Row(
-      mainAxisAlignment: isMine ? MainAxisAlignment.start : MainAxisAlignment.end,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        if (isMine)
-          Flexible(
-            child: _buildBubble(context, isMine),
-          )
-        else ...[
-          Flexible(
-            child: _buildBubble(context, isMine),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            width: 32,
-            height: 32,
-            decoration: const BoxDecoration(
-              color: AppColors.primary,
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: SvgPicture.asset(
-              AppAssets.supportAgentIcon,
-              width: 16,
-              height: 16,
-              colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildBubble(BuildContext context, bool isMine) {
-    return Column(
-      crossAxisAlignment: isMine ? CrossAxisAlignment.start : CrossAxisAlignment.end,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: isMine ? const Color(0xFFF1F1F1) : const Color(0xFFFCEAEB),
-            borderRadius: BorderRadiusDirectional.only(
-              topStart: const Radius.circular(16),
-              topEnd: const Radius.circular(16),
-              bottomStart: isMine ? Radius.zero : const Radius.circular(16),
-              bottomEnd: isMine ? const Radius.circular(16) : Radius.zero,
-            ),
-          ),
-          child: Text(
-            message.text,
-            style: AppTextStyles.body(context).copyWith(
-              color: AppColors.onSurface(context),
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-            ),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          '02:20PM',
-          style: AppTextStyles.caption(context).copyWith(
-            color: AppColors.paragraph(context),
-            fontSize: 10,
-            fontWeight: FontWeight.w400,
-          ),
-        ),
-      ],
-    );
-  }
-}
+// ── Header ────────────────────────────────────────────────────────────────────
 
 class _SupportChatHeader extends StatelessWidget {
   const _SupportChatHeader({required this.title});
@@ -257,12 +245,9 @@ class _SupportChatHeader extends StatelessWidget {
         fit: StackFit.expand,
         clipBehavior: Clip.hardEdge,
         children: [
-          Container(color: AppColors.primary),
+          const Positioned.fill(child: ColoredBox(color: AppColors.primary)),
           Positioned.fill(
-            child: Image.asset(
-              AppAssets.supportHeaderPattern,
-              fit: BoxFit.fill,
-            ),
+            child: Image.asset(AppAssets.supportHeaderPattern, fit: BoxFit.cover),
           ),
           PositionedDirectional(
             start: 16,
@@ -311,6 +296,8 @@ class _SupportChatHeader extends StatelessWidget {
   }
 }
 
+// ── Date Separator ─────────────────────────────────────────────────────────────
+
 class _DateSeparator extends StatelessWidget {
   const _DateSeparator({required this.label});
 
@@ -318,29 +305,237 @@ class _DateSeparator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        label,
-        textAlign: TextAlign.center,
-        style: AppTextStyles.caption(context).copyWith(
-          color: AppColors.paragraph(context),
-          fontSize: 12,
-          fontWeight: FontWeight.w400,
-          height: 1.3,
+    return Text(
+      label,
+      textAlign: TextAlign.center,
+      style: AppTextStyles.caption(context).copyWith(
+        color: AppColors.paragraph(context),
+        fontSize: 12,
+        fontWeight: FontWeight.w400,
+        height: 1.3,
+      ),
+    );
+  }
+}
+
+// ── Message Group (admin messages grouped with avatar) ─────────────────────────
+
+class _SupportMessageGroup extends StatelessWidget {
+  const _SupportMessageGroup({required this.messages});
+
+  final List<_SupportChatVm> messages;
+
+  @override
+  Widget build(BuildContext context) {
+    if (messages.isEmpty) return const SizedBox.shrink();
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Directionality(
+        textDirection: TextDirection.ltr,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Container(
+              width: 24,
+              height: 24,
+              alignment: Alignment.center,
+              clipBehavior: Clip.antiAlias,
+              decoration: const BoxDecoration(shape: BoxShape.circle),
+              child: Image.asset(
+                AppAssets.supportAdminIcon,
+                width: 24,
+                height: 24,
+                fit: BoxFit.cover,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final message in messages)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: _ChatMessageBubble(message: message),
+                  ),
+                _MessageTime(time: _formatTime(messages.last.createdAt)),
+              ],
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _SupportComposer extends StatelessWidget {
-  const _SupportComposer({required this.controller, required this.onSend});
+// ── Chat Bubble ────────────────────────────────────────────────────────────────
 
-  final TextEditingController controller;
-  final VoidCallback onSend;
+class _ChatMessageBubble extends StatelessWidget {
+  const _ChatMessageBubble({required this.message});
+
+  final _SupportChatVm message;
 
   @override
   Widget build(BuildContext context) {
+    final isMine = message.isMine;
+
+    final bubble = Column(
+      crossAxisAlignment:
+          isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      children: [
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: isMine
+                ? AppColors.border(context).withValues(alpha: 0.35)
+                : AppColors.error.withValues(alpha: 0.10),
+            borderRadius: _bubbleRadius(isMine),
+          ),
+          child: _MessageContent(message: message),
+        ),
+        if (isMine) ...[
+          const SizedBox(height: 4),
+          _MessageTime(time: _formatTime(message.createdAt)),
+        ],
+      ],
+    );
+
+    if (isMine) {
+      return Align(
+        alignment: Alignment.centerRight,
+        child: Directionality(textDirection: TextDirection.ltr, child: bubble),
+      );
+    }
+
+    return bubble;
+  }
+
+  BorderRadius _bubbleRadius(bool isMine) {
+    if (isMine) {
+      return const BorderRadius.only(
+        topLeft: Radius.circular(12),
+        topRight: Radius.circular(12),
+        bottomLeft: Radius.circular(12),
+      );
+    }
+    return const BorderRadius.only(
+      topLeft: Radius.circular(12),
+      topRight: Radius.circular(12),
+      bottomRight: Radius.circular(12),
+    );
+  }
+}
+
+// ── Message Content (text + optional image attachment) ─────────────────────────
+
+class _MessageContent extends StatelessWidget {
+  const _MessageContent({required this.message});
+
+  final _SupportChatVm message;
+
+  @override
+  Widget build(BuildContext context) {
+    final validImageUrl =
+        message.attachments.where((u) => u.trim().isNotEmpty).firstOrNull;
+
+    if (validImageUrl != null) {
+      return ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 220),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                validImageUrl,
+                width: double.infinity,
+                height: 200,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => const SizedBox(
+                  height: 200,
+                  child: Center(child: Icon(Icons.broken_image_outlined)),
+                ),
+              ),
+            ),
+            if (message.text.trim().isNotEmpty)
+              _TextMessageContent(text: message.text),
+          ],
+        ),
+      );
+    }
+    return _TextMessageContent(text: message.text);
+  }
+}
+
+class _TextMessageContent extends StatelessWidget {
+  const _TextMessageContent({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 220),
+      child: Padding(
+        padding: const EdgeInsetsDirectional.symmetric(
+          horizontal: 12,
+          vertical: 8,
+        ),
+        child: Text(
+          text,
+          textAlign: TextAlign.start,
+          style: AppTextStyles.caption(context).copyWith(
+            color: AppColors.onSurface(context),
+            fontSize: 12,
+            fontWeight: FontWeight.w400,
+            height: 1.3,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MessageTime extends StatelessWidget {
+  const _MessageTime({required this.time});
+
+  final String time;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      time,
+      style: AppTextStyles.caption(context).copyWith(
+        color: AppColors.paragraph(context),
+        fontSize: 8,
+        fontWeight: FontWeight.w400,
+        height: 1.25,
+      ),
+    );
+  }
+}
+
+// ── Composer ───────────────────────────────────────────────────────────────────
+
+class _SupportComposer extends StatelessWidget {
+  const _SupportComposer({
+    required this.controller,
+    required this.onSend,
+    required this.selectedImage,
+    required this.onPickImage,
+    required this.onRemoveImage,
+  });
+
+  final TextEditingController controller;
+  final VoidCallback onSend;
+  final File? selectedImage;
+  final VoidCallback onPickImage;
+  final VoidCallback onRemoveImage;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final bottomSafe = MediaQuery.of(context).padding.bottom;
 
     return Container(
@@ -357,106 +552,159 @@ class _SupportComposer extends StatelessWidget {
           BoxShadow(
             color: AppColors.shadow.withValues(alpha: 0.08),
             blurRadius: 4,
-            offset: const Offset(0, -2),
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: onSend,
-            child: Container(
-              width: 40,
-              height: 40,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.border(context), width: 1.0),
-              ),
-              child: Image.asset(
-                AppAssets.chatSentIcon,
-                width: 20,
-                height: 20,
+          if (selectedImage != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.file(
+                      selectedImage!,
+                      width: 80,
+                      height: 80,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  Positioned(
+                    top: 4,
+                    right: 4,
+                    child: GestureDetector(
+                      onTap: onRemoveImage,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.black54,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.close,
+                          size: 14,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-          const SizedBox(width: 8),
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () {},
-            child: Container(
-              width: 40,
-              height: 40,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.border(context), width: 1.0),
-              ),
-              child: Image.asset(
-                AppAssets.chatImageAddIcon,
-                width: 20,
-                height: 20,
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: SizedBox(
-              height: 48,
-              child: TextField(
-                controller: controller,
-                textAlign: TextAlign.start,
-                cursorColor: AppColors.cursor(context),
-                minLines: 1,
-                maxLines: 1,
-                style: AppTextStyles.inputText(
-                  context,
-                ).copyWith(fontSize: 14, height: 1.3),
-                decoration: InputDecoration(
-                  hintText: 'اكتب هنا...',
-                  hintStyle: AppTextStyles.inputHint(context).copyWith(
-                    color: AppColors.paragraph(context),
-                    fontSize: 12,
-                    height: 1.3,
-                  ),
-                  filled: true,
-                  fillColor: Theme.of(context).brightness == Brightness.light
-                      ? Colors.white
-                      : AppColors.scaffoldBackground(context),
-                  contentPadding: const EdgeInsetsDirectional.symmetric(
-                    horizontal: 16,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: AppColors.border(context),
-                      width: 0.5,
+          Row(
+            textDirection: TextDirection.ltr,
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 40,
+                  child: TextField(
+                    controller: controller,
+                    textAlign: TextAlign.start,
+                    cursorColor: AppColors.cursor(context),
+                    minLines: 1,
+                    maxLines: 1,
+                    style: AppTextStyles.inputText(
+                      context,
+                    ).copyWith(fontSize: 12, height: 1.3),
+                    decoration: InputDecoration(
+                      hintText: l10n.supportInputHint,
+                      hintStyle: AppTextStyles.inputHint(context).copyWith(
+                        color: AppColors.paragraph(context),
+                        fontSize: 12,
+                        height: 1.3,
+                      ),
+                      filled: true,
+                      fillColor: AppColors.surfaceCard(context),
+                      contentPadding: const EdgeInsetsDirectional.symmetric(
+                        horizontal: 12,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(
+                          color: AppColors.border(context),
+                          width: 0.5,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(
+                          color: AppColors.border(context),
+                          width: 0.5,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(
+                          color: AppColors.fieldFocusBorder(context),
+                          width: 0.5,
+                        ),
+                      ),
                     ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: AppColors.border(context),
-                      width: 0.5,
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: AppColors.fieldFocusBorder(context),
-                      width: 0.5,
-                    ),
+                    onSubmitted: (_) => onSend(),
                   ),
                 ),
-                onSubmitted: (_) => onSend(),
               ),
-            ),
+              const SizedBox(width: 8),
+              _ComposerIconButton(
+                onTap: onPickImage,
+                child: Image.asset(
+                  AppAssets.chatImageAddIcon,
+                  width: 24,
+                  height: 24,
+                ),
+              ),
+              const SizedBox(width: 8),
+              _ComposerIconButton(
+                onTap: onSend,
+                child: SvgPicture.asset(
+                  AppAssets.supportSendIcon,
+                  width: 24,
+                  height: 24,
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
+}
+
+class _ComposerIconButton extends StatelessWidget {
+  const _ComposerIconButton({required this.child, required this.onTap});
+
+  final Widget child;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        width: 40,
+        height: 40,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: AppColors.surfaceCard(context),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppColors.border(context), width: 0.5),
+        ),
+        child: child,
+      ),
+    );
+  }
+}
+
+// ── Utilities ──────────────────────────────────────────────────────────────────
+
+String _formatTime(DateTime time) {
+  final hour = time.hour % 12 == 0 ? 12 : time.hour % 12;
+  final minute = time.minute.toString().padLeft(2, '0');
+  final suffix = time.hour >= 12 ? 'PM' : 'AM';
+  return '${hour.toString().padLeft(2, '0')}:$minute$suffix';
 }

@@ -13,9 +13,9 @@ import '../../features/auth/domain/usecases/upload_media_usecase.dart';
 import '../../features/auth/domain/usecases/verify_driver_login_otp_usecase.dart';
 import '../../features/auth/presentation/bloc/auth_cubit.dart';
 import '../../features/auth/presentation/bloc/lookups_cubit.dart';
-import '../../features/profile/presentation/bloc/chat_cubit.dart';
 import '../../features/profile/presentation/bloc/phone_change/phone_change_cubit.dart';
 import '../../features/profile/presentation/bloc/profile_bloc.dart';
+import '../../features/support/presentation/cubit/support_cubit.dart';
 import '../../features/orders/presentation/bloc/active_order_cubit.dart';
 import '../../features/earnings/data/datasources/earnings_local_datasource.dart';
 import '../../features/earnings/data/datasources/earnings_remote_datasource.dart';
@@ -186,7 +186,7 @@ Future<void> init({required SharedPreferences prefs}) async {
     ),
   );
 
-  sl.registerFactory(() => ChatCubit());
+  sl.registerFactory(() => SupportCubit(dio: sl<ApiClient>().dio));
   sl.registerFactory(() => ProfileBloc());
   sl.registerFactory(() => PhoneChangeCubit());
 

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "655576232106",
+    "project_id": "lababk-10014",
+    "storage_bucket": "lababk-10014.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:655576232106:android:2fb8beab6795038db720d3",
+        "android_client_info": {
+          "package_name": "com.example.food_user_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAHQJFoXYdmGgbJ6dH8QAXM-umBjjFsr4A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
