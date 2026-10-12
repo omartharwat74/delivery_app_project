@@ -30,6 +30,7 @@ class AppAssets {
   static const generalSettingsDeleteAccount =
       'assets/images/icons/general_settings/delete_account.svg';
 
+  static const headerPattern = 'assets/images/header_pattern.png';
   static const supportHeaderPattern =
       'assets/images/support/header_pattern.png';
   static const supportAgentIcon = 'assets/images/icons/support/agent.svg';

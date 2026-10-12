@@ -247,7 +247,7 @@ class _SupportChatHeader extends StatelessWidget {
         children: [
           const Positioned.fill(child: ColoredBox(color: AppColors.primary)),
           Positioned.fill(
-            child: Image.asset(AppAssets.supportHeaderPattern, fit: BoxFit.cover),
+            child: Image.asset(AppAssets.headerPattern, fit: BoxFit.cover),
           ),
           PositionedDirectional(
             start: 16,
