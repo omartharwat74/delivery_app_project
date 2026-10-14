@@ -9,6 +9,7 @@ import 'core/theme/app_theme.dart';
 import 'core/theme/app_theme_scope.dart';
 import 'core/theme/theme_controller.dart';
 import 'features/auth/presentation/bloc/auth_cubit.dart';
+import 'features/auth/presentation/bloc/auth_state.dart';
 import 'features/auth/presentation/bloc/lookups_cubit.dart';
 import 'features/orders/presentation/bloc/active_order_cubit.dart';
 import 'l10n/app_localizations.dart';
@@ -64,6 +65,16 @@ class DriverApp extends StatelessWidget {
                     : AppTheme.darkEnglish,
                 themeMode: themeController.themeMode,
                 routerConfig: AppRouter.router,
+                builder: (context, child) {
+                  return BlocListener<AuthCubit, AuthState>(
+                    listenWhen: (prev, curr) =>
+                        prev is AuthAuthenticated && curr is AuthUnauthenticated,
+                    listener: (context, state) {
+                      AppRouter.redirectToLogin();
+                    },
+                    child: child ?? const SizedBox.shrink(),
+                  );
+                },
               );
             },
           ),

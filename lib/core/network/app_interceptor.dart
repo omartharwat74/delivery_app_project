@@ -9,11 +9,19 @@ class AppInterceptor extends Interceptor {
   final SharedPreferences sharedPreferences;
   final AuthEventBus authEventBus;
 
+  bool _isHandlingUnauthorized = false;
+
   AppInterceptor({
     required this.localDataSource,
     required this.sharedPreferences,
     required this.authEventBus,
   });
+
+  bool get isHandlingUnauthorized => _isHandlingUnauthorized;
+
+  void resetUnauthorizedLock() {
+    _isHandlingUnauthorized = false;
+  }
 
   @override
   void onRequest(
@@ -40,6 +48,8 @@ class AppInterceptor extends Interceptor {
       final token = await localDataSource.getToken();
       if (token != null && token.isNotEmpty) {
         options.headers['Authorization'] = 'Bearer $token';
+        // Reset lock when an authenticated request is initiated with a valid token
+        _isHandlingUnauthorized = false;
       }
     } catch (_) {
       // No token found, proceed unauthenticated
@@ -51,11 +61,15 @@ class AppInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
     // Error Handling: In case of 401, trigger logout event and clear token from device
+    // Prevent duplicate logout if multiple requests fail at the same moment
     if (err.response?.statusCode == 401) {
-      try {
-        await localDataSource.clearSession();
-      } catch (_) {}
-      authEventBus.emitUnauthorized();
+      if (!_isHandlingUnauthorized) {
+        _isHandlingUnauthorized = true;
+        try {
+          await localDataSource.clearSession();
+        } catch (_) {}
+        authEventBus.emitUnauthorized();
+      }
     }
 
     return handler.next(err);

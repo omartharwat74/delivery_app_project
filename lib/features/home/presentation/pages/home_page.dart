@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../widgets/home_drawer.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/router/route_names.dart';
 import '../../../auth/presentation/bloc/auth_cubit.dart';
+import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../orders/presentation/bloc/active_order_cubit.dart';
 import '../../../orders/presentation/bloc/active_order_state.dart';
 import '../../../orders/presentation/widgets/active_order_card.dart';
@@ -26,20 +29,33 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<ActiveOrderCubit, ActiveOrderState>(
-      listenWhen: (previous, current) =>
-          previous is ActiveOrderIdle && current is ActiveOrderAssigned,
-      listener: (context, state) {
-        // Play an alert sound here (e.g. Audioplayers.play('alert.mp3'))
-        final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.trackingNewOrderBody),
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      },
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<AuthCubit, AuthState>(
+          listenWhen: (previous, current) => current is AuthUnauthenticated,
+          listener: (context, state) {
+            while (Navigator.of(context, rootNavigator: true).canPop()) {
+              Navigator.of(context, rootNavigator: true).pop();
+            }
+            context.go(RouteNames.login);
+          },
+        ),
+        BlocListener<ActiveOrderCubit, ActiveOrderState>(
+          listenWhen: (previous, current) =>
+              previous is ActiveOrderIdle && current is ActiveOrderAssigned,
+          listener: (context, state) {
+            // Play an alert sound here (e.g. Audioplayers.play('alert.mp3'))
+            final l10n = AppLocalizations.of(context)!;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(l10n.trackingNewOrderBody),
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          },
+        ),
+      ],
       child: Scaffold(
         drawer: const HomeDrawer(),
 

@@ -4,6 +4,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:delivery_app_project/core/error/failures.dart';
+import 'package:delivery_app_project/core/network/auth_event_bus.dart';
 import 'package:delivery_app_project/core/services/location_service.dart';
 import 'package:delivery_app_project/core/services/notification_service.dart';
 import 'package:delivery_app_project/features/auth/data/models/driver_model.dart';
@@ -44,6 +45,7 @@ class MockHomeRepository implements HomeRepository {
   double? lastLat;
   double? lastLng;
   bool updateAvailabilityShouldFail = false;
+  Failure? updateAvailabilityFailure;
 
   @override
   Future<DriverModel?> getCachedDriver() async => cachedDriver;
@@ -79,6 +81,9 @@ class MockHomeRepository implements HomeRepository {
   Future<Either<Failure, DriverModel>> updateAvailability({
     required bool isOnline,
   }) async {
+    if (updateAvailabilityFailure != null) {
+      return Left(updateAvailabilityFailure!);
+    }
     if (updateAvailabilityShouldFail) {
       return Left(ServerFailure('Failed to update status'));
     }
@@ -96,6 +101,7 @@ void main() {
   late MockLocationService locationService;
   late MockNotificationService notificationService;
   late SharedPreferences prefs;
+  late AuthEventBus authEventBus;
   late HomeCubit cubit;
 
   setUp(() async {
@@ -104,6 +110,7 @@ void main() {
     repository = MockHomeRepository();
     locationService = MockLocationService();
     notificationService = MockNotificationService();
+    authEventBus = AuthEventBus();
 
     locationService.positionToReturn = Position(
       latitude: 31.2001,
@@ -123,6 +130,7 @@ void main() {
       sharedPreferences: prefs,
       locationService: locationService,
       notificationService: notificationService,
+      authEventBus: authEventBus,
     );
   });
 
@@ -213,6 +221,37 @@ void main() {
       expectLater(cubit.stream, emitsInOrder(expectedStates));
 
       await cubit.toggleAvailability(false);
+    });
+
+    test('toggleAvailability suppresses error when failure is UnauthorizedFailure (401)', () async {
+      repository.cachedDriver = const DriverModel(
+        id: 1,
+        name: 'Test Driver',
+        phone: '01011112222',
+        isOnline: true,
+      );
+      repository.updateAvailabilityFailure = const UnauthorizedFailure('Unauthenticated');
+
+      // Only loading should be emitted, error is suppressed to prevent UI popups during global logout
+      final expectedStates = [
+        isA<HomeAvailabilityLoading>().having((s) => s.targetOnline, 'targetOnline', isFalse),
+      ];
+
+      expectLater(cubit.stream, emitsInOrder(expectedStates));
+
+      await cubit.toggleAvailability(false);
+    });
+
+    test('authEventBus unauthorized event halts cubit operations and aborts subsequent updates', () async {
+      authEventBus.emitUnauthorized();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      repository.cachedDriver = const DriverModel(id: 1, name: 'Driver', phone: '010');
+      await cubit.initHome();
+
+      // State remains HomeInitial because cubit aborted on unauthorized
+      expect(cubit.state, const HomeInitial());
+      expect(repository.updateLocationCalled, isFalse);
     });
   });
 }

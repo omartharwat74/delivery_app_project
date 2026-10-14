@@ -1,6 +1,9 @@
+import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/di/injection_container.dart' as di;
+import '../network/auth_event_bus.dart';
 import '../../features/home/presentation/bloc/home_cubit.dart';
 
 import '../../features/auth/presentation/pages/login_page.dart';
@@ -30,7 +33,38 @@ import 'route_names.dart';
 class AppRouter {
   AppRouter._();
 
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>(debugLabel: 'app_root_navigator');
+
+  static StreamSubscription<void>? _unauthorizedSubscription;
+
+  /// Global method to clear the navigation stack and redirect immediately to Login
+  static void redirectToLogin() {
+    final nav = navigatorKey.currentState;
+    if (nav != null) {
+      while (nav.canPop()) {
+        nav.pop();
+      }
+    }
+    router.go(RouteNames.login);
+  }
+
+  /// Listens to unauthorized 401 events globally
+  static void listenToAuthEvents({AuthEventBus? eventBus}) {
+    _unauthorizedSubscription?.cancel();
+    final bus = eventBus ?? di.sl<AuthEventBus>();
+    _unauthorizedSubscription = bus.onUnauthorized.listen((_) {
+      redirectToLogin();
+    });
+  }
+
+  static void dispose() {
+    _unauthorizedSubscription?.cancel();
+    _unauthorizedSubscription = null;
+  }
+
   static final router = GoRouter(
+    navigatorKey: navigatorKey,
     initialLocation: RouteNames.splash,
     routes: [
       GoRoute(path: RouteNames.splash, builder: (c, s) => const SplashScreen()),

@@ -46,6 +46,7 @@ import '../../features/settings/presentation/bloc/settings_cubit.dart';
 import '../network/api_client.dart';
 import '../network/auth_event_bus.dart';
 import '../network/network_info.dart';
+import '../router/app_router.dart';
 import '../services/location_service.dart';
 import '../services/notification_service.dart';
 
@@ -58,6 +59,7 @@ Future<void> init({required SharedPreferences prefs}) async {
   sl.registerLazySingleton<FlutterSecureStorage>(() => secureStorage);
 
   sl.registerLazySingleton<AuthEventBus>(() => AuthEventBus());
+  AppRouter.listenToAuthEvents(eventBus: sl<AuthEventBus>());
 
   sl.registerLazySingleton<Dio>(() => Dio());
   sl.registerLazySingleton(() => Connectivity());
@@ -190,6 +192,7 @@ Future<void> init({required SharedPreferences prefs}) async {
       sharedPreferences: sl(),
       locationService: sl(),
       notificationService: sl(),
+      authEventBus: sl(),
     ),
   );
 

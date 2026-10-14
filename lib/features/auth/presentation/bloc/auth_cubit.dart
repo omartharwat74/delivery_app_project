@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/error/failures.dart';
 import '../../../../core/localization/app_strings.dart';
 import '../../../../core/network/auth_event_bus.dart';
 import '../../data/models/driver_model.dart';
@@ -33,6 +34,8 @@ class AuthCubit extends Cubit<AuthState> {
   }) : super(AuthInitial()) {
     // Listen for global 401 Unauthorized events from Dio Interceptor
     _unauthorizedSubscription = authEventBus.onUnauthorized.listen((_) {
+      _phoneNumber = null;
+      _registrationToken = null;
       emit(AuthUnauthenticated());
     });
   }
@@ -66,30 +69,31 @@ class AuthCubit extends Cubit<AuthState> {
       return;
     }
 
-    // Attempt to load driver profile
+    // Read cached driver profile if present
     final cachedDriver = await authRepository.getCachedDriver();
-    if (cachedDriver != null) {
-      emit(AuthAuthenticated(token: token, driver: cachedDriver));
-      // Silently refresh in background
-      authRepository.getMe().then((result) {
-        result.fold(
-          (_) {},
-          (driver) {
-            emit(AuthAuthenticated(token: token, driver: driver));
-          },
-        );
-      });
-      return;
-    }
 
+    // Verify session validity via GET /auth/me
     final meResult = await authRepository.getMe();
-    meResult.fold(
-      (failure) {
-        // If 401, unauthenticated will be triggered by interceptor;
-        // otherwise if network issue, proceed with token
-        emit(AuthAuthenticated(token: token, driver: null));
+    await meResult.fold(
+      (failure) async {
+        // If 401 Unauthorized, token is expired or user was deleted from backend
+        if (failure is UnauthorizedFailure || failure.statusCode == 401) {
+          await authRepository.clearSession();
+          _phoneNumber = null;
+          _registrationToken = null;
+          emit(AuthUnauthenticated());
+        } else if (cachedDriver != null) {
+          // If network / non-auth server error, allow offline session using cached profile
+          emit(AuthAuthenticated(token: token, driver: cachedDriver));
+        } else {
+          // No cached profile and backend call failed
+          await authRepository.clearSession();
+          _phoneNumber = null;
+          _registrationToken = null;
+          emit(AuthUnauthenticated());
+        }
       },
-      (driver) {
+      (driver) async {
         emit(AuthAuthenticated(token: token, driver: driver));
       },
     );
@@ -106,9 +110,16 @@ class AuthCubit extends Cubit<AuthState> {
     }
 
     final meResult = await authRepository.getMe();
-    meResult.fold(
-      (_) {},
-      (driver) {
+    await meResult.fold(
+      (failure) async {
+        if (failure is UnauthorizedFailure || failure.statusCode == 401) {
+          await authRepository.clearSession();
+          _phoneNumber = null;
+          _registrationToken = null;
+          emit(AuthUnauthenticated());
+        }
+      },
+      (driver) async {
         emit(AuthAuthenticated(token: token, driver: driver));
       },
     );

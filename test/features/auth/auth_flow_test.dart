@@ -28,6 +28,7 @@ class MockAuthRepository implements AuthRepository {
   Either<Failure, void>? logoutResult;
   Either<Failure, List<AreaModel>>? getAreasResult;
   Either<Failure, List<ShiftModel>>? getShiftsResult;
+  Either<Failure, DriverModel>? getMeResult;
 
   @override
   Future<Either<Failure, List<AreaModel>>> getAreas() async {
@@ -113,7 +114,8 @@ class MockAuthRepository implements AuthRepository {
 
   @override
   Future<Either<Failure, DriverModel>> getMe() async {
-    return Right(cachedDriverValue ?? const DriverModel(id: 1, name: 'Driver', phone: '01011112222'));
+    return getMeResult ??
+        Right(cachedDriverValue ?? const DriverModel(id: 1, name: 'Driver', phone: '01011112222'));
   }
 
   @override
@@ -339,6 +341,57 @@ void main() {
 
       await cubit.loadDriverProfile();
       expect(cubit.currentDriver?.name, 'Delivery Captain');
+    });
+
+    test('checkAuthStatus emits AuthUnauthenticated and clears session when getMe returns 401 Unauthorized', () async {
+      mockRepository.loggedInValue = true;
+      mockRepository.tokenValue = 'invalid_expired_token';
+      mockRepository.cachedDriverValue = const DriverModel(id: 1, name: 'Deleted Driver', phone: '01011112222');
+      mockRepository.getMeResult = const Left(UnauthorizedFailure('Unauthenticated'));
+
+      await cubit.checkAuthStatus();
+
+      expect(cubit.state, isA<AuthUnauthenticated>());
+      expect(cubit.currentDriver, isNull);
+      expect(mockRepository.tokenValue, isNull);
+    });
+
+    test('checkAuthStatus emits AuthAuthenticated with cached driver when getMe returns NetworkFailure', () async {
+      mockRepository.loggedInValue = true;
+      mockRepository.tokenValue = 'valid_token';
+      mockRepository.cachedDriverValue = const DriverModel(id: 99, name: 'Offline Driver', phone: '01055554444');
+      mockRepository.getMeResult = const Left(NetworkFailure('No Internet'));
+
+      await cubit.checkAuthStatus();
+
+      expect(cubit.state, isA<AuthAuthenticated>());
+      final authState = cubit.state as AuthAuthenticated;
+      expect(authState.token, 'valid_token');
+      expect(authState.driver?.name, 'Offline Driver');
+    });
+
+    test('checkAuthStatus emits AuthUnauthenticated when getMe returns NetworkFailure and no cached driver', () async {
+      mockRepository.loggedInValue = true;
+      mockRepository.tokenValue = 'valid_token';
+      mockRepository.cachedDriverValue = null;
+      mockRepository.getMeResult = const Left(NetworkFailure('No Internet'));
+
+      await cubit.checkAuthStatus();
+
+      expect(cubit.state, isA<AuthUnauthenticated>());
+      expect(mockRepository.tokenValue, isNull);
+    });
+
+    test('loadDriverProfile emits AuthUnauthenticated when getMe returns 401 Unauthorized', () async {
+      mockRepository.loggedInValue = true;
+      mockRepository.tokenValue = 'expired_token';
+      mockRepository.cachedDriverValue = const DriverModel(id: 2, name: 'Driver', phone: '010');
+      mockRepository.getMeResult = const Left(UnauthorizedFailure('Unauthenticated'));
+
+      await cubit.loadDriverProfile();
+
+      expect(cubit.state, isA<AuthUnauthenticated>());
+      expect(cubit.currentDriver, isNull);
     });
   });
 }

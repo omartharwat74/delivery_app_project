@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../core/constants/app_strings.dart';
 import '../models/driver_model.dart';
 
 abstract class AuthLocalDataSource {
@@ -100,6 +101,9 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
     await clearTokens();
     await sharedPreferences.remove(_keyDriverProfile);
     await sharedPreferences.remove(_keyDriverId);
+    await sharedPreferences.remove(AppStrings.keyIsOnline);
+    await sharedPreferences.remove(AppStrings.keyCachedStats);
+    await sharedPreferences.remove(AppStrings.keyCachedProfile);
   }
 
   // ---------------------------------------------------------------------------
