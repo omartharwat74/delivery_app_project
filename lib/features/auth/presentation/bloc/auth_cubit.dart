@@ -306,13 +306,26 @@ class AuthCubit extends Cubit<AuthState> {
     await submitRegistrationRequest(request);
   }
 
-  /// Logs out driver (POST /auth/logout) and clears local session
+  /// Logs out driver (POST /auth/logout) and clears local session on success
   Future<void> logout() async {
+    final previousDriver = currentDriver;
     emit(AuthLogoutLoading());
-    await authRepository.logout();
-    _phoneNumber = null;
-    _registrationToken = null;
-    emit(AuthUnauthenticated());
+    final result = await authRepository.logout();
+    await result.fold(
+      (failure) async {
+        emit(AuthError(failure.message, statusCode: failure.statusCode));
+        final token = await authRepository.getAccessToken();
+        if (token != null && token.isNotEmpty) {
+          final driver = previousDriver ?? await authRepository.getCachedDriver();
+          emit(AuthAuthenticated(token: token, driver: driver));
+        }
+      },
+      (_) async {
+        _phoneNumber = null;
+        _registrationToken = null;
+        emit(AuthUnauthenticated());
+      },
+    );
   }
 
   /// Updates driver data in memory and notifies listeners

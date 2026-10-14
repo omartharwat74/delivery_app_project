@@ -13,6 +13,7 @@ import '../../../../core/widgets/app_directional_icons.dart';
 import '../../../../core/widgets/app_media.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/bloc/auth_cubit.dart';
+import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../auth/presentation/widgets/app_language_picker_modal.dart';
 import '../../../home/presentation/bloc/home_cubit.dart';
 import '../../../home/presentation/bloc/home_state.dart';
@@ -112,6 +113,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       style: AppTextStyles.snackBarMessage(context),
                     ),
                     backgroundColor: AppColors.success,
+                  ),
+                );
+              }
+            },
+          ),
+          BlocListener<AuthCubit, AuthState>(
+            listenWhen: (previous, current) =>
+                current is AuthUnauthenticated || current is AuthError,
+            listener: (context, state) {
+              if (state is AuthUnauthenticated) {
+                while (Navigator.of(context, rootNavigator: true).canPop()) {
+                  Navigator.of(context, rootNavigator: true).pop();
+                }
+                context.go(RouteNames.login);
+              } else if (state is AuthError) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      state.message,
+                      style: AppTextStyles.snackBarMessage(context),
+                    ),
+                    backgroundColor: AppColors.error,
                   ),
                 );
               }
@@ -279,7 +302,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onPressed: () {
               Navigator.of(dialogContext).pop();
               context.read<AuthCubit>().logout();
-              context.go(RouteNames.login);
             },
             child: Text(
               l10n.confirm,

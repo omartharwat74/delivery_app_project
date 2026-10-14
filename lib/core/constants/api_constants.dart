@@ -10,7 +10,8 @@ class ApiConstants {
   static const String logout = '/auth/logout';
   static const String updateFcm = '/auth/update-fcm';
   static const String location = '/auth/location';
-  static const String availability = '/auth/availability';
+  // Attendance Endpoints
+  static const String availability = '/attendance/availability';
 
   // Lookups Endpoints
   static const String lookupsAreas = '/lookups/areas';

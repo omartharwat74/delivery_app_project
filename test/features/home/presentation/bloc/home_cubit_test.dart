@@ -204,23 +204,96 @@ void main() {
       await cubit.toggleAvailability(true);
     });
 
-    test('toggleAvailability emits [HomeAvailabilityLoading, HomeAvailabilityError] on failure', () async {
+    test('toggleAvailability emits [HomeAvailabilityLoading, HomeAvailabilityError] on failure and retains current state', () async {
       repository.cachedDriver = const DriverModel(
         id: 1,
         name: 'Test Driver',
         phone: '01011112222',
         isOnline: true,
       );
+      await cubit.initHome();
       repository.updateAvailabilityShouldFail = true;
 
       final expectedStates = [
         isA<HomeAvailabilityLoading>().having((s) => s.targetOnline, 'targetOnline', isFalse),
-        isA<HomeAvailabilityError>().having((s) => s.message, 'message', 'Failed to update status'),
+        isA<HomeAvailabilityError>()
+            .having((s) => s.message, 'message', 'Failed to update status')
+            .having((s) => s.isOnline, 'isOnline', isTrue),
       ];
 
       expectLater(cubit.stream, emitsInOrder(expectedStates));
 
       await cubit.toggleAvailability(false);
+    });
+
+    test('toggleAvailability retains current state on 422 failure without booked shift', () async {
+      repository.cachedDriver = const DriverModel(
+        id: 1,
+        name: 'Test Driver',
+        phone: '01011112222',
+        isOnline: false,
+      );
+      await cubit.initHome();
+      repository.updateAvailabilityFailure = const ValidationFailure(
+        'لا يمكنك بدء الشيفت بدون موعد عمل محجوز لهذا اليوم.',
+      );
+
+      final expectedStates = [
+        isA<HomeAvailabilityLoading>().having((s) => s.targetOnline, 'targetOnline', isTrue),
+        isA<HomeAvailabilityError>()
+            .having((s) => s.message, 'message', 'لا يمكنك بدء الشيفت بدون موعد عمل محجوز لهذا اليوم.')
+            .having((s) => s.isOnline, 'isOnline', isFalse),
+      ];
+
+      expectLater(cubit.stream, emitsInOrder(expectedStates));
+
+      await cubit.toggleAvailability(true);
+    });
+
+    test('toggleAvailability retains current state on 422 failure when busy with order', () async {
+      repository.cachedDriver = const DriverModel(
+        id: 1,
+        name: 'Test Driver',
+        phone: '01011112222',
+        isOnline: true,
+        isBusy: true,
+      );
+      await cubit.initHome();
+      repository.updateAvailabilityFailure = const ValidationFailure(
+        'لا يمكنك إنهاء الشيفت أو تسجيل الخروج أثناء تنفيذ طلب.',
+      );
+
+      final expectedStates = [
+        isA<HomeAvailabilityLoading>().having((s) => s.targetOnline, 'targetOnline', isFalse),
+        isA<HomeAvailabilityError>()
+            .having((s) => s.message, 'message', 'لا يمكنك إنهاء الشيفت أو تسجيل الخروج أثناء تنفيذ طلب.')
+            .having((s) => s.isOnline, 'isOnline', isTrue),
+      ];
+
+      expectLater(cubit.stream, emitsInOrder(expectedStates));
+
+      await cubit.toggleAvailability(false);
+    });
+
+    test('toggleAvailability retains current state on 403 blocked failure', () async {
+      repository.cachedDriver = const DriverModel(
+        id: 1,
+        name: 'Test Driver',
+        phone: '01011112222',
+        isOnline: false,
+      );
+      repository.updateAvailabilityFailure = const ForbiddenFailure('This account has been blocked.');
+
+      final expectedStates = [
+        isA<HomeAvailabilityLoading>().having((s) => s.targetOnline, 'targetOnline', isTrue),
+        isA<HomeAvailabilityError>()
+            .having((s) => s.message, 'message', 'This account has been blocked.')
+            .having((s) => s.isOnline, 'isOnline', isFalse),
+      ];
+
+      expectLater(cubit.stream, emitsInOrder(expectedStates));
+
+      await cubit.toggleAvailability(true);
     });
 
     test('toggleAvailability suppresses error when failure is UnauthorizedFailure (401)', () async {

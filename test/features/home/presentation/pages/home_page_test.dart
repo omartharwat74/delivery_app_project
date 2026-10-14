@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:delivery_app_project/core/error/failures.dart';
 import 'package:delivery_app_project/core/network/auth_event_bus.dart';
 import 'package:delivery_app_project/features/auth/data/models/driver_model.dart';
 import 'package:delivery_app_project/features/auth/presentation/bloc/auth_cubit.dart';
+import 'package:delivery_app_project/features/auth/presentation/bloc/auth_state.dart';
 import 'package:delivery_app_project/features/home/presentation/bloc/home_cubit.dart';
 import 'package:delivery_app_project/features/home/presentation/pages/home_page.dart';
 import 'package:delivery_app_project/features/orders/presentation/bloc/active_order_cubit.dart';
@@ -84,5 +86,48 @@ void main() {
 
     // Cubit should have toggled to true
     expect(homeCubit.state.isOnline, isTrue);
+  });
+
+  testWidgets('displays SnackBar and keeps toggle unchanged when availability update fails (422/403)', (tester) async {
+    homeRepository.cachedDriver = const DriverModel(
+      id: 1,
+      name: 'Captain Jack',
+      phone: '01012345678',
+      isOnline: false,
+    );
+    homeRepository.updateAvailabilityFailure = const ValidationFailure(
+      'لا يمكنك بدء الشيفت بدون موعد عمل محجوز لهذا اليوم.',
+    );
+
+    await tester.pumpWidget(buildHomePage());
+    await tester.pumpAndSettle();
+
+    // Toggle button initial state is false
+    expect(homeCubit.state.isOnline, isFalse);
+
+    // Tap toggle button to attempt check-in
+    final toggleFinder = find.byType(AnimatedContainer);
+    await tester.tap(toggleFinder);
+    await tester.pump(); // starts loading
+    await tester.pump(); // emits error
+
+    // Verify toggle state is still false (unchanged)
+    expect(homeCubit.state.isOnline, isFalse);
+
+    // Verify SnackBar with server message appears
+    expect(find.text('لا يمكنك بدء الشيفت بدون موعد عمل محجوز لهذا اليوم.'), findsOneWidget);
+  });
+
+  testWidgets('displays SnackBar when AuthCubit emits AuthError on logout failure (422)', (tester) async {
+    await tester.pumpWidget(buildHomePage());
+    await tester.pumpAndSettle();
+
+    authCubit.emit(
+      const AuthError('لا يمكنك إنهاء الشيفت أو تسجيل الخروج أثناء تنفيذ طلب.', statusCode: 422),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('لا يمكنك إنهاء الشيفت أو تسجيل الخروج أثناء تنفيذ طلب.'), findsOneWidget);
   });
 }

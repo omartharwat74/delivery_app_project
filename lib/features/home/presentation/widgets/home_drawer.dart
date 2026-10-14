@@ -204,12 +204,6 @@ class HomeDrawer extends StatelessWidget {
             onPressed: () async {
               Navigator.of(dialogContext).pop();
               await context.read<AuthCubit>().logout();
-              if (context.mounted) {
-                while (Navigator.of(context, rootNavigator: true).canPop()) {
-                  Navigator.of(context, rootNavigator: true).pop();
-                }
-                context.go(RouteNames.login);
-              }
             },
             child: Text(
               l10n.confirm,

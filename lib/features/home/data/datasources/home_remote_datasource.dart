@@ -16,7 +16,7 @@ abstract class HomeRemoteDataSource {
     required double lng,
   });
 
-  /// PATCH /auth/availability
+  /// PATCH /attendance/availability (Attendance punch clock)
   Future<ApiResponse<Map<String, dynamic>>> updateAvailability({
     required bool isOnline,
   });

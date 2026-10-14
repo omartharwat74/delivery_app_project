@@ -32,12 +32,23 @@ class _HomePageState extends State<HomePage> {
     return MultiBlocListener(
       listeners: [
         BlocListener<AuthCubit, AuthState>(
-          listenWhen: (previous, current) => current is AuthUnauthenticated,
+          listenWhen: (previous, current) =>
+              current is AuthUnauthenticated || current is AuthError,
           listener: (context, state) {
-            while (Navigator.of(context, rootNavigator: true).canPop()) {
-              Navigator.of(context, rootNavigator: true).pop();
+            if (state is AuthUnauthenticated) {
+              while (Navigator.of(context, rootNavigator: true).canPop()) {
+                Navigator.of(context, rootNavigator: true).pop();
+              }
+              context.go(RouteNames.login);
+            } else if (state is AuthError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
             }
-            context.go(RouteNames.login);
           },
         ),
         BlocListener<ActiveOrderCubit, ActiveOrderState>(

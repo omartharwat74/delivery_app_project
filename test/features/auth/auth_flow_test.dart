@@ -108,6 +108,9 @@ class MockAuthRepository implements AuthRepository {
 
   @override
   Future<Either<Failure, void>> logout() async {
+    if (logoutResult != null && logoutResult!.isLeft()) {
+      return logoutResult!;
+    }
     await clearSession();
     return logoutResult ?? const Right(null);
   }
@@ -309,6 +312,41 @@ void main() {
 
       await cubit.logout();
       expect(cubit.currentDriver, isNull);
+    });
+
+    test('logout retains token/session and emits [AuthLogoutLoading, AuthError, AuthAuthenticated] when 422 busy error occurs', () async {
+      mockRepository.loggedInValue = true;
+      mockRepository.tokenValue = 'active_delivery_token';
+      const driver = DriverModel(
+        id: 1,
+        name: 'Captain Delivery',
+        phone: '01011112222',
+        isOnline: true,
+        isBusy: true,
+      );
+      mockRepository.cachedDriverValue = driver;
+
+      // Put cubit in authenticated state
+      cubit.updateDriver(driver);
+
+      mockRepository.logoutResult = const Left(
+        ValidationFailure('لا يمكنك إنهاء الشيفت أو تسجيل الخروج أثناء تنفيذ طلب.', errors: {}),
+      );
+
+      final expectedStates = [
+        AuthLogoutLoading(),
+        const AuthError('لا يمكنك إنهاء الشيفت أو تسجيل الخروج أثناء تنفيذ طلب.', statusCode: 422),
+        const AuthAuthenticated(token: 'active_delivery_token', driver: driver),
+      ];
+
+      expectLater(cubit.stream, emitsInOrder(expectedStates));
+
+      await cubit.logout();
+
+      // Ensure session is NOT cleared and driver is still active
+      expect(mockRepository.tokenValue, 'active_delivery_token');
+      expect(cubit.state, isA<AuthAuthenticated>());
+      expect(cubit.currentDriver?.isBusy, isTrue);
     });
 
     test('checkAuthStatus emits AuthUnauthenticated when not logged in', () async {

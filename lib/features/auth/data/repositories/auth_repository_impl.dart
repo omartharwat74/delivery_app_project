@@ -163,12 +163,23 @@ class AuthRepositoryImpl implements AuthRepository {
       final deviceId = await DeviceIdHelper.getDeviceId(sharedPreferences);
       try {
         await remoteDataSource.logout(LogoutRequest(deviceId: deviceId));
-      } catch (_) {
-        // Even if remote server call fails, we always clear the local session
+      } on ValidationException catch (e) {
+        // HTTP 422: Driver is busy delivering an order (is_busy == true).
+        // Prohibited from clearing local token/session and logging out.
+        return Left(_mapExceptionToFailure(e));
+      } catch (e) {
+        if (e is ApiException && e.statusCode == 422) {
+          return Left(_mapExceptionToFailure(e));
+        }
+        // Even if remote server call fails with non-422 error, clear the local session
       }
       await localDataSource.clearSession();
       return const Right(null);
     } catch (e) {
+      if (e is ValidationException ||
+          (e is ApiException && e.statusCode == 422)) {
+        return Left(_mapExceptionToFailure(e));
+      }
       await localDataSource.clearSession();
       return Left(_mapExceptionToFailure(e));
     }

@@ -119,15 +119,24 @@ class HomeRepositoryImpl implements HomeRepository {
         final deliveryMap = data['delivery'] is Map<String, dynamic>
             ? data['delivery'] as Map<String, dynamic>
             : data;
+        final newIsOnline = deliveryMap['is_online'] as bool? ?? isOnline;
+        final newIsBusy = deliveryMap['is_busy'] as bool? ??
+            (cachedDriver?.isBusy ?? false);
+        final newCanAcceptOrders = deliveryMap['can_accept_orders'] as bool? ??
+            (newIsOnline && !newIsBusy);
+
         if (cachedDriver != null) {
           updatedDriver = cachedDriver.copyWith(
-            isOnline: deliveryMap['is_online'] as bool? ?? isOnline,
-            isBusy: deliveryMap['is_busy'] as bool? ?? cachedDriver.isBusy,
-            canAcceptOrders:
-                deliveryMap['can_accept_orders'] as bool? ?? isOnline,
+            isOnline: newIsOnline,
+            isBusy: newIsBusy,
+            canAcceptOrders: newCanAcceptOrders,
           );
         } else {
-          updatedDriver = DriverModel.fromJson(deliveryMap);
+          updatedDriver = DriverModel.fromJson(deliveryMap).copyWith(
+            isOnline: newIsOnline,
+            isBusy: newIsBusy,
+            canAcceptOrders: newCanAcceptOrders,
+          );
         }
       } else if (cachedDriver != null) {
         updatedDriver = cachedDriver.copyWith(
