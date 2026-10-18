@@ -49,6 +49,13 @@ import '../network/network_info.dart';
 import '../router/app_router.dart';
 import '../services/location_service.dart';
 import '../services/notification_service.dart';
+import '../../features/working_hours/data/datasources/working_hours_remote_datasource.dart';
+import '../../features/working_hours/data/repositories/working_hours_repository_impl.dart';
+import '../../features/working_hours/domain/repositories/working_hours_repository.dart';
+import '../../features/working_hours/domain/usecases/add_working_hours_usecase.dart';
+import '../../features/working_hours/domain/usecases/delete_working_hours_usecase.dart';
+import '../../features/working_hours/domain/usecases/get_working_hours_usecase.dart';
+import '../../features/working_hours/presentation/cubit/working_hours_cubit.dart';
 
 final sl = GetIt.instance;
 
@@ -166,6 +173,24 @@ Future<void> init({required SharedPreferences prefs}) async {
     () => ReviewsRepositoryImpl(remoteDataSource: sl()),
   );
   sl.registerFactory(() => ReviewsCubit(repository: sl()));
+
+  // Working Hours
+  sl.registerLazySingleton<WorkingHoursRemoteDataSource>(
+    () => WorkingHoursRemoteDataSourceImpl(apiClient: sl()),
+  );
+  sl.registerLazySingleton<WorkingHoursRepository>(
+    () => WorkingHoursRepositoryImpl(remoteDataSource: sl()),
+  );
+  sl.registerLazySingleton(() => GetWorkingHoursUseCase(sl()));
+  sl.registerLazySingleton(() => AddWorkingHoursUseCase(sl()));
+  sl.registerLazySingleton(() => DeleteWorkingHoursUseCase(sl()));
+  sl.registerFactory(
+    () => WorkingHoursCubit(
+      getWorkingHoursUseCase: sl(),
+      addWorkingHoursUseCase: sl(),
+      deleteWorkingHoursUseCase: sl(),
+    ),
+  );
 
   sl.registerLazySingleton(
     () => AuthCubit(

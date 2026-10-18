@@ -80,7 +80,7 @@ class HomeDrawer extends StatelessWidget {
                         },
                       ),
                       DrawerItemTile(
-                        title: 'مواعيد العمل',
+                        title: l10n.workingHoursTitle,
                         iconAsset: 'assets/images/ic_drawer_reviews.png',
                         iconBgColor: const Color(0xFFF8AC8E),
                         iconColor: Colors.white,

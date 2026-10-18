@@ -620,4 +620,58 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get mockReviewText =>
       'This is a mock review text. The service was great and the delivery was fast. Highly recommended!';
+
+  @override
+  String get workingHoursTitle => 'Working Hours';
+
+  @override
+  String get specifiedShiftPeriod => 'Specified Working Period';
+
+  @override
+  String get fromTime => 'From';
+
+  @override
+  String get toTime => 'To';
+
+  @override
+  String get editAppointment => 'Edit Appointment';
+
+  @override
+  String get delete => 'Delete';
+
+  @override
+  String get deleting => 'Deleting...';
+
+  @override
+  String get confirmEdit => 'Confirm Edit';
+
+  @override
+  String get selectStartTimeTitle => 'Select Start Time (From)';
+
+  @override
+  String get selectEndTimeTitle => 'Select End Time (To)';
+
+  @override
+  String get lockedAppointmentWarning =>
+      'Appointment is locked for editing or deletion (less than 6 hours)';
+
+  @override
+  String get deleteAppointmentConfirmTitle => 'Confirm Deletion';
+
+  @override
+  String get deleteAppointmentConfirmMessage =>
+      'Are you sure you want to delete the working hours for this day?';
+
+  @override
+  String get deleteWorkingHoursSuccess => 'Working hours deleted successfully';
+
+  @override
+  String get editWorkingHoursSoon =>
+      'Editing working hours will be supported soon';
+
+  @override
+  String get loadWorkingHoursError => 'Failed to load working hours';
+
+  @override
+  String get retry => 'Retry';
 }

@@ -612,4 +612,58 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get mockReviewText =>
       'هذا نص تقييم تجريبي. الخدمة كانت ممتازة والتوصيل سريع. أنصح به بشدة!';
+
+  @override
+  String get workingHoursTitle => 'مواعيد العمل';
+
+  @override
+  String get specifiedShiftPeriod => 'فترة العمل المحددة';
+
+  @override
+  String get fromTime => 'من';
+
+  @override
+  String get toTime => 'الى';
+
+  @override
+  String get editAppointment => 'تعديل الموعد';
+
+  @override
+  String get delete => 'حذف';
+
+  @override
+  String get deleting => 'جاري الحذف...';
+
+  @override
+  String get confirmEdit => 'تأكيد التعديل';
+
+  @override
+  String get selectStartTimeTitle => 'تحديد وقت البداية (من)';
+
+  @override
+  String get selectEndTimeTitle => 'تحديد وقت النهاية (الى)';
+
+  @override
+  String get lockedAppointmentWarning =>
+      'الموعد مغلق للتعديل أو الحذف (أقل من 6 ساعات)';
+
+  @override
+  String get deleteAppointmentConfirmTitle => 'تأكيد الحذف';
+
+  @override
+  String get deleteAppointmentConfirmMessage =>
+      'هل أنت متأكد من رغبتك في حذف موعد العمل لهذا اليوم؟';
+
+  @override
+  String get deleteWorkingHoursSuccess => 'تم حذف موعد العمل بنجاح';
+
+  @override
+  String get editWorkingHoursSoon =>
+      'سيتم تفعيل تعديل المواعيد قريباً من خلال الخادم';
+
+  @override
+  String get loadWorkingHoursError => 'حدث خطأ في تحميل مواعيد العمل';
+
+  @override
+  String get retry => 'إعادة المحاولة';
 }

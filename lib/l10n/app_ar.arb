@@ -215,5 +215,23 @@
   "mockUserName3": "جون د.",
   "mockReviewDate": "2026/6/{day}",
   "mockReviewUserName": "مستخدم {id}",
-  "mockReviewText": "هذا نص تقييم تجريبي. الخدمة كانت ممتازة والتوصيل سريع. أنصح به بشدة!"
+  "mockReviewText": "هذا نص تقييم تجريبي. الخدمة كانت ممتازة والتوصيل سريع. أنصح به بشدة!",
+
+  "workingHoursTitle": "مواعيد العمل",
+  "specifiedShiftPeriod": "فترة العمل المحددة",
+  "fromTime": "من",
+  "toTime": "الى",
+  "editAppointment": "تعديل الموعد",
+  "delete": "حذف",
+  "deleting": "جاري الحذف...",
+  "confirmEdit": "تأكيد التعديل",
+  "selectStartTimeTitle": "تحديد وقت البداية (من)",
+  "selectEndTimeTitle": "تحديد وقت النهاية (الى)",
+  "lockedAppointmentWarning": "الموعد مغلق للتعديل أو الحذف (أقل من 6 ساعات)",
+  "deleteAppointmentConfirmTitle": "تأكيد الحذف",
+  "deleteAppointmentConfirmMessage": "هل أنت متأكد من رغبتك في حذف موعد العمل لهذا اليوم؟",
+  "deleteWorkingHoursSuccess": "تم حذف موعد العمل بنجاح",
+  "editWorkingHoursSoon": "سيتم تفعيل تعديل المواعيد قريباً من خلال الخادم",
+  "loadWorkingHoursError": "حدث خطأ في تحميل مواعيد العمل",
+  "retry": "إعادة المحاولة"
 }

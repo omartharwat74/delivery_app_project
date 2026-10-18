@@ -1243,6 +1243,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This is a mock review text. The service was great and the delivery was fast. Highly recommended!'**
   String get mockReviewText;
+
+  /// Title of working hours screen
+  ///
+  /// In en, this message translates to:
+  /// **'Working Hours'**
+  String get workingHoursTitle;
+
+  /// Label for the base shift period
+  ///
+  /// In en, this message translates to:
+  /// **'Specified Working Period'**
+  String get specifiedShiftPeriod;
+
+  /// From time label
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get fromTime;
+
+  /// To time label
+  ///
+  /// In en, this message translates to:
+  /// **'To'**
+  String get toTime;
+
+  /// Button to edit working hour appointment
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Appointment'**
+  String get editAppointment;
+
+  /// Delete button text
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get delete;
+
+  /// Deleting loading state text
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting...'**
+  String get deleting;
+
+  /// Confirm button text in edit mode
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Edit'**
+  String get confirmEdit;
+
+  /// Modal title for start time picker
+  ///
+  /// In en, this message translates to:
+  /// **'Select Start Time (From)'**
+  String get selectStartTimeTitle;
+
+  /// Modal title for end time picker
+  ///
+  /// In en, this message translates to:
+  /// **'Select End Time (To)'**
+  String get selectEndTimeTitle;
+
+  /// Warning message when appointment is locked
+  ///
+  /// In en, this message translates to:
+  /// **'Appointment is locked for editing or deletion (less than 6 hours)'**
+  String get lockedAppointmentWarning;
+
+  /// Title of delete confirmation dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Deletion'**
+  String get deleteAppointmentConfirmTitle;
+
+  /// Message of delete confirmation dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete the working hours for this day?'**
+  String get deleteAppointmentConfirmMessage;
+
+  /// Success message when working hours deleted
+  ///
+  /// In en, this message translates to:
+  /// **'Working hours deleted successfully'**
+  String get deleteWorkingHoursSuccess;
+
+  /// Placeholder message for edit working hours API
+  ///
+  /// In en, this message translates to:
+  /// **'Editing working hours will be supported soon'**
+  String get editWorkingHoursSoon;
+
+  /// Error message when loading working hours fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load working hours'**
+  String get loadWorkingHoursError;
+
+  /// Retry button label
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retry;
 }
 
 class _AppLocalizationsDelegate

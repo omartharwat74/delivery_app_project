@@ -14,6 +14,8 @@ import '../../features/auth/presentation/pages/language_page.dart';
 import '../../features/auth/presentation/pages/splash_screen.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/home/presentation/pages/shift_screen.dart';
+import '../../features/working_hours/presentation/cubit/working_hours_cubit.dart';
+import '../../features/working_hours/presentation/pages/working_hours_screen.dart';
 import '../../features/orders/presentation/pages/orders_screen.dart';
 import '../../features/wallet/presentation/pages/wallet_screen.dart';
 import '../../features/profile/presentation/pages/profile_screen.dart';
@@ -97,7 +99,10 @@ class AppRouter {
       GoRoute(path: RouteNames.wallet, builder: (c, s) => const WalletScreen()),
       GoRoute(
         path: RouteNames.workHours,
-        builder: (c, s) => const WorkHoursScreen(),
+        builder: (c, s) => BlocProvider<WorkingHoursCubit>(
+          create: (context) => di.sl<WorkingHoursCubit>(),
+          child: const WorkingHoursScreen(),
+        ),
       ),
       GoRoute(
         name: RouteNames.settings,
