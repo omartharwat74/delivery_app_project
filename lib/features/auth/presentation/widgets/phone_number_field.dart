@@ -16,6 +16,7 @@ class PhoneNumberField extends StatelessWidget {
     this.validator,
     this.autovalidateMode = AutovalidateMode.onUserInteraction,
     this.readOnly = false,
+    this.trailingLabel,
   });
 
   final TextEditingController controller;
@@ -24,16 +25,23 @@ class PhoneNumberField extends StatelessWidget {
   final String? Function(String?)? validator;
   final AutovalidateMode autovalidateMode;
   final bool readOnly;
+  final Widget? trailingLabel;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          label,
-          textAlign: TextAlign.start,
-          style: AppTextStyles.fieldLabel(context),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              textAlign: TextAlign.start,
+              style: AppTextStyles.fieldLabel(context),
+            ),
+            ?trailingLabel,
+          ],
         ),
         const SizedBox(height: 8),
         FormField<String>(

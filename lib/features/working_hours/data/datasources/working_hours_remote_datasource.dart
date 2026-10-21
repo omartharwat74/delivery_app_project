@@ -13,6 +13,13 @@ abstract class WorkingHoursRemoteDataSource {
     required String endsAt,
   });
 
+  /// PUT /working-hours
+  Future<WorkingHoursModel> updateWorkingHours({
+    required String workDate,
+    required String startsAt,
+    required String endsAt,
+  });
+
   /// DELETE /working-hours?work_date=YYYY-MM-DD
   Future<WorkingHoursModel> deleteWorkingHours({required String workDate});
 }
@@ -64,6 +71,35 @@ class WorkingHoursRemoteDataSourceImpl implements WorkingHoursRemoteDataSource {
     if (response.data != null) return response.data!;
     throw Exception(
       response.msg.isNotEmpty ? response.msg : 'Failed to add working hours',
+    );
+  }
+
+  @override
+  Future<WorkingHoursModel> updateWorkingHours({
+    required String workDate,
+    required String startsAt,
+    required String endsAt,
+  }) async {
+    final response = await apiClient.putResponse<WorkingHoursModel>(
+      ApiConstants.workingHours,
+      body: {
+        'work_date': workDate,
+        'starts_at': startsAt,
+        'ends_at': endsAt,
+      },
+      fromJson: (data) {
+        if (data is Map<String, dynamic>) {
+          return WorkingHoursModel.fromJson(data);
+        }
+        throw Exception('Invalid working hours data format');
+      },
+    );
+
+    if (response.data != null) return response.data!;
+    throw Exception(
+      response.msg.isNotEmpty
+          ? response.msg
+          : 'Failed to update working hours',
     );
   }
 

@@ -1328,6 +1328,12 @@ abstract class AppLocalizations {
   /// **'Working hours deleted successfully'**
   String get deleteWorkingHoursSuccess;
 
+  /// Success message when working hours updated
+  ///
+  /// In en, this message translates to:
+  /// **'Working hours updated successfully'**
+  String get updateWorkingHoursSuccess;
+
   /// Placeholder message for edit working hours API
   ///
   /// In en, this message translates to:

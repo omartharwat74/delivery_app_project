@@ -1,8 +1,5 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/di/injection_container.dart' as di;
@@ -15,7 +12,6 @@ import '../../../auth/presentation/bloc/auth_cubit.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../auth/presentation/widgets/auth_back_button.dart';
 import '../../../auth/presentation/widgets/auth_image_upload_box.dart';
-import '../../../auth/presentation/widgets/auth_primary_button.dart';
 import '../../../auth/presentation/widgets/auth_text_field.dart';
 import '../../../auth/presentation/widgets/document_upload_tile.dart';
 import '../../../auth/presentation/widgets/phone_number_field.dart';
@@ -29,13 +25,12 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  bool _isEditing = false;
-  final _picker = ImagePicker();
-
   late final TextEditingController _usernameController;
   late final TextEditingController _phoneController;
   late final TextEditingController _emailController;
   late final TextEditingController _nationalIdController;
+  late final TextEditingController _areaController;
+  late final TextEditingController _shiftController;
 
   String? _vehicleType;
   String? _profileImageUrl;
@@ -44,12 +39,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String? _nationalIdImageUrl;
   String? _vehicleFrontUrl;
 
-  File? _profileImage;
-  File? _driverLicenseImage;
-  File? _vehicleRegistrationImage;
-  File? _nationalIdImage;
-  File? _vehicleFrontImage;
-
   @override
   void initState() {
     super.initState();
@@ -57,6 +46,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _phoneController = TextEditingController();
     _emailController = TextEditingController();
     _nationalIdController = TextEditingController();
+    _areaController = TextEditingController();
+    _shiftController = TextEditingController();
 
     _initDriverData();
   }
@@ -66,6 +57,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _phoneController.text = _cleanPhone(driver.phone);
     _emailController.text = driver.email ?? '';
     _nationalIdController.text = driver.nationalId ?? '';
+    _areaController.text = driver.area?.name ?? '';
+    _shiftController.text = driver.shift?.name ?? '';
     _vehicleType = _mapVehicleType(driver.vehicleType);
     _profileImageUrl = driver.image;
     _driverLicenseUrl =
@@ -139,6 +132,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _phoneController.dispose();
     _emailController.dispose();
     _nationalIdController.dispose();
+    _areaController.dispose();
+    _shiftController.dispose();
     super.dispose();
   }
 
@@ -160,7 +155,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(width: 4),
             Expanded(
               child: Text(
-                _isEditing ? l10n.profileEditPersonalData : l10n.profilePersonalData,
+                l10n.profilePersonalData,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.start,
@@ -177,255 +172,169 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body: BlocListener<AuthCubit, AuthState>(
         listenWhen: (prev, curr) => curr is AuthAuthenticated,
         listener: (context, state) {
-          if (state is AuthAuthenticated &&
-              state.driver != null &&
-              !_isEditing) {
+          if (state is AuthAuthenticated && state.driver != null) {
             setState(() => _populateDriver(state.driver!));
           }
         },
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.only(
-                  left: 16,
-                  right: 16,
-                  top: 24,
-                  bottom: 24,
-                ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 24,
+            bottom: 32,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Profile Image Area (Read-only)
+              Center(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Profile Image Area
-                    Center(
-                      child: Column(
-                        children: [
-                          Text(
-                            l10n.profileProfileImage,
-                            style: AppTextStyles.inputText(context),
-                          ),
-                          const SizedBox(height: 8),
-                          AuthImageUploadBox(
-                            imageFile: _profileImage,
-                            imageUrl: _profileImageUrl,
-                            imageAsset: AppAssets.profilePlaceholder,
-                            readOnly: !_isEditing,
-                            showUploadIcon: _isEditing,
-                            onTap: () async {
-                              final picked = await _picker.pickImage(
-                                source: ImageSource.gallery,
-                              );
-                              if (picked != null) {
-                                setState(
-                                  () => _profileImage = File(picked.path),
-                                );
-                              }
-                            },
-                          ),
-                        ],
-                      ),
+                    Text(
+                      l10n.profileProfileImage,
+                      style: AppTextStyles.inputText(context),
                     ),
-                    const SizedBox(height: 16),
-
-                    // Form Fields
-                    AuthTextField(
-                      controller: _usernameController,
-                      label: l10n.profileUserName,
-                      hintText: l10n.profileUserName,
-                      readOnly: !_isEditing,
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Phone Number (Always readOnly)
-                    AnimatedSize(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                      alignment: Alignment.topCenter,
-                      child: _isEditing
-                          ? const SizedBox.shrink()
-                          : Padding(
-                              padding: const EdgeInsets.only(bottom: 16),
-                              child: PhoneNumberField(
-                                controller: _phoneController,
-                                label: l10n.profilePhone,
-                                hintText: l10n.profilePhone,
-                                readOnly: true,
-                              ),
-                            ),
-                    ),
-
-                    AuthTextField(
-                      controller: _emailController,
-                      label: l10n.profileEmail,
-                      hintText: l10n.profileEmail,
-                      keyboardType: TextInputType.emailAddress,
-                      readOnly: !_isEditing,
-                    ),
-                    const SizedBox(height: 16),
-
-                    AuthTextField(
-                      controller: _nationalIdController,
-                      label: l10n.profileNationalId,
-                      hintText: l10n.profileNationalId,
-                      keyboardType: TextInputType.number,
-                      readOnly: !_isEditing,
-                    ),
-                    const SizedBox(height: 16),
-
-                    VehicleTypeField(
-                      label: l10n.profileVehicleType,
-                      hintText: l10n.profileVehicleType,
-                      items: {
-                        'motorcycle',
-                        'regular_bike',
-                        if (_vehicleType != null && _vehicleType!.isNotEmpty)
-                          _vehicleType!,
-                      }.toList(),
-                      initialValue: _vehicleType,
-                      readOnly: !_isEditing,
-                      itemLabelBuilder: (val) => _vehicleLabel(l10n, val),
-                      autovalidateMode: AutovalidateMode.onUserInteraction,
-                      validator: (v) => null,
-                      onChanged: (val) {
-                        setState(() => _vehicleType = val);
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Documents
-                    DocumentUploadTile(
-                      label: l10n.profileDriverLicense,
-                      hintText: l10n.profileDriverLicense,
-                      tapToUploadLabel: l10n.profileUploadPrompt,
-                      imageFile: _driverLicenseImage,
-                      imageUrl: _driverLicenseUrl,
-                      readOnly: !_isEditing,
-                      onTap: () async {
-                        final picked = await _picker.pickImage(
-                          source: ImageSource.gallery,
-                        );
-                        if (picked != null) {
-                          setState(
-                            () => _driverLicenseImage = File(picked.path),
-                          );
-                        }
-                      },
-                      onRemove: () {
-                        setState(() {
-                          _driverLicenseImage = null;
-                          _driverLicenseUrl = null;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    DocumentUploadTile(
-                      label: l10n.profileVehicleRegistration,
-                      hintText: l10n.profileVehicleRegistration,
-                      tapToUploadLabel: l10n.profileUploadPrompt,
-                      imageFile: _vehicleRegistrationImage,
-                      imageUrl: _vehicleLicenseUrl,
-                      readOnly: !_isEditing,
-                      onTap: () async {
-                        final picked = await _picker.pickImage(
-                          source: ImageSource.gallery,
-                        );
-                        if (picked != null) {
-                          setState(
-                            () =>
-                                _vehicleRegistrationImage = File(picked.path),
-                          );
-                        }
-                      },
-                      onRemove: () {
-                        setState(() {
-                          _vehicleRegistrationImage = null;
-                          _vehicleLicenseUrl = null;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    DocumentUploadTile(
-                      label: l10n.profileNationalIdImage,
-                      hintText: l10n.profileNationalIdImage,
-                      tapToUploadLabel: l10n.profileUploadPrompt,
-                      imageFile: _nationalIdImage,
-                      imageUrl: _nationalIdImageUrl,
-                      readOnly: !_isEditing,
-                      onTap: () async {
-                        final picked = await _picker.pickImage(
-                          source: ImageSource.gallery,
-                        );
-                        if (picked != null) {
-                          setState(
-                            () => _nationalIdImage = File(picked.path),
-                          );
-                        }
-                      },
-                      onRemove: () {
-                        setState(() {
-                          _nationalIdImage = null;
-                          _nationalIdImageUrl = null;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    DocumentUploadTile(
-                      label: l10n.profileVehicleFront,
-                      hintText: l10n.profileVehicleFront,
-                      tapToUploadLabel: l10n.profileUploadPrompt,
-                      imageFile: _vehicleFrontImage,
-                      imageUrl: _vehicleFrontUrl,
-                      readOnly: !_isEditing,
-                      onTap: () async {
-                        final picked = await _picker.pickImage(
-                          source: ImageSource.gallery,
-                        );
-                        if (picked != null) {
-                          setState(
-                            () => _vehicleFrontImage = File(picked.path),
-                          );
-                        }
-                      },
-                      onRemove: () {
-                        setState(() {
-                          _vehicleFrontImage = null;
-                          _vehicleFrontUrl = null;
-                        });
-                      },
+                    const SizedBox(height: 8),
+                    AuthImageUploadBox(
+                      imageFile: null,
+                      imageUrl: _profileImageUrl,
+                      imageAsset: AppAssets.profilePlaceholder,
+                      readOnly: true,
+                      showUploadIcon: false,
+                      onTap: () {},
                     ),
                   ],
                 ),
               ),
-            ),
-            // Bottom Pinned Button
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-              decoration: BoxDecoration(
-                color: AppColors.scaffoldBackground(context),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, -5),
-                  ),
-                ],
+              const SizedBox(height: 16),
+
+              // Username (Read-only)
+              AuthTextField(
+                controller: _usernameController,
+                label: l10n.profileUserName,
+                hintText: l10n.profileUserName,
+                readOnly: true,
               ),
-              child: SafeArea(
-                top: false,
-                child: AuthPrimaryButton(
-                  label: _isEditing ? l10n.confirm : l10n.profileRequestEdit,
-                  onPressed: () {
-                    setState(() {
-                      _isEditing = !_isEditing;
-                    });
-                  },
+              const SizedBox(height: 16),
+
+              // Phone Number (Read-only)
+              PhoneNumberField(
+                controller: _phoneController,
+                label: l10n.profilePhone,
+                hintText: l10n.profilePhone,
+                readOnly: true,
+              ),
+              const SizedBox(height: 16),
+
+              // Email (Read-only)
+              AuthTextField(
+                controller: _emailController,
+                label: l10n.profileEmail,
+                hintText: l10n.profileEmail,
+                keyboardType: TextInputType.emailAddress,
+                readOnly: true,
+              ),
+              const SizedBox(height: 16),
+
+              // National ID (Read-only)
+              AuthTextField(
+                controller: _nationalIdController,
+                label: l10n.profileNationalId,
+                hintText: l10n.profileNationalId,
+                keyboardType: TextInputType.number,
+                readOnly: true,
+              ),
+              const SizedBox(height: 16),
+
+              // Vehicle Type (Read-only)
+              VehicleTypeField(
+                label: l10n.profileVehicleType,
+                hintText: l10n.profileVehicleType,
+                items: {
+                  'motorcycle',
+                  'regular_bike',
+                  if (_vehicleType != null && _vehicleType!.isNotEmpty)
+                    _vehicleType!,
+                }.toList(),
+                initialValue: _vehicleType,
+                readOnly: true,
+                itemLabelBuilder: (val) => _vehicleLabel(l10n, val),
+                autovalidateMode: AutovalidateMode.disabled,
+                validator: (v) => null,
+                onChanged: null,
+              ),
+              const SizedBox(height: 16),
+
+              // Area (Read-only, if available)
+              if (_areaController.text.isNotEmpty) ...[
+                AuthTextField(
+                  controller: _areaController,
+                  label: l10n.registerDeliveryAreaLabel,
+                  hintText: l10n.registerDeliveryAreaLabel,
+                  readOnly: true,
                 ),
+                const SizedBox(height: 16),
+              ],
+
+              // Shift (Read-only, if available)
+              if (_shiftController.text.isNotEmpty) ...[
+                AuthTextField(
+                  controller: _shiftController,
+                  label: l10n.registerDeliveryShiftLabel,
+                  hintText: l10n.registerDeliveryShiftLabel,
+                  readOnly: true,
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // Driver License Document (Read-only)
+              DocumentUploadTile(
+                label: l10n.profileDriverLicense,
+                hintText: l10n.profileDriverLicense,
+                tapToUploadLabel: l10n.profileUploadPrompt,
+                imageUrl: _driverLicenseUrl,
+                readOnly: true,
+                onTap: () {},
+                onRemove: () {},
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+
+              // Vehicle Registration Document (Read-only)
+              DocumentUploadTile(
+                label: l10n.profileVehicleRegistration,
+                hintText: l10n.profileVehicleRegistration,
+                tapToUploadLabel: l10n.profileUploadPrompt,
+                imageUrl: _vehicleLicenseUrl,
+                readOnly: true,
+                onTap: () {},
+                onRemove: () {},
+              ),
+              const SizedBox(height: 16),
+
+              // National ID Document (Read-only)
+              DocumentUploadTile(
+                label: l10n.profileNationalIdImage,
+                hintText: l10n.profileNationalIdImage,
+                tapToUploadLabel: l10n.profileUploadPrompt,
+                imageUrl: _nationalIdImageUrl,
+                readOnly: true,
+                onTap: () {},
+                onRemove: () {},
+              ),
+              const SizedBox(height: 16),
+
+              // Vehicle Front Document (Read-only)
+              DocumentUploadTile(
+                label: l10n.profileVehicleFront,
+                hintText: l10n.profileVehicleFront,
+                tapToUploadLabel: l10n.profileUploadPrompt,
+                imageUrl: _vehicleFrontUrl,
+                readOnly: true,
+                onTap: () {},
+                onRemove: () {},
+              ),
+            ],
+          ),
         ),
       ),
     );

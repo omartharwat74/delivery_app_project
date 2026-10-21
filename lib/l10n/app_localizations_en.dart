@@ -666,6 +666,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteWorkingHoursSuccess => 'Working hours deleted successfully';
 
   @override
+  String get updateWorkingHoursSuccess => 'Working hours updated successfully';
+
+  @override
   String get editWorkingHoursSoon =>
       'Editing working hours will be supported soon';
 

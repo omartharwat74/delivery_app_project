@@ -231,6 +231,7 @@
   "deleteAppointmentConfirmTitle": "تأكيد الحذف",
   "deleteAppointmentConfirmMessage": "هل أنت متأكد من رغبتك في حذف موعد العمل لهذا اليوم؟",
   "deleteWorkingHoursSuccess": "تم حذف موعد العمل بنجاح",
+  "updateWorkingHoursSuccess": "تم تعديل موعد العمل بنجاح",
   "editWorkingHoursSoon": "سيتم تفعيل تعديل المواعيد قريباً من خلال الخادم",
   "loadWorkingHoursError": "حدث خطأ في تحميل مواعيد العمل",
   "retry": "إعادة المحاولة"

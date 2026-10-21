@@ -40,6 +40,24 @@ class WorkingHoursRepositoryImpl implements WorkingHoursRepository {
   }
 
   @override
+  Future<Either<Failure, WorkingHoursEntity>> updateWorkingHours({
+    required String workDate,
+    required String startsAt,
+    required String endsAt,
+  }) async {
+    try {
+      final result = await remoteDataSource.updateWorkingHours(
+        workDate: workDate,
+        startsAt: startsAt,
+        endsAt: endsAt,
+      );
+      return Right(result);
+    } catch (e) {
+      return Left(_mapExceptionToFailure(e));
+    }
+  }
+
+  @override
   Future<Either<Failure, WorkingHoursEntity>> deleteWorkingHours({
     required String workDate,
   }) async {

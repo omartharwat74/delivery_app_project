@@ -55,6 +55,7 @@ import '../../features/working_hours/domain/repositories/working_hours_repositor
 import '../../features/working_hours/domain/usecases/add_working_hours_usecase.dart';
 import '../../features/working_hours/domain/usecases/delete_working_hours_usecase.dart';
 import '../../features/working_hours/domain/usecases/get_working_hours_usecase.dart';
+import '../../features/working_hours/domain/usecases/update_working_hours_usecase.dart';
 import '../../features/working_hours/presentation/cubit/working_hours_cubit.dart';
 
 final sl = GetIt.instance;
@@ -184,11 +185,13 @@ Future<void> init({required SharedPreferences prefs}) async {
   sl.registerLazySingleton(() => GetWorkingHoursUseCase(sl()));
   sl.registerLazySingleton(() => AddWorkingHoursUseCase(sl()));
   sl.registerLazySingleton(() => DeleteWorkingHoursUseCase(sl()));
+  sl.registerLazySingleton(() => UpdateWorkingHoursUseCase(sl()));
   sl.registerFactory(
     () => WorkingHoursCubit(
       getWorkingHoursUseCase: sl(),
       addWorkingHoursUseCase: sl(),
       deleteWorkingHoursUseCase: sl(),
+      updateWorkingHoursUseCase: sl(),
     ),
   );
 

@@ -5,8 +5,10 @@ import 'package:delivery_app_project/features/working_hours/domain/repositories/
 import 'package:delivery_app_project/features/working_hours/domain/usecases/add_working_hours_usecase.dart';
 import 'package:delivery_app_project/features/working_hours/domain/usecases/delete_working_hours_usecase.dart';
 import 'package:delivery_app_project/features/working_hours/domain/usecases/get_working_hours_usecase.dart';
+import 'package:delivery_app_project/features/working_hours/domain/usecases/update_working_hours_usecase.dart';
 import 'package:delivery_app_project/features/working_hours/presentation/cubit/working_hours_cubit.dart';
 import 'package:delivery_app_project/features/working_hours/presentation/pages/working_hours_screen.dart';
+import 'package:delivery_app_project/features/working_hours/presentation/widgets/edit_booking_card.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -17,10 +19,14 @@ import 'package:delivery_app_project/l10n/app_localizations.dart';
 
 class FakeTestRepository implements WorkingHoursRepository {
   final WorkingHoursEntity entity;
+  bool shouldFail = false;
+  Failure failure = const ServerFailure('Server Error');
+
   FakeTestRepository(this.entity);
 
   @override
   Future<Either<Failure, WorkingHoursEntity>> getWorkingHours() async {
+    if (shouldFail) return Left(failure);
     return Right(entity);
   }
 
@@ -30,16 +36,51 @@ class FakeTestRepository implements WorkingHoursRepository {
     required String startsAt,
     required String endsAt,
   }) async {
+    if (shouldFail) return Left(failure);
     return Right(entity);
+  }
+
+  @override
+  Future<Either<Failure, WorkingHoursEntity>> updateWorkingHours({
+    required String workDate,
+    required String startsAt,
+    required String endsAt,
+  }) async {
+    if (shouldFail) return Left(failure);
+
+    final updatedDays = List<WorkingHourDay>.from(entity.days);
+    final index = updatedDays.indexWhere((d) => d.workDate == workDate);
+    if (index != -1) {
+      updatedDays[index] = WorkingHourDay(
+        workDate: workDate,
+        startsAt: startsAt,
+        endsAt: endsAt,
+        isLocked: updatedDays[index].isLocked,
+      );
+    }
+    return Right(WorkingHoursEntity(
+      shift: entity.shift,
+      days: updatedDays,
+      windowFrom: entity.windowFrom,
+      windowTo: entity.windowTo,
+    ));
   }
 
   @override
   Future<Either<Failure, WorkingHoursEntity>> deleteWorkingHours({
     required String workDate,
   }) async {
+    if (shouldFail) return Left(failure);
     return Right(entity);
   }
 }
+
+WorkingHoursCubit createCubit(WorkingHoursRepository repo) => WorkingHoursCubit(
+  getWorkingHoursUseCase: GetWorkingHoursUseCase(repo),
+  addWorkingHoursUseCase: AddWorkingHoursUseCase(repo),
+  deleteWorkingHoursUseCase: DeleteWorkingHoursUseCase(repo),
+  updateWorkingHoursUseCase: UpdateWorkingHoursUseCase(repo),
+);
 
 void main() {
   const testEntity = WorkingHoursEntity(
@@ -101,11 +142,7 @@ void main() {
 
   testWidgets('State 1 (Initial): displays shift info, calendar, and NO bottom button or detail card', (tester) async {
     final fakeRepo = FakeTestRepository(testEntity);
-    final cubit = WorkingHoursCubit(
-      getWorkingHoursUseCase: GetWorkingHoursUseCase(fakeRepo),
-      addWorkingHoursUseCase: AddWorkingHoursUseCase(fakeRepo),
-      deleteWorkingHoursUseCase: DeleteWorkingHoursUseCase(fakeRepo),
-    );
+    final cubit = createCubit(fakeRepo);
 
     await tester.pumpWidget(createTestWidget(tester, cubit));
     await tester.pumpAndSettle();
@@ -126,11 +163,7 @@ void main() {
 
   testWidgets('State 2 (New booking): tapping unbooked date shows day name, time fields, and bottom تأكيد button', (tester) async {
     final fakeRepo = FakeTestRepository(testEntity);
-    final cubit = WorkingHoursCubit(
-      getWorkingHoursUseCase: GetWorkingHoursUseCase(fakeRepo),
-      addWorkingHoursUseCase: AddWorkingHoursUseCase(fakeRepo),
-      deleteWorkingHoursUseCase: DeleteWorkingHoursUseCase(fakeRepo),
-    );
+    final cubit = createCubit(fakeRepo);
 
     await tester.pumpWidget(createTestWidget(tester, cubit));
     await tester.pumpAndSettle();
@@ -152,11 +185,7 @@ void main() {
 
   testWidgets('State 3 (Booked day): tapping booked day shows card with edit and delete, NO bottom button', (tester) async {
     final fakeRepo = FakeTestRepository(testEntity);
-    final cubit = WorkingHoursCubit(
-      getWorkingHoursUseCase: GetWorkingHoursUseCase(fakeRepo),
-      addWorkingHoursUseCase: AddWorkingHoursUseCase(fakeRepo),
-      deleteWorkingHoursUseCase: DeleteWorkingHoursUseCase(fakeRepo),
-    );
+    final cubit = createCubit(fakeRepo);
 
     await tester.pumpWidget(createTestWidget(tester, cubit));
     await tester.pumpAndSettle();
@@ -182,11 +211,7 @@ void main() {
 
   testWidgets('State 3 (Locked day): locked day displays warning and disables edit/delete actions', (tester) async {
     final fakeRepo = FakeTestRepository(testEntity);
-    final cubit = WorkingHoursCubit(
-      getWorkingHoursUseCase: GetWorkingHoursUseCase(fakeRepo),
-      addWorkingHoursUseCase: AddWorkingHoursUseCase(fakeRepo),
-      deleteWorkingHoursUseCase: DeleteWorkingHoursUseCase(fakeRepo),
-    );
+    final cubit = createCubit(fakeRepo);
 
     await tester.pumpWidget(createTestWidget(tester, cubit));
     await tester.pumpAndSettle();
@@ -210,11 +235,7 @@ void main() {
 
   testWidgets('State 4 (Edit booking): tapping edit on unlocked day switches to edit mode with bottom button', (tester) async {
     final fakeRepo = FakeTestRepository(testEntity);
-    final cubit = WorkingHoursCubit(
-      getWorkingHoursUseCase: GetWorkingHoursUseCase(fakeRepo),
-      addWorkingHoursUseCase: AddWorkingHoursUseCase(fakeRepo),
-      deleteWorkingHoursUseCase: DeleteWorkingHoursUseCase(fakeRepo),
-    );
+    final cubit = createCubit(fakeRepo);
 
     await tester.pumpWidget(createTestWidget(tester, cubit));
     await tester.pumpAndSettle();
@@ -241,11 +262,7 @@ void main() {
 
   testWidgets('Calendar navigation: right arrow advances month, left arrow goes back, and weekdays are Sun to Sat LTR', (tester) async {
     final fakeRepo = FakeTestRepository(testEntity);
-    final cubit = WorkingHoursCubit(
-      getWorkingHoursUseCase: GetWorkingHoursUseCase(fakeRepo),
-      addWorkingHoursUseCase: AddWorkingHoursUseCase(fakeRepo),
-      deleteWorkingHoursUseCase: DeleteWorkingHoursUseCase(fakeRepo),
-    );
+    final cubit = createCubit(fakeRepo);
 
     await tester.pumpWidget(createTestWidget(tester, cubit));
     await tester.pumpAndSettle();
@@ -277,11 +294,7 @@ void main() {
 
   testWidgets('Time picker: tapping "من" opens Cupertino bottom sheet modal and confirming updates the time', (tester) async {
     final fakeRepo = FakeTestRepository(testEntity);
-    final cubit = WorkingHoursCubit(
-      getWorkingHoursUseCase: GetWorkingHoursUseCase(fakeRepo),
-      addWorkingHoursUseCase: AddWorkingHoursUseCase(fakeRepo),
-      deleteWorkingHoursUseCase: DeleteWorkingHoursUseCase(fakeRepo),
-    );
+    final cubit = createCubit(fakeRepo);
 
     await tester.pumpWidget(createTestWidget(tester, cubit));
     await tester.pumpAndSettle();
@@ -313,11 +326,7 @@ void main() {
 
   testWidgets('English localization: displays English texts for title, shift info, calendar, and actions', (tester) async {
     final fakeRepo = FakeTestRepository(testEntity);
-    final cubit = WorkingHoursCubit(
-      getWorkingHoursUseCase: GetWorkingHoursUseCase(fakeRepo),
-      addWorkingHoursUseCase: AddWorkingHoursUseCase(fakeRepo),
-      deleteWorkingHoursUseCase: DeleteWorkingHoursUseCase(fakeRepo),
-    );
+    final cubit = createCubit(fakeRepo);
 
     await tester.pumpWidget(createTestWidget(tester, cubit, locale: const Locale('en')));
     await tester.pumpAndSettle();
@@ -351,11 +360,7 @@ void main() {
 
   testWidgets('Dark mode: renders without error and applies dark theme tokens', (tester) async {
     final fakeRepo = FakeTestRepository(testEntity);
-    final cubit = WorkingHoursCubit(
-      getWorkingHoursUseCase: GetWorkingHoursUseCase(fakeRepo),
-      addWorkingHoursUseCase: AddWorkingHoursUseCase(fakeRepo),
-      deleteWorkingHoursUseCase: DeleteWorkingHoursUseCase(fakeRepo),
-    );
+    final cubit = createCubit(fakeRepo);
 
     await tester.pumpWidget(createTestWidget(
       tester,
@@ -382,11 +387,7 @@ void main() {
 
   testWidgets('Cupertino time picker: displays AM and PM even when app is in Arabic', (tester) async {
     final fakeRepo = FakeTestRepository(testEntity);
-    final cubit = WorkingHoursCubit(
-      getWorkingHoursUseCase: GetWorkingHoursUseCase(fakeRepo),
-      addWorkingHoursUseCase: AddWorkingHoursUseCase(fakeRepo),
-      deleteWorkingHoursUseCase: DeleteWorkingHoursUseCase(fakeRepo),
-    );
+    final cubit = createCubit(fakeRepo);
 
     await tester.pumpWidget(createTestWidget(tester, cubit, locale: const Locale('ar')));
     await tester.pumpAndSettle();
@@ -404,5 +405,106 @@ void main() {
     expect(find.text('PM'), findsWidgets);
     expect(find.text('ص'), findsNothing);
     expect(find.text('م'), findsNothing);
+  });
+
+  testWidgets('Submitting edit booking on 200 OK updates booked day view and hides bottom button', (tester) async {
+    final fakeRepo = FakeTestRepository(testEntity);
+    final cubit = createCubit(fakeRepo);
+
+    await tester.pumpWidget(createTestWidget(tester, cubit));
+    await tester.pumpAndSettle();
+
+    // Tap day 18 (unlocked)
+    await tester.tap(find.text('18'));
+    await tester.pumpAndSettle();
+
+    // Tap 'تعديل الموعد'
+    await tester.tap(find.text('تعديل الموعد'));
+    await tester.pumpAndSettle();
+
+    // 'تأكيد التعديل' button is present
+    expect(find.text('تأكيد التعديل'), findsOneWidget);
+
+    // Update times via cubit directly to simulate picking different times
+    cubit.updatePickedTimes(startsAt: '11:00', endsAt: '15:00');
+    await tester.pumpAndSettle();
+
+    // Tap 'تأكيد التعديل'
+    await tester.tap(find.text('تأكيد التعديل'));
+    await tester.pumpAndSettle();
+
+    // Success SnackBar is shown
+    expect(find.text('تم تعديل موعد العمل بنجاح'), findsOneWidget);
+
+    // Bottom red button "تأكيد التعديل" MUST BE HIDDEN
+    expect(find.text('تأكيد التعديل'), findsNothing);
+    expect(find.text('تأكيد'), findsNothing);
+
+    // Returned to booked day view showing updated times
+    expect(find.text('11:00 AM - 03:00 PM'), findsOneWidget);
+    expect(find.text('تعديل الموعد'), findsOneWidget);
+    expect(find.text('حذف'), findsOneWidget);
+  });
+
+  testWidgets('Submitting edit booking on 422 error shows server error SnackBar and keeps edit card intact', (tester) async {
+    final fakeRepo = FakeTestRepository(testEntity);
+    final cubit = createCubit(fakeRepo);
+
+    await tester.pumpWidget(createTestWidget(tester, cubit));
+    await tester.pumpAndSettle();
+
+    // Tap day 18
+    await tester.tap(find.text('18'));
+    await tester.pumpAndSettle();
+
+    // Enter edit mode
+    await tester.tap(find.text('تعديل الموعد'));
+    await tester.pumpAndSettle();
+
+    // Set failure for the update call
+    fakeRepo.shouldFail = true;
+    fakeRepo.failure = const ValidationFailure('لا يمكن تعديل الموعد إذا تبقّى أقل من 6 ساعات على بدايته.');
+
+    // Tap 'تأكيد التعديل'
+    await tester.tap(find.text('تأكيد التعديل'));
+    await tester.pumpAndSettle();
+
+    // Server error SnackBar is displayed
+    expect(find.text('لا يمكن تعديل الموعد إذا تبقّى أقل من 6 ساعات على بدايته.'), findsOneWidget);
+
+    // Edit mode card and bottom button remain active (screen state retained)
+    expect(find.text('تأكيد التعديل'), findsOneWidget);
+    expect(find.byType(EditBookingCard), findsOneWidget);
+  });
+
+  testWidgets('Submitting edit booking on 404 error shows server error SnackBar and keeps edit card intact', (tester) async {
+    final fakeRepo = FakeTestRepository(testEntity);
+    final cubit = createCubit(fakeRepo);
+
+    await tester.pumpWidget(createTestWidget(tester, cubit));
+    await tester.pumpAndSettle();
+
+    // Tap day 18
+    await tester.tap(find.text('18'));
+    await tester.pumpAndSettle();
+
+    // Enter edit mode
+    await tester.tap(find.text('تعديل الموعد'));
+    await tester.pumpAndSettle();
+
+    // Set failure for the update call
+    fakeRepo.shouldFail = true;
+    fakeRepo.failure = const NotFoundFailure('لا يوجد موعد لهذا اليوم.');
+
+    // Tap 'تأكيد التعديل'
+    await tester.tap(find.text('تأكيد التعديل'));
+    await tester.pumpAndSettle();
+
+    // Server error SnackBar is displayed
+    expect(find.text('لا يوجد موعد لهذا اليوم.'), findsOneWidget);
+
+    // Edit mode card and bottom button remain active (screen state retained)
+    expect(find.text('تأكيد التعديل'), findsOneWidget);
+    expect(find.byType(EditBookingCard), findsOneWidget);
   });
 }

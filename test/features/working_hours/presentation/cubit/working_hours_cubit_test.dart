@@ -5,6 +5,7 @@ import 'package:delivery_app_project/features/working_hours/domain/repositories/
 import 'package:delivery_app_project/features/working_hours/domain/usecases/add_working_hours_usecase.dart';
 import 'package:delivery_app_project/features/working_hours/domain/usecases/delete_working_hours_usecase.dart';
 import 'package:delivery_app_project/features/working_hours/domain/usecases/get_working_hours_usecase.dart';
+import 'package:delivery_app_project/features/working_hours/domain/usecases/update_working_hours_usecase.dart';
 import 'package:delivery_app_project/features/working_hours/presentation/cubit/working_hours_cubit.dart';
 import 'package:delivery_app_project/features/working_hours/presentation/cubit/working_hours_state.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -65,6 +66,35 @@ class FakeWorkingHoursRepository implements WorkingHoursRepository {
     return Right(mockData!);
   }
 
+  @override
+  Future<Either<Failure, WorkingHoursEntity>> updateWorkingHours({
+    required String workDate,
+    required String startsAt,
+    required String endsAt,
+  }) async {
+    if (shouldFail) return Left(failure);
+
+    final updatedDays = List<WorkingHourDay>.from(mockData?.days ?? _defaultEntity.days);
+    final index = updatedDays.indexWhere((d) => d.workDate == workDate);
+    if (index != -1) {
+      updatedDays[index] = WorkingHourDay(
+        workDate: workDate,
+        startsAt: startsAt,
+        endsAt: endsAt,
+        isLocked: updatedDays[index].isLocked,
+      );
+    }
+
+    mockData = WorkingHoursEntity(
+      shift: mockData?.shift ?? _defaultEntity.shift,
+      days: updatedDays,
+      windowFrom: mockData?.windowFrom ?? _defaultEntity.windowFrom,
+      windowTo: mockData?.windowTo ?? _defaultEntity.windowTo,
+    );
+
+    return Right(mockData!);
+  }
+
   static const _defaultEntity = WorkingHoursEntity(
     shift: ShiftEntity(startsAt: '09:00', endsAt: '17:00'),
     days: [
@@ -96,6 +126,7 @@ void main() {
       getWorkingHoursUseCase: GetWorkingHoursUseCase(fakeRepository),
       addWorkingHoursUseCase: AddWorkingHoursUseCase(fakeRepository),
       deleteWorkingHoursUseCase: DeleteWorkingHoursUseCase(fakeRepository),
+      updateWorkingHoursUseCase: UpdateWorkingHoursUseCase(fakeRepository),
     );
   });
 
@@ -246,17 +277,99 @@ void main() {
       expect(cubit.state.cardMode, WorkingHoursCardMode.bookedView);
     });
 
-    test('updateWorkingHours completes edit and switches back to bookedView', () async {
+    test('updateWorkingHours successfully updates slot on 200 OK and switches back to bookedView', () async {
       await cubit.getWorkingHours();
 
       final bookedDate = DateTime(2026, 11, 18);
       cubit.selectDate(bookedDate);
       cubit.enterEditMode();
 
+      cubit.updatePickedTimes(startsAt: '11:00', endsAt: '15:00');
+
       await cubit.updateWorkingHours();
 
       expect(cubit.state.cardMode, WorkingHoursCardMode.bookedView);
-      expect(cubit.state.successMessage, contains('تم حفظ التعديل'));
+      expect(cubit.state.isActionLoading, false);
+      expect(cubit.state.successMessage, 'تم تعديل موعد العمل بنجاح');
+
+      final updatedDay = cubit.state.bookedDayFor(bookedDate);
+      expect(updatedDay?.startsAt, '11:00');
+      expect(updatedDay?.endsAt, '15:00');
+    });
+
+    test('updateWorkingHours handles 422 validation error and retains edit state', () async {
+      await cubit.getWorkingHours();
+
+      final bookedDate = DateTime(2026, 11, 18);
+      cubit.selectDate(bookedDate);
+      cubit.enterEditMode();
+      cubit.updatePickedTimes(startsAt: '08:00', endsAt: '12:00');
+
+      fakeRepository.shouldFail = true;
+      fakeRepository.failure = const ValidationFailure('لا يمكن تعديل الموعد إذا تبقّى أقل من 6 ساعات على بدايته.');
+
+      await cubit.updateWorkingHours();
+
+      expect(cubit.state.cardMode, WorkingHoursCardMode.editBooking);
+      expect(cubit.state.isActionLoading, false);
+      expect(cubit.state.errorMessage, 'لا يمكن تعديل الموعد إذا تبقّى أقل من 6 ساعات على بدايته.');
+      expect(cubit.state.pickedStartsAt, '08:00');
+      expect(cubit.state.pickedEndsAt, '12:00');
+    });
+
+    test('updateWorkingHours handles 422 shift boundary error and retains edit state', () async {
+      await cubit.getWorkingHours();
+
+      final bookedDate = DateTime(2026, 11, 18);
+      cubit.selectDate(bookedDate);
+      cubit.enterEditMode();
+
+      fakeRepository.shouldFail = true;
+      fakeRepository.failure = const ValidationFailure('الوقت المحدد خارج حدود الشيفت الأساسي');
+
+      await cubit.updateWorkingHours();
+
+      expect(cubit.state.cardMode, WorkingHoursCardMode.editBooking);
+      expect(cubit.state.isActionLoading, false);
+      expect(cubit.state.errorMessage, 'الوقت المحدد خارج حدود الشيفت الأساسي');
+    });
+
+    test('updateWorkingHours handles 404 not found error and retains edit state', () async {
+      await cubit.getWorkingHours();
+
+      final bookedDate = DateTime(2026, 11, 18);
+      cubit.selectDate(bookedDate);
+      cubit.enterEditMode();
+
+      fakeRepository.shouldFail = true;
+      fakeRepository.failure = const NotFoundFailure('لا يوجد موعد لهذا اليوم.');
+
+      await cubit.updateWorkingHours();
+
+      expect(cubit.state.cardMode, WorkingHoursCardMode.editBooking);
+      expect(cubit.state.isActionLoading, false);
+      expect(cubit.state.errorMessage, 'لا يوجد موعد لهذا اليوم.');
+    });
+
+    test('updateWorkingHours on locked day (is_locked == true) is rejected without API call', () async {
+      await cubit.getWorkingHours();
+
+      final lockedDate = DateTime(2026, 11, 19);
+      cubit.selectDate(lockedDate);
+
+      // Force call updateWorkingHours on locked day
+      await cubit.updateWorkingHours();
+
+      expect(cubit.state.errorMessage, contains('مغلق'));
+      expect(cubit.state.isActionLoading, false);
+    });
+
+    test('updateWorkingHours without selected date emits error', () async {
+      await cubit.getWorkingHours();
+
+      await cubit.updateWorkingHours();
+
+      expect(cubit.state.errorMessage, 'يرجى تحديد يوم العمل');
     });
   });
 }

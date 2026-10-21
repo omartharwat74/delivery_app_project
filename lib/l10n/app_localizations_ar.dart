@@ -658,6 +658,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get deleteWorkingHoursSuccess => 'تم حذف موعد العمل بنجاح';
 
   @override
+  String get updateWorkingHoursSuccess => 'تم تعديل موعد العمل بنجاح';
+
+  @override
   String get editWorkingHoursSoon =>
       'سيتم تفعيل تعديل المواعيد قريباً من خلال الخادم';
 

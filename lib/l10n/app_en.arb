@@ -300,6 +300,8 @@
   "@deleteAppointmentConfirmMessage": { "description": "Message of delete confirmation dialog" },
   "deleteWorkingHoursSuccess": "Working hours deleted successfully",
   "@deleteWorkingHoursSuccess": { "description": "Success message when working hours deleted" },
+  "updateWorkingHoursSuccess": "Working hours updated successfully",
+  "@updateWorkingHoursSuccess": { "description": "Success message when working hours updated" },
   "editWorkingHoursSoon": "Editing working hours will be supported soon",
   "@editWorkingHoursSoon": { "description": "Placeholder message for edit working hours API" },
   "loadWorkingHoursError": "Failed to load working hours",

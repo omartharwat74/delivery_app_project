@@ -4,17 +4,20 @@ import '../../../../core/usecases/usecase.dart';
 import '../../domain/usecases/add_working_hours_usecase.dart';
 import '../../domain/usecases/delete_working_hours_usecase.dart';
 import '../../domain/usecases/get_working_hours_usecase.dart';
+import '../../domain/usecases/update_working_hours_usecase.dart';
 import 'working_hours_state.dart';
 
 class WorkingHoursCubit extends Cubit<WorkingHoursState> {
   final GetWorkingHoursUseCase getWorkingHoursUseCase;
   final AddWorkingHoursUseCase addWorkingHoursUseCase;
   final DeleteWorkingHoursUseCase deleteWorkingHoursUseCase;
+  final UpdateWorkingHoursUseCase updateWorkingHoursUseCase;
 
   WorkingHoursCubit({
     required this.getWorkingHoursUseCase,
     required this.addWorkingHoursUseCase,
     required this.deleteWorkingHoursUseCase,
+    required this.updateWorkingHoursUseCase,
   }) : super(WorkingHoursState(
           displayMonth: DateTime(DateTime.now().year, DateTime.now().month, 1),
         ));
@@ -180,13 +183,65 @@ class WorkingHoursCubit extends Cubit<WorkingHoursState> {
     ));
   }
 
-  /// Submit edit booking
+  /// Submit edit booking (PUT /working-hours)
   Future<void> updateWorkingHours() async {
-    // TODO: Integrate Edit Working Hours API when backend is ready
+    final selectedDate = state.selectedDate;
+    if (selectedDate == null) {
+      emit(state.copyWith(errorMessage: 'يرجى تحديد يوم العمل'));
+      return;
+    }
+
+    final bookedDay = state.bookedDayFor(selectedDate);
+    if (bookedDay == null || bookedDay.isLocked) {
+      emit(state.copyWith(
+        errorMessage: 'لا يمكن تعديل الموعد لأنه مغلق أو غير متاح',
+      ));
+      return;
+    }
+
+    final startsAt = state.pickedStartsAt;
+    final endsAt = state.pickedEndsAt;
+
+    if (startsAt == null || endsAt == null || startsAt.isEmpty || endsAt.isEmpty) {
+      emit(state.copyWith(errorMessage: 'يرجى تحديد وقت البداية والنهاية'));
+      return;
+    }
+
+    final workDate = _formatDate(selectedDate);
+
     emit(state.copyWith(
-      cardMode: WorkingHoursCardMode.bookedView,
-      successMessage: 'تم حفظ التعديل (في انتظار ربط الـ API)',
+      isActionLoading: true,
+      clearErrorMessage: true,
+      clearSuccessMessage: true,
     ));
+
+    final result = await updateWorkingHoursUseCase(UpdateWorkingHoursParams(
+      workDate: workDate,
+      startsAt: startsAt,
+      endsAt: endsAt,
+    ));
+
+    result.fold(
+      (failure) {
+        emit(state.copyWith(
+          isActionLoading: false,
+          errorMessage: failure.message,
+        ));
+      },
+      (entity) {
+        final updatedDay =
+            entity.days.where((d) => d.workDate == workDate).firstOrNull;
+        emit(state.copyWith(
+          isActionLoading: false,
+          data: entity,
+          cardMode: WorkingHoursCardMode.bookedView,
+          pickedStartsAt: updatedDay?.startsAt ?? startsAt,
+          pickedEndsAt: updatedDay?.endsAt ?? endsAt,
+          successMessage: 'تم تعديل موعد العمل بنجاح',
+          clearErrorMessage: true,
+        ));
+      },
+    );
   }
 
   /// Delete a booked day (DELETE /working-hours?work_date=YYYY-MM-DD)
