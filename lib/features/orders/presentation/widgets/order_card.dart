@@ -13,49 +13,45 @@ class OrderCard extends StatelessWidget {
 
   String _statusLabel(AppLocalizations l10n) {
     switch (order.status) {
-      case OrderStatus.waitingAcceptance:
-        return l10n.orderStatusNew;
-      case OrderStatus.preparing:
-        return l10n.orderStatusPreparing;
-      case OrderStatus.readyForPickup:
-        return l10n.orderStatusReady;
-      case OrderStatus.courierOnWay:
-        return l10n.orderStatusOnWay;
-      case OrderStatus.delivered:
-        return l10n.orderStatusDelivered;
-      case OrderStatus.cancelled:
+      case 'assigned':
+        return l10n.localeName == 'ar' ? 'طلب مسند' : 'Assigned';
+      case 'on_the_way':
+        return l10n.localeName == 'ar' ? 'في الطريق' : 'On The Way';
+      case 'delivered':
+        return l10n.localeName == 'ar' ? 'طلب مغلق' : 'Closed Order';
+      case 'cancelled':
         return l10n.orderStatusCancelled;
+      default:
+        return l10n.orderStatusNew;
     }
   }
 
-  String _subStatusLabel() {
+  String _subStatusLabel(AppLocalizations l10n) {
     switch (order.status) {
-      case OrderStatus.waitingAcceptance:
-        return 'في انتظار القبول';
-      case OrderStatus.preparing:
-        return 'قيد التحضير';
-      case OrderStatus.readyForPickup:
-        return 'جاهز للاستلام';
-      case OrderStatus.courierOnWay:
-        return 'المندوب في الطريق';
-      case OrderStatus.delivered:
-        return 'تم التسليم للعميل';
-      case OrderStatus.cancelled:
-        return 'تم إلغاء الطلب';
+      case 'assigned':
+        return l10n.localeName == 'ar' ? 'تم قبول الطلب' : 'Order Accepted';
+      case 'on_the_way':
+        return l10n.localeName == 'ar' ? 'المندوب في الطريق' : 'Driver on the way';
+      case 'delivered':
+        return l10n.localeName == 'ar' ? 'تم التسليم للعميل' : 'Delivered to customer';
+      case 'cancelled':
+        return l10n.orderStatusCancelled;
+      default:
+        return l10n.orderStatusNew;
     }
   }
 
   Color _statusColor() {
     switch (order.status) {
-      case OrderStatus.waitingAcceptance:
+      case 'assigned':
         return AppColors.statusWarning;
-      case OrderStatus.preparing:
-      case OrderStatus.readyForPickup:
-      case OrderStatus.courierOnWay:
+      case 'on_the_way':
         return AppColors.primary;
-      case OrderStatus.delivered:
-      case OrderStatus.cancelled:
+      case 'delivered':
+      case 'cancelled':
         return const Color(0xFF9E9E9E); // grey for closed
+      default:
+        return AppColors.primary;
     }
   }
 
@@ -196,7 +192,7 @@ class OrderCard extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            _subStatusLabel(),
+                            _subStatusLabel(l10n),
                             style: AppTextStyles.body(context).copyWith(
                               fontFamily: 'ExpoArabic',
                               fontSize: 14,
@@ -208,6 +204,7 @@ class OrderCard extends StatelessWidget {
                       ),
                     ),
                     // Expected time column
+                    // TODO(API): static for now
                     if (order.estimatedTime != null)
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.center,
@@ -239,7 +236,7 @@ class OrderCard extends StatelessWidget {
 
                 const SizedBox(height: 16),
 
-                // ── PROGRESS BAR: exactly 3 solid red segments ─────────────
+                // ── PROGRESS BAR: 3 segments based on status ─────────────
                 Row(
                   children: [
                     for (int i = 0; i < 3; i++) ...[
@@ -247,7 +244,9 @@ class OrderCard extends StatelessWidget {
                         child: Container(
                           height: 4,
                           decoration: BoxDecoration(
-                            color: primary,
+                            color: i < order.progressSegments
+                                ? primary
+                                : const Color(0xFFE0E0E0),
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),

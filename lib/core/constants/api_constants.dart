@@ -32,6 +32,14 @@ class ApiConstants {
   // Notifications
   static const String notifications = '/notifications';
 
+  // Orders Endpoints
+  static const String orderOffer = '/orders/offer';
+  static String acceptOffer(dynamic offerId) => '/orders/offers/$offerId/accept';
+  static String rejectOffer(dynamic offerId) => '/orders/offers/$offerId/reject';
+  static const String ordersList = '/orders';
+  static String orderDetails(dynamic orderId) => '/orders/$orderId';
+  static String orderStatus(dynamic orderId) => '/orders/$orderId/status';
+
   // Working Hours
   static const String workingHours = '/working-hours';
 

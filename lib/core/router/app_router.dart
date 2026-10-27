@@ -5,11 +5,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/di/injection_container.dart' as di;
 import '../network/auth_event_bus.dart';
 import '../../features/home/presentation/bloc/home_cubit.dart';
+import '../../features/orders/presentation/bloc/active_order_cubit.dart';
+import '../../features/orders/presentation/bloc/orders_cubit.dart';
 
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/otp_page.dart';
 import '../../features/auth/presentation/pages/register_driver_page.dart';
 import '../../features/auth/presentation/pages/registration_pending_page.dart';
+import '../../features/auth/presentation/pages/blocked_account_page.dart';
 import '../../features/auth/presentation/pages/language_page.dart';
 import '../../features/auth/presentation/pages/splash_screen.dart';
 import '../../features/home/presentation/pages/home_page.dart';
@@ -39,6 +42,7 @@ class AppRouter {
       GlobalKey<NavigatorState>(debugLabel: 'app_root_navigator');
 
   static StreamSubscription<void>? _unauthorizedSubscription;
+  static StreamSubscription<String?>? _blockedSubscription;
 
   /// Global method to clear the navigation stack and redirect immediately to Login
   static void redirectToLogin() {
@@ -51,18 +55,35 @@ class AppRouter {
     router.go(RouteNames.login);
   }
 
-  /// Listens to unauthorized 401 events globally
+  /// Global method to clear the navigation stack and redirect immediately to Blocked screen
+  static void redirectToBlocked([String? message]) {
+    final nav = navigatorKey.currentState;
+    if (nav != null) {
+      while (nav.canPop()) {
+        nav.pop();
+      }
+    }
+    router.go(RouteNames.blocked, extra: message);
+  }
+
+  /// Listens to unauthorized 401 and 403 blocked events globally
   static void listenToAuthEvents({AuthEventBus? eventBus}) {
     _unauthorizedSubscription?.cancel();
+    _blockedSubscription?.cancel();
     final bus = eventBus ?? di.sl<AuthEventBus>();
     _unauthorizedSubscription = bus.onUnauthorized.listen((_) {
       redirectToLogin();
+    });
+    _blockedSubscription = bus.onAccountBlocked.listen((message) {
+      redirectToBlocked(message);
     });
   }
 
   static void dispose() {
     _unauthorizedSubscription?.cancel();
     _unauthorizedSubscription = null;
+    _blockedSubscription?.cancel();
+    _blockedSubscription = null;
   }
 
   static final router = GoRouter(
@@ -88,14 +109,31 @@ class AppRouter {
         builder: (c, s) => const RegistrationPendingPage(),
       ),
       GoRoute(
+        path: RouteNames.blocked,
+        builder: (c, s) => BlockedAccountPage(message: s.extra as String?),
+      ),
+      GoRoute(
         name: RouteNames.home,
         path: RouteNames.driverHome,
-        builder: (c, s) => BlocProvider<HomeCubit>(
-          create: (context) => di.sl<HomeCubit>(),
+        builder: (c, s) => MultiBlocProvider(
+          providers: [
+            BlocProvider<HomeCubit>(
+              create: (context) => di.sl<HomeCubit>(),
+            ),
+            BlocProvider<ActiveOrderCubit>.value(
+              value: di.sl<ActiveOrderCubit>(),
+            ),
+          ],
           child: const HomePage(),
         ),
       ),
-      GoRoute(path: RouteNames.orders, builder: (c, s) => const OrdersScreen()),
+      GoRoute(
+        path: RouteNames.orders,
+        builder: (c, s) => BlocProvider<OrdersCubit>(
+          create: (_) => di.sl<OrdersCubit>()..loadOrders(),
+          child: const OrdersScreen(),
+        ),
+      ),
       GoRoute(path: RouteNames.wallet, builder: (c, s) => const WalletScreen()),
       GoRoute(
         path: RouteNames.workHours,

@@ -1,59 +1,49 @@
 import 'package:flutter/material.dart';
-import 'package:delivery_app_project/core/theme/text_styles.dart';
-import 'package:delivery_app_project/features/auth/presentation/widgets/auth_back_button.dart';
-import 'package:delivery_app_project/features/orders/presentation/widgets/order_card.dart';
-import 'package:delivery_app_project/features/orders/domain/entities/order_entity.dart';
-import 'package:delivery_app_project/features/orders/presentation/pages/order_details_screen.dart';
-import 'package:delivery_app_project/l10n/app_localizations.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-class OrdersScreen extends StatelessWidget {
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/text_styles.dart';
+import '../../../auth/presentation/widgets/auth_back_button.dart';
+import '../../../../l10n/app_localizations.dart';
+import '../bloc/orders_cubit.dart';
+import '../bloc/orders_state.dart';
+import '../widgets/order_card.dart';
+import 'order_details_screen.dart';
+
+class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
+
+  @override
+  State<OrdersScreen> createState() => _OrdersScreenState();
+}
+
+class _OrdersScreenState extends State<OrdersScreen> {
+  late final ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController()..addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (_scrollController.hasClients &&
+        _scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200) {
+      context.read<OrdersCubit>().loadMoreOrders();
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final orders = [
-      OrderEntity(
-        id: '1',
-        restaurantName: l10n.mockRestaurantName1,
-        pickupAddress: '123 شارع رئيسي',
-        deliveryAddress: '456 شارع التوصيل',
-        customerName: l10n.mockUserName1,
-        customerPhone: '+1234567890',
-        deliveryFee: 5.50,
-        status: OrderStatus.waitingAcceptance,
-        createdAt: DateTime.now().subtract(const Duration(minutes: 5)),
-        totalItems: 3,
-        estimatedDistance: '2.4 km',
-        estimatedTime: '20 : 15 دقيقة',
-      ),
-      OrderEntity(
-        id: '2',
-        restaurantName: l10n.mockRestaurantName2,
-        pickupAddress: '789 طريق سريع',
-        deliveryAddress: '101 شارع العميل',
-        customerName: l10n.mockUserName2,
-        customerPhone: '+1987654321',
-        deliveryFee: 7.00,
-        status: OrderStatus.courierOnWay,
-        createdAt: DateTime.now().subtract(const Duration(minutes: 20)),
-        totalItems: 1,
-        estimatedDistance: '1.2 km',
-        estimatedTime: '08 : 05 دقيقة',
-      ),
-      OrderEntity(
-        id: '3',
-        restaurantName: l10n.mockRestaurantName3,
-        pickupAddress: '222 شارع البيتزا',
-        deliveryAddress: '333 طريق المستخدم',
-        customerName: l10n.mockUserName3,
-        customerPhone: '+1122334455',
-        deliveryFee: 6.25,
-        status: OrderStatus.delivered,
-        createdAt: DateTime.now().subtract(const Duration(hours: 2)),
-        totalItems: 4,
-      ),
-    ];
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -74,24 +64,125 @@ class OrdersScreen extends StatelessWidget {
           ],
         ),
       ),
-      body: CustomScrollView(
-        physics: const ClampingScrollPhysics(),
-        slivers: [
-          SliverPadding(
-            padding: const EdgeInsetsDirectional.fromSTEB(16, 20, 16, 24),
-            sliver: SliverList.separated(
-              itemCount: orders.length,
-              itemBuilder: (context, index) => OrderCard(
-                order: orders[index],
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => OrderDetailsScreen(order: orders[index]),
+      body: BlocBuilder<OrdersCubit, OrdersState>(
+        builder: (context, state) {
+          return _buildBody(context, state, l10n);
+        },
+      ),
+    );
+  }
+
+  Widget _buildBody(
+    BuildContext context,
+    OrdersState state,
+    AppLocalizations l10n,
+  ) {
+    if (state.status == OrdersStatus.loading && state.orders.isEmpty) {
+      return const Center(
+        child: CircularProgressIndicator(
+          color: AppColors.primary,
+        ),
+      );
+    }
+
+    if (state.status == OrdersStatus.error && state.orders.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                state.errorMessage ?? 'حدث خطأ أثناء تحميل الطلبات',
+                textAlign: TextAlign.center,
+                style: AppTextStyles.body(context).copyWith(
+                  color: AppColors.paragraph(context),
+                ),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => context.read<OrdersCubit>().loadOrders(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text(
+                  l10n.localeName == 'ar' ? 'إعادة المحاولة' : 'Retry',
+                  style: const TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (state.status == OrdersStatus.loaded && state.orders.isEmpty) {
+      return RefreshIndicator(
+        color: AppColors.primary,
+        onRefresh: () => context.read<OrdersCubit>().refreshOrders(),
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: ClampingScrollPhysics(),
+          ),
+          children: [
+            SizedBox(
+              height: MediaQuery.of(context).size.height * 0.4,
+              child: Center(
+                child: Text(
+                  l10n.noOrdersFound,
+                  style: AppTextStyles.body(context).copyWith(
+                    color: AppColors.paragraph(context),
                   ),
                 ),
               ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      color: AppColors.primary,
+      onRefresh: () => context.read<OrdersCubit>().refreshOrders(),
+      child: CustomScrollView(
+        controller: _scrollController,
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: ClampingScrollPhysics(),
+        ),
+        slivers: [
+          SliverPadding(
+            padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 16, 24),
+            sliver: SliverList.separated(
+              itemCount: state.orders.length,
+              itemBuilder: (context, index) {
+                final order = state.orders[index];
+                return OrderCard(
+                  order: order,
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => OrderDetailsScreen(order: order),
+                    ),
+                  ),
+                );
+              },
               separatorBuilder: (_, _) => const SizedBox(height: 16),
             ),
           ),
+          if (state.isLoadingMore)
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Center(
+                  child: CircularProgressIndicator(
+                    color: AppColors.primary,
+                    strokeWidth: 2,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );

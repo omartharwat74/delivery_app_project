@@ -1,18 +1,125 @@
 import 'package:flutter/material.dart';
-import 'package:delivery_app_project/core/theme/app_colors.dart';
-import 'package:delivery_app_project/core/theme/text_styles.dart';
-import 'package:delivery_app_project/features/orders/domain/entities/order_entity.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+
+import '../../../../core/di/injection_container.dart' as di;
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/text_styles.dart';
+import '../../../../l10n/app_localizations.dart';
+import '../../domain/entities/order_entity.dart';
+import '../../domain/repositories/order_repository.dart';
+import '../bloc/active_order_cubit.dart';
 
 /// Order Details Screen — Figma node-id: 7811-9813
 /// Layout: Real map image (40%) → overlapping white details card (60%+).
 /// Entire layout is RTL. All content is right-aligned (start = right).
-class OrderDetailsScreen extends StatelessWidget {
+class OrderDetailsScreen extends StatefulWidget {
   final OrderEntity order;
   const OrderDetailsScreen({super.key, required this.order});
 
   @override
+  State<OrderDetailsScreen> createState() => _OrderDetailsScreenState();
+}
+
+class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
+  late OrderEntity _order;
+  bool _isLoading = false;
+  bool _isActionLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _order = widget.order;
+    _fetchLatestDetails();
+  }
+
+  Future<void> _fetchLatestDetails() async {
+    setState(() => _isLoading = true);
+
+    final result = await di.sl<OrderRepository>().getOrderDetails(_order.id);
+
+    if (!mounted) return;
+
+    result.fold(
+      (failure) {
+        setState(() => _isLoading = false);
+        // If 404 or failure, show server error message and pop
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(failure.message),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        Navigator.of(context).pop();
+      },
+      (freshOrder) {
+        setState(() {
+          _order = freshOrder;
+          _isLoading = false;
+        });
+      },
+    );
+  }
+
+  Future<void> _handleConfirmPickup() async {
+    setState(() => _isActionLoading = true);
+
+    final result =
+        await di.sl<OrderRepository>().updateOrderStatus(_order.id, 'on_the_way');
+
+    if (!mounted) return;
+    setState(() => _isActionLoading = false);
+
+    result.fold(
+      (failure) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(failure.message),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        _fetchLatestDetails();
+      },
+      (updatedOrder) {
+        setState(() => _order = updatedOrder);
+        di.sl<ActiveOrderCubit>().restoreActiveOrderOrOffer();
+      },
+    );
+  }
+
+  Future<void> _handleConfirmDelivery() async {
+    setState(() => _isActionLoading = true);
+
+    final result =
+        await di.sl<OrderRepository>().updateOrderStatus(_order.id, 'delivered');
+
+    if (!mounted) return;
+    setState(() => _isActionLoading = false);
+
+    result.fold(
+      (failure) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(failure.message),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        _fetchLatestDetails();
+      },
+      (updatedOrder) {
+        setState(() => _order = updatedOrder);
+        di.sl<ActiveOrderCubit>().restoreActiveOrderOrOffer();
+        Navigator.of(context).pop();
+      },
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
@@ -21,7 +128,7 @@ class OrderDetailsScreen extends StatelessWidget {
           automaticallyImplyLeading: false,
           backgroundColor: Colors.white,
           elevation: 0,
-          titleSpacing: 16, // Screen side padding
+          titleSpacing: 16,
           title: Row(
             children: [
               InkWell(
@@ -35,7 +142,7 @@ class OrderDetailsScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 4), // Exactly 4px gap
+              const SizedBox(width: 4),
               const Text(
                 'تفاصيل الطلب',
                 style: TextStyle(
@@ -101,24 +208,101 @@ class OrderDetailsScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          if (_isLoading)
+                            const Padding(
+                              padding: EdgeInsets.only(bottom: 12),
+                              child: Center(
+                                child: SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                              ),
+                            ),
+
                           // ── Order Header ─────────────────────────────────────
-                          _OrderHeader(order: order),
+                          _OrderHeader(order: _order),
                           const _Divider(),
 
                           // ── Restaurant Info ───────────────────────────────────
-                          _RestaurantSection(order: order),
+                          _RestaurantSection(order: _order),
                           const _Divider(),
 
                           // ── Customer Info ─────────────────────────────────────
-                          _CustomerSection(order: order),
+                          _CustomerSection(order: _order),
                           const _Divider(),
 
                           // ── Delivery Route ────────────────────────────────────
-                          _DeliveryRouteSection(order: order),
+                          _DeliveryRouteSection(order: _order),
                           const _Divider(),
 
                           // ── Customer Rating ───────────────────────────────────
+                          // TODO(API): static for now
                           const _RatingSection(),
+
+                          // ── Active Order Action Button ──────────────────────
+                          if (_order.isAssigned) ...[
+                            const SizedBox(height: 24),
+                            ElevatedButton(
+                              onPressed: _isActionLoading
+                                  ? null
+                                  : _handleConfirmPickup,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                minimumSize: const Size(double.infinity, 50),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                              child: _isActionLoading
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : Text(
+                                      l10n.trackingConfirmPickup,
+                                      style: AppTextStyles.buttonHeading(
+                                        context,
+                                      ).copyWith(color: Colors.white),
+                                    ),
+                            ),
+                          ] else if (_order.isOnTheWay) ...[
+                            const SizedBox(height: 24),
+                            ElevatedButton(
+                              onPressed: _isActionLoading
+                                  ? null
+                                  : _handleConfirmDelivery,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                minimumSize: const Size(double.infinity, 50),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                              child: _isActionLoading
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : Text(
+                                      l10n.trackingConfirmDelivery,
+                                      style: AppTextStyles.buttonHeading(
+                                        context,
+                                      ).copyWith(color: Colors.white),
+                                    ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -142,6 +326,10 @@ class _OrderHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final displayPrice = order.totalPrice > 0
+        ? order.totalPrice.toStringAsFixed(0)
+        : order.deliveryFee.toStringAsFixed(0);
+
     return Row(
       children: [
         // Right (start): Order ID fixing RTL Bidirectional rendering
@@ -157,7 +345,7 @@ class _OrderHeader extends StatelessWidget {
               ),
             ),
             Text(
-              '#${order.id}',
+              '#${order.code.isNotEmpty ? order.code : order.id}',
               textDirection: TextDirection.ltr,
               style: AppTextStyles.body(context).copyWith(
                 fontSize: 12,
@@ -188,7 +376,7 @@ class _OrderHeader extends StatelessWidget {
                 ),
               ),
               TextSpan(
-                text: '${order.deliveryFee.toStringAsFixed(0)} ج.م',
+                text: '$displayPrice ج.م',
                 style: AppTextStyles.caption(context).copyWith(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
@@ -210,67 +398,81 @@ class _RestaurantSection extends StatelessWidget {
   final OrderEntity order;
   const _RestaurantSection({required this.order});
 
+  Widget _defaultLogo(Color primary) {
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: primary.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Icon(Icons.store_rounded, color: primary, size: 22),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
+    final storeLogo = order.store?.logo;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Restaurant logo + name + phone + call icon — all start-aligned
         Row(
-          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             // Logo
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: Image.asset(
-                'assets/images/orders/az_al_sham_logo.png',
-                width: 44,
-                height: 44,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: primary.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(Icons.store_rounded, color: primary, size: 22),
-                ),
-              ),
+              child: storeLogo != null && storeLogo.isNotEmpty
+                  ? Image.network(
+                      storeLogo,
+                      width: 44,
+                      height: 44,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => _defaultLogo(primary),
+                    )
+                  : Image.asset(
+                      'assets/images/orders/az_al_sham_logo.png',
+                      width: 44,
+                      height: 44,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => _defaultLogo(primary),
+                    ),
             ),
             const SizedBox(width: 10),
             // Name + phone + icon grouped together
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  order.restaurantName,
-                  style: AppTextStyles.body(context).copyWith(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFF1B1B1B),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const _RedCallIcon(),
-                    const SizedBox(width: 8),
-                    Text(
-                      order.customerPhone,
-                      textDirection: TextDirection.ltr,
-                      style: AppTextStyles.caption(context).copyWith(
-                        fontSize: 12,
-                        color: AppColors.paragraph(context),
-                      ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    order.restaurantName,
+                    style: AppTextStyles.body(context).copyWith(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF1B1B1B),
                     ),
-                  ],
-                ),
-              ],
+                  ),
+                  const SizedBox(height: 4),
+                  if ((order.store?.phone ?? order.customerPhone).isNotEmpty)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const _RedCallIcon(),
+                        const SizedBox(width: 8),
+                        Text(
+                          order.store?.phone ?? order.customerPhone,
+                          textDirection: TextDirection.ltr,
+                          style: AppTextStyles.caption(context).copyWith(
+                            fontSize: 12,
+                            color: AppColors.paragraph(context),
+                          ),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
             ),
           ],
         ),
@@ -300,7 +502,6 @@ class _CustomerSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 10),
-        // Name + phone + call icon — all start-aligned, no spaceBetween
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -312,22 +513,24 @@ class _CustomerSection extends StatelessWidget {
                 color: const Color(0xFF1B1B1B),
               ),
             ),
-            const SizedBox(height: 4),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const _RedSmartphoneIcon(),
-                const SizedBox(width: 8),
-                Text(
-                  order.customerPhone,
-                  textDirection: TextDirection.ltr,
-                  style: AppTextStyles.caption(context).copyWith(
-                    fontSize: 12,
-                    color: AppColors.paragraph(context),
+            if (order.customerPhone.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const _RedSmartphoneIcon(),
+                  const SizedBox(width: 8),
+                  Text(
+                    order.customerPhone,
+                    textDirection: TextDirection.ltr,
+                    style: AppTextStyles.caption(context).copyWith(
+                      fontSize: 12,
+                      color: AppColors.paragraph(context),
+                    ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
+            ],
           ],
         ),
       ],
@@ -356,10 +559,8 @@ class _DeliveryRouteSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        // Timeline row: icons | text — all on the right (start)
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
           children: [
             // Vertical icon column with dotted connector
             Column(
@@ -385,39 +586,43 @@ class _DeliveryRouteSection extends StatelessWidget {
             ),
             const SizedBox(width: 10),
             // Addresses column
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'من :',
-                  style: AppTextStyles.caption(context).copyWith(
-                    fontSize: 11,
-                    color: AppColors.paragraph(context),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'من :',
+                    style: AppTextStyles.caption(context).copyWith(
+                      fontSize: 11,
+                      color: AppColors.paragraph(context),
+                    ),
                   ),
-                ),
-                Text(
-                  order.pickupAddress,
-                  style: AppTextStyles.body(context).copyWith(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
+                  Text(
+                    order.pickupAddress,
+                    style: AppTextStyles.body(context).copyWith(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  'الى :',
-                  style: AppTextStyles.caption(context).copyWith(
-                    fontSize: 11,
-                    color: AppColors.paragraph(context),
+                  // TODO(API): static for now
+                  const SizedBox(height: 20),
+                  Text(
+                    'الى :',
+                    style: AppTextStyles.caption(context).copyWith(
+                      fontSize: 11,
+                      color: AppColors.paragraph(context),
+                    ),
                   ),
-                ),
-                Text(
-                  order.deliveryAddress,
-                  style: AppTextStyles.body(context).copyWith(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
+                  Text(
+                    order.deliveryAddress,
+                    style: AppTextStyles.body(context).copyWith(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
-              ],
+                  // TODO(API): static for now
+                ],
+              ),
             ),
           ],
         ),
@@ -446,6 +651,7 @@ class _RatingSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 10),
+        // TODO(API): static for now
         Row(
           mainAxisSize: MainAxisSize.min,
           children: List.generate(
@@ -473,6 +679,7 @@ class _RatingSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
+        // TODO(API): static for now
         Text(
           'المندوب كان في غاية من الاحترام ، والسرعة',
           style: AppTextStyles.body(context).copyWith(
@@ -490,7 +697,6 @@ class _RatingSection extends StatelessWidget {
 // SHARED HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Red circular call icon button.
 class _RedCallIcon extends StatelessWidget {
   const _RedCallIcon();
 
@@ -505,7 +711,6 @@ class _RedCallIcon extends StatelessWidget {
   }
 }
 
-/// Red circular smartphone icon button.
 class _RedSmartphoneIcon extends StatelessWidget {
   const _RedSmartphoneIcon();
 
@@ -520,7 +725,6 @@ class _RedSmartphoneIcon extends StatelessWidget {
   }
 }
 
-/// Subtle section divider.
 class _Divider extends StatelessWidget {
   const _Divider();
 
@@ -533,7 +737,6 @@ class _Divider extends StatelessWidget {
   }
 }
 
-/// Custom painter for a dotted vertical line.
 class _DottedLinePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {

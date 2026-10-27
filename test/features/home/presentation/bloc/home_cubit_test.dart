@@ -34,6 +34,24 @@ class MockNotificationService implements NotificationService {
 
   @override
   Future<NotificationSettings?> requestPermission() async => null;
+
+  @override
+  Stream<String> get onTokenRefresh => const Stream.empty();
+
+  @override
+  Stream<RemoteMessage> get onMessage => const Stream.empty();
+
+  @override
+  Stream<RemoteMessage> get onMessageOpenedApp => const Stream.empty();
+
+  @override
+  Future<RemoteMessage?> getInitialMessage() async => null;
+
+  @override
+  Future<void> initialize({
+    void Function(String token)? onTokenRefresh,
+    void Function()? onOrderOfferChime,
+  }) async {}
 }
 
 class MockHomeRepository implements HomeRepository {

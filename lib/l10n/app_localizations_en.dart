@@ -628,6 +628,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get trackingConfirmDelivery => 'Confirm Delivery';
 
   @override
+  String get trackingAcceptOrder => 'Accept Order';
+
+  @override
   String get trackingMapOpen => 'Open Map';
 
   @override
@@ -638,6 +641,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ordersTitle => 'Orders';
+
+  @override
+  String get noOrdersFound => 'No orders found';
+
+  @override
+  String get orderStatusAssigned => 'Assigned';
+
+  @override
+  String get orderStatusAssignedSub => 'Order Accepted';
+
+  @override
+  String get orderStatusOnWaySub => 'Driver on the way';
+
+  @override
+  String get orderStatusDeliveredSub => 'Delivered to customer';
+
+  @override
+  String get accountBlockedTitle => 'Account Blocked';
+
+  @override
+  String get accountBlockedMessage =>
+      'Your account has been blocked. Contact support';
 
   @override
   String get orderStatusNew => 'New Request';

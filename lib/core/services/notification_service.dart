@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:developer' as developer;
+import 'package:flutter/foundation.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 abstract class NotificationService {
@@ -7,6 +9,24 @@ abstract class NotificationService {
 
   /// Retrieves the device FCM token. Returns null if permission is denied or token is unavailable.
   Future<String?> getFcmToken();
+
+  /// Stream of new FCM token values whenever Google refreshes it.
+  Stream<String> get onTokenRefresh;
+
+  /// Stream of incoming foreground messages.
+  Stream<RemoteMessage> get onMessage;
+
+  /// Stream of messages that caused the app to open from the background.
+  Stream<RemoteMessage> get onMessageOpenedApp;
+
+  /// Retrieves any message that opened the app from a terminated state.
+  Future<RemoteMessage?> getInitialMessage();
+
+  /// Initializes listeners for token refresh and incoming notifications.
+  Future<void> initialize({
+    void Function(String token)? onTokenRefresh,
+    VoidCallback? onOrderOfferChime,
+  });
 }
 
 class NotificationServiceImpl implements NotificationService {
@@ -16,6 +36,10 @@ class NotificationServiceImpl implements NotificationService {
       : _messaging = messaging;
 
   FirebaseMessaging get _instance => _messaging ?? FirebaseMessaging.instance;
+
+  StreamSubscription<String>? _tokenRefreshSub;
+  StreamSubscription<RemoteMessage>? _foregroundSub;
+  StreamSubscription<RemoteMessage>? _openedAppSub;
 
   @override
   Future<NotificationSettings?> requestPermission() async {
@@ -61,5 +85,88 @@ class NotificationServiceImpl implements NotificationService {
       );
       return null;
     }
+  }
+
+  @override
+  Stream<String> get onTokenRefresh => _instance.onTokenRefresh;
+
+  @override
+  Stream<RemoteMessage> get onMessage => FirebaseMessaging.onMessage;
+
+  @override
+  Stream<RemoteMessage> get onMessageOpenedApp =>
+      FirebaseMessaging.onMessageOpenedApp;
+
+  @override
+  Future<RemoteMessage?> getInitialMessage() => _instance.getInitialMessage();
+
+  @override
+  Future<void> initialize({
+    void Function(String token)? onTokenRefresh,
+    VoidCallback? onOrderOfferChime,
+  }) async {
+    try {
+      // 1. Request permission
+      await requestPermission();
+
+      // 2. Configure foreground presentation options (iOS & Android)
+      await _instance.setForegroundNotificationPresentationOptions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+
+      // 3. Listen to token refresh
+      if (onTokenRefresh != null) {
+        _tokenRefreshSub?.cancel();
+        _tokenRefreshSub = this.onTokenRefresh.listen((token) {
+          developer.log('FCM Token Refreshed: $token', name: 'NotificationService');
+          onTokenRefresh(token);
+        });
+      }
+
+      // 4. Foreground message listener
+      _foregroundSub?.cancel();
+      _foregroundSub = onMessage.listen((message) {
+        developer.log(
+          'FCM Message received in foreground: ${message.data}',
+          name: 'NotificationService',
+        );
+        onOrderOfferChime?.call();
+      });
+
+      // 5. Background message clicked
+      _openedAppSub?.cancel();
+      _openedAppSub = onMessageOpenedApp.listen((message) {
+        developer.log(
+          'FCM Message opened from background: ${message.data}',
+          name: 'NotificationService',
+        );
+        onOrderOfferChime?.call();
+      });
+
+      // 6. Terminated launch message
+      final initialMessage = await getInitialMessage();
+      if (initialMessage != null) {
+        developer.log(
+          'FCM Initial message opened from terminated: ${initialMessage.data}',
+          name: 'NotificationService',
+        );
+        onOrderOfferChime?.call();
+      }
+    } catch (e, stack) {
+      developer.log(
+        'Error initializing NotificationService: $e',
+        error: e,
+        stackTrace: stack,
+        name: 'NotificationService',
+      );
+    }
+  }
+
+  void dispose() {
+    _tokenRefreshSub?.cancel();
+    _foregroundSub?.cancel();
+    _openedAppSub?.cancel();
   }
 }

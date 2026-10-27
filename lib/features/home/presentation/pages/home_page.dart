@@ -24,7 +24,11 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    context.read<HomeCubit>().initHome();
+    context.read<HomeCubit>().initHome(
+      onOrderOfferChime: () =>
+          context.read<ActiveOrderCubit>().checkCurrentOffer(),
+    );
+    context.read<ActiveOrderCubit>().restoreActiveOrderOrOffer();
   }
 
   @override
@@ -53,9 +57,8 @@ class _HomePageState extends State<HomePage> {
         ),
         BlocListener<ActiveOrderCubit, ActiveOrderState>(
           listenWhen: (previous, current) =>
-              previous is ActiveOrderIdle && current is ActiveOrderAssigned,
+              previous is ActiveOrderIdle && current is ActiveOrderOfferReceived,
           listener: (context, state) {
-            // Play an alert sound here (e.g. Audioplayers.play('alert.mp3'))
             final l10n = AppLocalizations.of(context)!;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(

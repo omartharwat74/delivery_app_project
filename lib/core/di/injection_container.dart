@@ -17,6 +17,7 @@ import '../../features/profile/presentation/bloc/phone_change/phone_change_cubit
 import '../../features/profile/presentation/bloc/profile_bloc.dart';
 import '../../features/support/presentation/cubit/support_cubit.dart';
 import '../../features/orders/presentation/bloc/active_order_cubit.dart';
+import '../../features/orders/presentation/bloc/orders_cubit.dart';
 import '../../features/earnings/data/datasources/earnings_local_datasource.dart';
 import '../../features/earnings/data/datasources/earnings_remote_datasource.dart';
 import '../../features/home/data/datasources/home_local_datasource.dart';
@@ -29,6 +30,8 @@ import '../../features/auth/data/datasources/auth_local_datasource.dart';
 import '../../features/auth/data/datasources/auth_remote_datasource.dart';
 import '../../features/orders/data/datasources/order_local_datasource.dart';
 import '../../features/orders/data/datasources/order_remote_datasource.dart';
+import '../../features/orders/domain/repositories/order_repository.dart';
+import '../../features/orders/data/repositories/order_repository_impl.dart';
 import '../../features/profile/data/datasources/profile_local_datasource.dart';
 import '../../features/profile/data/datasources/profile_remote_datasource.dart';
 import '../../features/notifications/data/datasources/notifications_remote_datasource.dart';
@@ -146,6 +149,10 @@ Future<void> init({required SharedPreferences prefs}) async {
     ),
   );
 
+  sl.registerLazySingleton<OrderRepository>(
+    () => OrderRepositoryImpl(remoteDataSource: sl()),
+  );
+
   sl.registerLazySingleton(() => CheckAuthSessionUseCase(sl()));
   sl.registerLazySingleton(() => RegisterDriverUseCase(sl()));
   sl.registerLazySingleton(() => UploadMediaUseCase(sl()));
@@ -250,5 +257,10 @@ Future<void> init({required SharedPreferences prefs}) async {
     ),
   );
 
-  sl.registerLazySingleton(() => ActiveOrderCubit());
+  sl.registerLazySingleton(
+    () => ActiveOrderCubit(orderRepository: sl()),
+  );
+  sl.registerFactory(
+    () => OrdersCubit(orderRepository: sl()),
+  );
 }

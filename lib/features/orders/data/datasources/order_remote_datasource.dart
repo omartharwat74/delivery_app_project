@@ -1,56 +1,155 @@
-import 'package:http/http.dart' as http;
 import '../../../../core/constants/api_constants.dart';
-import '../../../../core/error/exceptions.dart';
 import '../../../../core/network/api_client.dart';
+import '../models/order_model.dart';
 
 abstract class OrderRemoteDataSource {
-  Future<Map<String, dynamic>> getActiveOrder();
-  Future<Map<String, dynamic>> acceptOrder(String orderId);
-  Future<void> declineOrder(String orderId);
-  Future<void> arrivedAtRestaurant(String orderId);
-  Future<void> confirmDelivery(String orderId, String photoPath);
-  Future<void> reportIssue(String orderId, Map<String, dynamic> body);
-  Future<void> updateLocation(double lat, double lng);
+  /// GET /orders/offer
+  Future<OrderOfferModel?> getCurrentOffer();
+
+  /// POST /orders/offers/{offerId}/accept
+  Future<OrderModel> acceptOffer(int offerId);
+
+  /// POST /orders/offers/{offerId}/reject
+  Future<void> rejectOffer(int offerId);
+
+  /// PATCH /orders/{orderId}/status
+  Future<OrderModel> updateOrderStatus(int orderId, String status);
+
+  /// GET /orders?scope={current|past}&per_page={5,10,20...}&page={page}
+  Future<OrdersPaginatedResponse> getOrders({
+    String? scope,
+    int perPage = 10,
+    int page = 1,
+  });
+
+  /// GET /orders/{orderId}
+  Future<OrderModel> getOrderDetails(int orderId);
 }
 
 class OrderRemoteDataSourceImpl implements OrderRemoteDataSource {
-  final ApiClient client;
-  OrderRemoteDataSourceImpl(this.client);
+  final ApiClient apiClient;
+
+  OrderRemoteDataSourceImpl(this.apiClient);
 
   @override
-  Future<Map<String, dynamic>> getActiveOrder() =>
-      client.get(ApiConstants.activeOrder);
-
-  @override
-  Future<Map<String, dynamic>> acceptOrder(String orderId) =>
-      client.post(ApiConstants.acceptOrder.replaceFirst('{id}', orderId));
-
-  @override
-  Future<void> declineOrder(String orderId) =>
-      client.post(ApiConstants.declineOrder.replaceFirst('{id}', orderId));
-
-  @override
-  Future<void> arrivedAtRestaurant(String orderId) =>
-      client.post(ApiConstants.arrivedOrder.replaceFirst('{id}', orderId));
-
-  @override
-  Future<void> confirmDelivery(String orderId, String photoPath) async {
-    final uri = Uri.parse(
-      '${ApiConstants.baseUrl}${ApiConstants.confirmOrder.replaceFirst('{id}', orderId)}',
+  Future<OrderOfferModel?> getCurrentOffer() async {
+    final response = await apiClient.getResponse<OrderOfferModel?>(
+      ApiConstants.orderOffer,
+      fromJson: (data) {
+        if (data is Map<String, dynamic>) {
+          final offerData = data['offer'];
+          if (offerData is Map<String, dynamic>) {
+            return OrderOfferModel.fromJson(offerData);
+          }
+        }
+        return null;
+      },
     );
-    final request = http.MultipartRequest('POST', uri)
-      ..files.add(await http.MultipartFile.fromPath('photo', photoPath));
-    final streamed = await request.send();
-    if (streamed.statusCode != 200) {
-      throw ServerException('Confirm delivery failed: ${streamed.statusCode}');
-    }
+    return response.data;
   }
 
   @override
-  Future<void> reportIssue(String orderId, Map<String, dynamic> body) => client
-      .post(ApiConstants.reportIssue.replaceFirst('{id}', orderId), body: body);
+  Future<OrderModel> acceptOffer(int offerId) async {
+    final response = await apiClient.postResponse<OrderModel>(
+      ApiConstants.acceptOffer(offerId),
+      fromJson: (data) {
+        if (data is Map<String, dynamic>) {
+          return OrderModel.fromJson(data);
+        }
+        throw Exception('Invalid order payload');
+      },
+    );
+    if (response.data != null) {
+      return response.data!;
+    }
+    throw Exception(
+      response.msg.isNotEmpty ? response.msg : 'Failed to accept offer',
+    );
+  }
 
   @override
-  Future<void> updateLocation(double lat, double lng) =>
-      client.post(ApiConstants.driverLocation, body: {'lat': lat, 'lng': lng});
+  Future<void> rejectOffer(int offerId) async {
+    await apiClient.postResponse<void>(
+      ApiConstants.rejectOffer(offerId),
+    );
+  }
+
+  @override
+  Future<OrderModel> updateOrderStatus(int orderId, String status) async {
+    final response = await apiClient.patchResponse<OrderModel>(
+      ApiConstants.orderStatus(orderId),
+      body: {'status': status},
+      fromJson: (data) {
+        if (data is Map<String, dynamic>) {
+          return OrderModel.fromJson(data);
+        }
+        throw Exception('Invalid order status update payload');
+      },
+    );
+    if (response.data != null) {
+      return response.data!;
+    }
+    throw Exception(
+      response.msg.isNotEmpty ? response.msg : 'Failed to update order status',
+    );
+  }
+
+  @override
+  Future<OrdersPaginatedResponse> getOrders({
+    String? scope,
+    int perPage = 10,
+    int page = 1,
+  }) async {
+    final queryParams = <String, dynamic>{
+      'per_page': perPage,
+      'page': page,
+    };
+    if (scope != null && scope.isNotEmpty) {
+      queryParams['scope'] = scope;
+    }
+
+    final response = await apiClient.getResponse<OrdersPaginatedResponse>(
+      ApiConstants.ordersList,
+      queryParams: queryParams,
+      fromJson: (data) {
+        if (data is Map<String, dynamic>) {
+          return OrdersPaginatedResponse.fromJson(data);
+        }
+        return const OrdersPaginatedResponse(
+          items: [],
+          currentPage: 1,
+          lastPage: 1,
+          perPage: 10,
+          total: 0,
+        );
+      },
+    );
+    return response.data ??
+        const OrdersPaginatedResponse(
+          items: [],
+          currentPage: 1,
+          lastPage: 1,
+          perPage: 10,
+          total: 0,
+        );
+  }
+
+  @override
+  Future<OrderModel> getOrderDetails(int orderId) async {
+    final response = await apiClient.getResponse<OrderModel>(
+      ApiConstants.orderDetails(orderId),
+      fromJson: (data) {
+        if (data is Map<String, dynamic>) {
+          return OrderModel.fromJson(data);
+        }
+        throw Exception('Invalid order details payload');
+      },
+    );
+    if (response.data != null) {
+      return response.data!;
+    }
+    throw Exception(
+      response.msg.isNotEmpty ? response.msg : 'Failed to load order details',
+    );
+  }
 }

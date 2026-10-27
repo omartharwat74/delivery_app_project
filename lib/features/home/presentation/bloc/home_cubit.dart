@@ -19,6 +19,7 @@ class HomeCubit extends Cubit<HomeState> {
   final AuthEventBus authEventBus;
 
   StreamSubscription<void>? _unauthorizedSubscription;
+  StreamSubscription<String?>? _blockedSubscription;
   bool _isUnauthorized = false;
 
   HomeCubit({
@@ -34,6 +35,9 @@ class HomeCubit extends Cubit<HomeState> {
     _unauthorizedSubscription = this.authEventBus.onUnauthorized.listen((_) {
       _isUnauthorized = true;
     });
+    _blockedSubscription = this.authEventBus.onAccountBlocked.listen((_) {
+      _isUnauthorized = true;
+    });
   }
 
   /// Initializes home screen silently:
@@ -44,8 +48,16 @@ class HomeCubit extends Cubit<HomeState> {
     String? fcmToken,
     double? lat,
     double? lng,
+    void Function()? onOrderOfferChime,
   }) async {
     if (_isUnauthorized) return;
+
+    // Initialize notification service listeners for FCM chime & token refresh
+    notificationService.initialize(
+      onTokenRefresh: (newToken) => _updateFcmSilently(fcmToken: newToken),
+      onOrderOfferChime: onOrderOfferChime,
+    );
+
     // 1. Load initial driver & online status from local cache
     final cachedDriver = await homeRepository.getCachedDriver();
     final isOnline =
@@ -184,6 +196,7 @@ class HomeCubit extends Cubit<HomeState> {
   @override
   Future<void> close() {
     _unauthorizedSubscription?.cancel();
+    _blockedSubscription?.cancel();
     return super.close();
   }
 }

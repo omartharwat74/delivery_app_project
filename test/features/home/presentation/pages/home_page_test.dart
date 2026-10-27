@@ -1,3 +1,4 @@
+import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -9,11 +10,55 @@ import 'package:delivery_app_project/features/auth/presentation/bloc/auth_cubit.
 import 'package:delivery_app_project/features/auth/presentation/bloc/auth_state.dart';
 import 'package:delivery_app_project/features/home/presentation/bloc/home_cubit.dart';
 import 'package:delivery_app_project/features/home/presentation/pages/home_page.dart';
+import 'package:delivery_app_project/features/orders/data/models/order_model.dart';
+import 'package:delivery_app_project/features/orders/domain/entities/order_entity.dart';
+import 'package:delivery_app_project/features/orders/domain/repositories/order_repository.dart';
 import 'package:delivery_app_project/features/orders/presentation/bloc/active_order_cubit.dart';
 import 'package:delivery_app_project/l10n/app_localizations.dart';
 
 import '../../../auth/auth_flow_test.dart';
 import '../bloc/home_cubit_test.dart';
+
+class MockOrderRepository implements OrderRepository {
+  @override
+  Future<Either<Failure, OrderOfferEntity?>> getCurrentOffer() async =>
+      const Right(null);
+
+  @override
+  Future<Either<Failure, OrderEntity>> acceptOffer(int offerId) async =>
+      Left(ServerFailure('not implemented'));
+
+  @override
+  Future<Either<Failure, void>> rejectOffer(int offerId) async =>
+      const Right(null);
+
+  @override
+  Future<Either<Failure, OrderEntity>> updateOrderStatus(
+    int orderId,
+    String status,
+  ) async =>
+      Left(ServerFailure('not implemented'));
+
+  @override
+  Future<Either<Failure, OrdersPaginatedResponse>> getOrders({
+    String? scope,
+    int perPage = 10,
+    int page = 1,
+  }) async =>
+      const Right(
+        OrdersPaginatedResponse(
+          items: [],
+          currentPage: 1,
+          lastPage: 1,
+          perPage: 10,
+          total: 0,
+        ),
+      );
+
+  @override
+  Future<Either<Failure, OrderEntity>> getOrderDetails(int orderId) async =>
+      Left(ServerFailure('not implemented'));
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -37,7 +82,7 @@ void main() {
       notificationService: MockNotificationService(),
     );
     authCubit = AuthCubit(authRepository: authRepository, authEventBus: AuthEventBus());
-    activeOrderCubit = ActiveOrderCubit();
+    activeOrderCubit = ActiveOrderCubit(orderRepository: MockOrderRepository());
   });
 
   tearDown(() {

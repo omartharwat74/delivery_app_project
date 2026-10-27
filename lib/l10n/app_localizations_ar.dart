@@ -619,6 +619,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get trackingConfirmDelivery => 'تم تسليم الطلب';
 
   @override
+  String get trackingAcceptOrder => 'قبول الطلب';
+
+  @override
   String get trackingMapOpen => 'فتح الخريطة';
 
   @override
@@ -629,6 +632,27 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get ordersTitle => 'الطلبات';
+
+  @override
+  String get noOrdersFound => 'لا توجد طلبات';
+
+  @override
+  String get orderStatusAssigned => 'طلب مسند';
+
+  @override
+  String get orderStatusAssignedSub => 'تم قبول الطلب';
+
+  @override
+  String get orderStatusOnWaySub => 'المندوب في الطريق';
+
+  @override
+  String get orderStatusDeliveredSub => 'تم التسليم للعميل';
+
+  @override
+  String get accountBlockedTitle => 'الحساب محظور';
+
+  @override
+  String get accountBlockedMessage => 'حسابك محظور. تواصل مع الدعم';
 
   @override
   String get orderStatusNew => 'طلب جديد';

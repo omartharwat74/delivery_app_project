@@ -1262,6 +1262,12 @@ abstract class AppLocalizations {
   /// **'Confirm Delivery'**
   String get trackingConfirmDelivery;
 
+  /// No description provided for @trackingAcceptOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept Order'**
+  String get trackingAcceptOrder;
+
   /// No description provided for @trackingMapOpen.
   ///
   /// In en, this message translates to:
@@ -1285,6 +1291,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Orders'**
   String get ordersTitle;
+
+  /// No description provided for @noOrdersFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No orders found'**
+  String get noOrdersFound;
+
+  /// No description provided for @orderStatusAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned'**
+  String get orderStatusAssigned;
+
+  /// No description provided for @orderStatusAssignedSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Accepted'**
+  String get orderStatusAssignedSub;
+
+  /// No description provided for @orderStatusOnWaySub.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver on the way'**
+  String get orderStatusOnWaySub;
+
+  /// No description provided for @orderStatusDeliveredSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered to customer'**
+  String get orderStatusDeliveredSub;
+
+  /// No description provided for @accountBlockedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Blocked'**
+  String get accountBlockedTitle;
+
+  /// No description provided for @accountBlockedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account has been blocked. Contact support'**
+  String get accountBlockedMessage;
 
   /// No description provided for @orderStatusNew.
   ///

@@ -7,6 +7,7 @@ class RouteNames {
   static const register = '/register';
   static const otp = '/otp';
   static const pending = '/pending';
+  static const blocked = '/blocked';
 
   static const driverHome = '/home';
   static const home = driverHome;

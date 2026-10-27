@@ -211,5 +211,32 @@ void main() {
 
       await sub.cancel();
     });
+
+    test('clears session and emits accountBlocked when statusCode is 403', () async {
+      String? receivedMessage;
+      final sub = authEventBus.onAccountBlocked.listen((msg) {
+        receivedMessage = msg;
+      });
+
+      final dioException403 = DioException(
+        requestOptions: RequestOptions(path: '/orders/offer'),
+        response: Response(
+          requestOptions: RequestOptions(path: '/orders/offer'),
+          statusCode: 403,
+          data: {'msg': 'حسابك محظور. تواصل مع الدعم'},
+        ),
+      );
+
+      final handler = FakeErrorInterceptorHandler();
+      interceptor.onError(dioException403, handler);
+
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(localDataSource.clearSessionCallCount, 1);
+      expect(receivedMessage, 'حسابك محظور. تواصل مع الدعم');
+      expect(interceptor.isHandlingBlocked, isTrue);
+
+      await sub.cancel();
+    });
   });
 }

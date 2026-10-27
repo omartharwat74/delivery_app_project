@@ -10,6 +10,7 @@ class AppInterceptor extends Interceptor {
   final AuthEventBus authEventBus;
 
   bool _isHandlingUnauthorized = false;
+  bool _isHandlingBlocked = false;
 
   AppInterceptor({
     required this.localDataSource,
@@ -18,9 +19,11 @@ class AppInterceptor extends Interceptor {
   });
 
   bool get isHandlingUnauthorized => _isHandlingUnauthorized;
+  bool get isHandlingBlocked => _isHandlingBlocked;
 
   void resetUnauthorizedLock() {
     _isHandlingUnauthorized = false;
+    _isHandlingBlocked = false;
   }
 
   @override
@@ -60,8 +63,7 @@ class AppInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
-    // Error Handling: In case of 401, trigger logout event and clear token from device
-    // Prevent duplicate logout if multiple requests fail at the same moment
+    // 1. In case of 401 Unauthorized, clear session and emit unauthorized
     if (err.response?.statusCode == 401) {
       if (!_isHandlingUnauthorized) {
         _isHandlingUnauthorized = true;
@@ -69,6 +71,21 @@ class AppInterceptor extends Interceptor {
           await localDataSource.clearSession();
         } catch (_) {}
         authEventBus.emitUnauthorized();
+      }
+    }
+    // 2. In case of 403 Forbidden / Blocked, clear session and emit account blocked
+    else if (err.response?.statusCode == 403) {
+      if (!_isHandlingBlocked) {
+        _isHandlingBlocked = true;
+        try {
+          await localDataSource.clearSession();
+        } catch (_) {}
+        String? message;
+        final data = err.response?.data;
+        if (data is Map<String, dynamic> && data['msg'] != null) {
+          message = data['msg'].toString();
+        }
+        authEventBus.emitAccountBlocked(message);
       }
     }
 

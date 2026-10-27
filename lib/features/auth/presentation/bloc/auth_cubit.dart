@@ -15,6 +15,7 @@ class AuthCubit extends Cubit<AuthState> {
   final AuthEventBus authEventBus;
 
   StreamSubscription<void>? _unauthorizedSubscription;
+  StreamSubscription<String?>? _blockedSubscription;
   String? _phoneNumber;
   String? _registrationToken;
 
@@ -34,6 +35,12 @@ class AuthCubit extends Cubit<AuthState> {
   }) : super(AuthInitial()) {
     // Listen for global 401 Unauthorized events from Dio Interceptor
     _unauthorizedSubscription = authEventBus.onUnauthorized.listen((_) {
+      _phoneNumber = null;
+      _registrationToken = null;
+      emit(AuthUnauthenticated());
+    });
+    // Listen for global 403 Blocked events from Dio Interceptor
+    _blockedSubscription = authEventBus.onAccountBlocked.listen((_) {
       _phoneNumber = null;
       _registrationToken = null;
       emit(AuthUnauthenticated());
@@ -338,6 +345,7 @@ class AuthCubit extends Cubit<AuthState> {
   @override
   Future<void> close() {
     _unauthorizedSubscription?.cancel();
+    _blockedSubscription?.cancel();
     return super.close();
   }
 }
