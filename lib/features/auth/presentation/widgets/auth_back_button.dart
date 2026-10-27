@@ -7,7 +7,9 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_media.dart';
 
 class AuthBackButton extends StatelessWidget {
-  const AuthBackButton({super.key});
+  final VoidCallback? onPressed;
+
+  const AuthBackButton({super.key, this.onPressed});
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +19,13 @@ class AuthBackButton extends StatelessWidget {
         width: 28,
         height: 28,
         child: InkWell(
-          onTap: () => context.pop(),
+          onTap: onPressed ?? () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              Navigator.of(context).maybePop();
+            }
+          },
           child: Transform.flip(
             flipX: context.isArabic,
             child: AppSvgImage.asset(

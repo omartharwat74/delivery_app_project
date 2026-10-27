@@ -9,12 +9,12 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_theme_scope.dart';
 import '../../../../core/theme/text_styles.dart';
-import '../../../../core/widgets/app_directional_icons.dart';
 import '../../../../core/widgets/app_media.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/bloc/auth_cubit.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../auth/presentation/widgets/app_language_picker_modal.dart';
+import '../../../auth/presentation/widgets/auth_back_button.dart';
 import '../../../home/presentation/bloc/home_cubit.dart';
 import '../../../home/presentation/bloc/home_state.dart';
 import '../bloc/settings_cubit.dart';
@@ -329,24 +329,14 @@ class _SettingsHeader extends StatelessWidget {
         ),
         child: Row(
           children: [
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () {
+            AuthBackButton(
+              onPressed: () {
                 if (context.canPop()) {
                   context.pop();
                 } else {
                   context.goNamed(RouteNames.home);
                 }
               },
-              child: SizedBox(
-                width: 28,
-                height: 28,
-                child: Icon(
-                  AppDirectionalIcons.backChevron(context),
-                  size: 28,
-                  color: AppColors.onSurface(context),
-                ),
-              ),
             ),
             const SizedBox(width: 4),
             Expanded(

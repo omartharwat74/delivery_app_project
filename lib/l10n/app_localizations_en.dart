@@ -308,6 +308,96 @@ class AppLocalizationsEn extends AppLocalizations {
   String get transactionHistory => 'Transaction History';
 
   @override
+  String get availableBalanceToWithdraw => 'Available Balance to Withdraw';
+
+  @override
+  String get currencyEgp => 'EGP';
+
+  @override
+  String get debtTitle => 'Debt';
+
+  @override
+  String get cashWithYou => '  (Cash with you)';
+
+  @override
+  String get withdrawBalanceButton => 'Withdraw Balance';
+
+  @override
+  String get transactionHistoryTitle => 'Transaction History : ';
+
+  @override
+  String get viewAll => 'View All';
+
+  @override
+  String get noTransactionsYet => 'No transactions yet';
+
+  @override
+  String maxDebtLimitWarning(String amount) {
+    return 'Your maximum debt limit is $amount EGP';
+  }
+
+  @override
+  String get maxDebtWarningDetail =>
+      'If exceeded, incoming orders will stop until you pay';
+
+  @override
+  String get pendingReviewBadge => 'Under Review';
+
+  @override
+  String get completedBadge => 'Completed';
+
+  @override
+  String get rejectedBadge => 'Rejected';
+
+  @override
+  String get withdrawalRequest => 'Withdrawal Request';
+
+  @override
+  String get cashOrder => 'Cash Order';
+
+  @override
+  String get cardOrder => 'Card Order';
+
+  @override
+  String get debtSettlement => 'Debt Settlement';
+
+  @override
+  String get appCommission => 'App Commission';
+
+  @override
+  String get deliveryFee => 'Delivery Fee';
+
+  @override
+  String get withdrawBalanceModalTitle => 'Withdraw Balance';
+
+  @override
+  String get withdrawalAmountLabel => 'Withdrawal Amount';
+
+  @override
+  String get enterWithdrawalAmountHint => 'Enter withdrawal amount';
+
+  @override
+  String get confirmButton => 'Confirm';
+
+  @override
+  String get withdrawalSuccessDialog =>
+      'Your request has been sent to administration successfully';
+
+  @override
+  String get okButton => 'OK';
+
+  @override
+  String get enterValidAmount => 'Please enter a valid amount greater than 0';
+
+  @override
+  String get enterAmountPrompt => 'Please enter withdrawal amount';
+
+  @override
+  String amountExceedsBalance(String amount) {
+    return 'Requested amount exceeds available balance ($amount EGP)';
+  }
+
+  @override
   String get walletTotal => 'Total';
 
   @override

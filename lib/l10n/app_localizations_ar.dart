@@ -303,6 +303,95 @@ class AppLocalizationsAr extends AppLocalizations {
   String get transactionHistory => 'سجل المعاملات';
 
   @override
+  String get availableBalanceToWithdraw => 'الرصيد المتاح للسحب';
+
+  @override
+  String get currencyEgp => 'ج.م';
+
+  @override
+  String get debtTitle => 'المديونية';
+
+  @override
+  String get cashWithYou => '  (كاش معاك)';
+
+  @override
+  String get withdrawBalanceButton => 'سحب الرصيد';
+
+  @override
+  String get transactionHistoryTitle => 'سجل المعاملات : ';
+
+  @override
+  String get viewAll => 'عرض الكل';
+
+  @override
+  String get noTransactionsYet => 'لا توجد معاملات حتى الآن';
+
+  @override
+  String maxDebtLimitWarning(String amount) {
+    return 'الحد الأعلى للمديونية عليك $amount جنيه';
+  }
+
+  @override
+  String get maxDebtWarningDetail =>
+      'في حالة الزيادة تتوقف الطلبات من الوصول إليك حتى تقوم بالسداد';
+
+  @override
+  String get pendingReviewBadge => 'قيد المراجعة';
+
+  @override
+  String get completedBadge => 'منتهي';
+
+  @override
+  String get rejectedBadge => 'مرفوض';
+
+  @override
+  String get withdrawalRequest => 'طلب سحب';
+
+  @override
+  String get cashOrder => 'طلب كاش';
+
+  @override
+  String get cardOrder => 'طلب فيزا';
+
+  @override
+  String get debtSettlement => 'تسديد مديونية';
+
+  @override
+  String get appCommission => 'عمولة التطبيق';
+
+  @override
+  String get deliveryFee => 'رسوم التوصيل';
+
+  @override
+  String get withdrawBalanceModalTitle => 'سحب رصيد';
+
+  @override
+  String get withdrawalAmountLabel => 'مبلغ السحب';
+
+  @override
+  String get enterWithdrawalAmountHint => 'ادخل مبلغ السحب';
+
+  @override
+  String get confirmButton => 'تأكيد';
+
+  @override
+  String get withdrawalSuccessDialog => 'تم إرسال طلبك الى الادارة بنجاح';
+
+  @override
+  String get okButton => 'حسناً';
+
+  @override
+  String get enterValidAmount => 'يرجى إدخال مبلغ صالح أكبر من 0';
+
+  @override
+  String get enterAmountPrompt => 'يرجى إدخال مبلغ السحب';
+
+  @override
+  String amountExceedsBalance(String amount) {
+    return 'المبلغ المطلوب يتجاوز الرصيد المتاح ($amount ج.م)';
+  }
+
+  @override
   String get walletTotal => 'الاجمالي';
 
   @override

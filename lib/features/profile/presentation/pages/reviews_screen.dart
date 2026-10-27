@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import 'package:delivery_app_project/core/theme/app_colors.dart';
 import 'package:delivery_app_project/core/theme/text_styles.dart';
+import 'package:delivery_app_project/features/auth/presentation/widgets/auth_back_button.dart';
 import 'package:delivery_app_project/features/reviews/data/models/review_model.dart';
 import 'package:delivery_app_project/features/reviews/presentation/bloc/reviews_cubit.dart';
 import 'package:delivery_app_project/features/reviews/presentation/bloc/reviews_state.dart';
@@ -50,13 +50,19 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
         backgroundColor: bg,
         foregroundColor: fg,
         elevation: 0,
-        leading: BackButton(color: fg, onPressed: () => context.pop()),
-        title: Text(
-          l10n.drawerReviews,
-          style: AppTextStyles.appBarTitle(context),
-        ),
         centerTitle: false,
-        titleSpacing: 4.0,
+        automaticallyImplyLeading: false,
+        titleSpacing: 16.0,
+        title: Row(
+          children: [
+            const AuthBackButton(),
+            const SizedBox(width: 4),
+            Text(
+              l10n.drawerReviews,
+              style: AppTextStyles.appBarTitle(context),
+            ),
+          ],
+        ),
       ),
       body: BlocBuilder<ReviewsCubit, ReviewsState>(
         builder: (context, state) {

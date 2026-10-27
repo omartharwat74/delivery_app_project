@@ -57,6 +57,12 @@ import '../../features/working_hours/domain/usecases/delete_working_hours_usecas
 import '../../features/working_hours/domain/usecases/get_working_hours_usecase.dart';
 import '../../features/working_hours/domain/usecases/update_working_hours_usecase.dart';
 import '../../features/working_hours/presentation/cubit/working_hours_cubit.dart';
+import '../../features/wallet/data/datasources/wallet_remote_datasource.dart';
+import '../../features/wallet/data/repositories/wallet_repository_impl.dart';
+import '../../features/wallet/domain/repositories/wallet_repository.dart';
+import '../../features/wallet/domain/usecases/get_wallet_usecase.dart';
+import '../../features/wallet/domain/usecases/request_withdrawal_usecase.dart';
+import '../../features/wallet/presentation/cubit/wallet_cubit.dart';
 
 final sl = GetIt.instance;
 
@@ -227,6 +233,22 @@ Future<void> init({required SharedPreferences prefs}) async {
   sl.registerFactory(() => SupportCubit(dio: sl<ApiClient>().dio));
   sl.registerFactory(() => ProfileBloc());
   sl.registerFactory(() => PhoneChangeCubit());
+
+  // Wallet
+  sl.registerLazySingleton<WalletRemoteDataSource>(
+    () => WalletRemoteDataSourceImpl(apiClient: sl()),
+  );
+  sl.registerLazySingleton<WalletRepository>(
+    () => WalletRepositoryImpl(remoteDataSource: sl()),
+  );
+  sl.registerLazySingleton(() => GetWalletUseCase(sl()));
+  sl.registerLazySingleton(() => RequestWithdrawalUseCase(sl()));
+  sl.registerFactory(
+    () => WalletCubit(
+      getWalletUseCase: sl(),
+      requestWithdrawalUseCase: sl(),
+    ),
+  );
 
   sl.registerLazySingleton(() => ActiveOrderCubit());
 }

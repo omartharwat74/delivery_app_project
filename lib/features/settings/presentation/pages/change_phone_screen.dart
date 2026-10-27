@@ -356,9 +356,7 @@ class _EgyptPhonePrefix extends StatelessWidget {
             Text(
               '+20',
               style: AppTextStyles.inputText(context).copyWith(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? const Color(0xFF999999)
-                    : const Color(0xFF787878),
+                color: AppColors.onSurface(context),
                 fontSize: 12,
                 fontWeight: FontWeight.w400,
                 height: 1.3,

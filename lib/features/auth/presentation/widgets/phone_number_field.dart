@@ -69,7 +69,7 @@ class PhoneNumberField extends StatelessWidget {
                     textDirection: TextDirection.ltr,
                     child: Row(
                       children: [
-                        const _PhoneCountryPrefix(),
+                        _PhoneCountryPrefix(readOnly: readOnly),
                         Expanded(
                           child: Directionality(
                             textDirection: TextDirection.ltr,
@@ -136,7 +136,9 @@ class PhoneNumberField extends StatelessWidget {
 
 /// Flag + +20 + divider (parent [Row] is forced LTR).
 class _PhoneCountryPrefix extends StatelessWidget {
-  const _PhoneCountryPrefix();
+  final bool readOnly;
+
+  const _PhoneCountryPrefix({this.readOnly = false});
 
   @override
   Widget build(BuildContext context) {
@@ -149,9 +151,13 @@ class _PhoneCountryPrefix extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             '+20',
-            style: AppTextStyles.inputHint(
+            style: AppTextStyles.inputText(
               context,
-            ).copyWith(color: AppColors.paragraph(context)),
+            ).copyWith(
+              color: readOnly
+                  ? AppColors.paragraph(context)
+                  : AppColors.onSurface(context),
+            ),
           ),
           const SizedBox(width: 8),
           Container(width: 1, height: 16, color: AppColors.border(context)),

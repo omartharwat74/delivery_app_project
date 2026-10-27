@@ -167,7 +167,7 @@ class _LoginPageState extends State<LoginPage> {
                                 '+20',
                                 style: AppTextStyles.inputText(
                                   context,
-                                ).copyWith(color: AppColors.paragraph(context)),
+                                ).copyWith(color: AppColors.onSurface(context)),
                               ),
                               const SizedBox(width: 8),
                               Container(

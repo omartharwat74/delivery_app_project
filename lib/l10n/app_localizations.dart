@@ -674,6 +674,174 @@ abstract class AppLocalizations {
   /// **'Transaction History'**
   String get transactionHistory;
 
+  /// No description provided for @availableBalanceToWithdraw.
+  ///
+  /// In en, this message translates to:
+  /// **'Available Balance to Withdraw'**
+  String get availableBalanceToWithdraw;
+
+  /// No description provided for @currencyEgp.
+  ///
+  /// In en, this message translates to:
+  /// **'EGP'**
+  String get currencyEgp;
+
+  /// No description provided for @debtTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Debt'**
+  String get debtTitle;
+
+  /// No description provided for @cashWithYou.
+  ///
+  /// In en, this message translates to:
+  /// **'  (Cash with you)'**
+  String get cashWithYou;
+
+  /// No description provided for @withdrawBalanceButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdraw Balance'**
+  String get withdrawBalanceButton;
+
+  /// No description provided for @transactionHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Transaction History : '**
+  String get transactionHistoryTitle;
+
+  /// No description provided for @viewAll.
+  ///
+  /// In en, this message translates to:
+  /// **'View All'**
+  String get viewAll;
+
+  /// No description provided for @noTransactionsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No transactions yet'**
+  String get noTransactionsYet;
+
+  /// No description provided for @maxDebtLimitWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Your maximum debt limit is {amount} EGP'**
+  String maxDebtLimitWarning(String amount);
+
+  /// No description provided for @maxDebtWarningDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'If exceeded, incoming orders will stop until you pay'**
+  String get maxDebtWarningDetail;
+
+  /// No description provided for @pendingReviewBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Under Review'**
+  String get pendingReviewBadge;
+
+  /// No description provided for @completedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get completedBadge;
+
+  /// No description provided for @rejectedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get rejectedBadge;
+
+  /// No description provided for @withdrawalRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdrawal Request'**
+  String get withdrawalRequest;
+
+  /// No description provided for @cashOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash Order'**
+  String get cashOrder;
+
+  /// No description provided for @cardOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Card Order'**
+  String get cardOrder;
+
+  /// No description provided for @debtSettlement.
+  ///
+  /// In en, this message translates to:
+  /// **'Debt Settlement'**
+  String get debtSettlement;
+
+  /// No description provided for @appCommission.
+  ///
+  /// In en, this message translates to:
+  /// **'App Commission'**
+  String get appCommission;
+
+  /// No description provided for @deliveryFee.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery Fee'**
+  String get deliveryFee;
+
+  /// No description provided for @withdrawBalanceModalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdraw Balance'**
+  String get withdrawBalanceModalTitle;
+
+  /// No description provided for @withdrawalAmountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdrawal Amount'**
+  String get withdrawalAmountLabel;
+
+  /// No description provided for @enterWithdrawalAmountHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter withdrawal amount'**
+  String get enterWithdrawalAmountHint;
+
+  /// No description provided for @confirmButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get confirmButton;
+
+  /// No description provided for @withdrawalSuccessDialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Your request has been sent to administration successfully'**
+  String get withdrawalSuccessDialog;
+
+  /// No description provided for @okButton.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get okButton;
+
+  /// No description provided for @enterValidAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid amount greater than 0'**
+  String get enterValidAmount;
+
+  /// No description provided for @enterAmountPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter withdrawal amount'**
+  String get enterAmountPrompt;
+
+  /// No description provided for @amountExceedsBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Requested amount exceeds available balance ({amount} EGP)'**
+  String amountExceedsBalance(String amount);
+
   /// No description provided for @walletTotal.
   ///
   /// In en, this message translates to:

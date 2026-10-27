@@ -107,6 +107,48 @@
   "currentBalance": "رصيدك الحالي",
   "withdrawButton": "سحب",
   "transactionHistory": "سجل المعاملات",
+  "availableBalanceToWithdraw": "الرصيد المتاح للسحب",
+  "currencyEgp": "ج.م",
+  "debtTitle": "المديونية",
+  "cashWithYou": "  (كاش معاك)",
+  "withdrawBalanceButton": "سحب الرصيد",
+  "transactionHistoryTitle": "سجل المعاملات : ",
+  "viewAll": "عرض الكل",
+  "noTransactionsYet": "لا توجد معاملات حتى الآن",
+  "maxDebtLimitWarning": "الحد الأعلى للمديونية عليك {amount} جنيه",
+  "@maxDebtLimitWarning": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "maxDebtWarningDetail": "في حالة الزيادة تتوقف الطلبات من الوصول إليك حتى تقوم بالسداد",
+  "pendingReviewBadge": "قيد المراجعة",
+  "completedBadge": "منتهي",
+  "rejectedBadge": "مرفوض",
+  "withdrawalRequest": "طلب سحب",
+  "cashOrder": "طلب كاش",
+  "cardOrder": "طلب فيزا",
+  "debtSettlement": "تسديد مديونية",
+  "appCommission": "عمولة التطبيق",
+  "deliveryFee": "رسوم التوصيل",
+  "withdrawBalanceModalTitle": "سحب رصيد",
+  "withdrawalAmountLabel": "مبلغ السحب",
+  "enterWithdrawalAmountHint": "ادخل مبلغ السحب",
+  "confirmButton": "تأكيد",
+  "withdrawalSuccessDialog": "تم إرسال طلبك الى الادارة بنجاح",
+  "okButton": "حسناً",
+  "enterValidAmount": "يرجى إدخال مبلغ صالح أكبر من 0",
+  "enterAmountPrompt": "يرجى إدخال مبلغ السحب",
+  "amountExceedsBalance": "المبلغ المطلوب يتجاوز الرصيد المتاح ({amount} ج.م)",
+  "@amountExceedsBalance": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "walletTotal": "الاجمالي",
   "walletPaymentMethod": "طريقة الدفع",
   "walletOrderDate": "تاريخ الطلب",

@@ -112,6 +112,48 @@
   "currentBalance": "Your current balance",
   "withdrawButton": "Withdraw",
   "transactionHistory": "Transaction History",
+  "availableBalanceToWithdraw": "Available Balance to Withdraw",
+  "currencyEgp": "EGP",
+  "debtTitle": "Debt",
+  "cashWithYou": "  (Cash with you)",
+  "withdrawBalanceButton": "Withdraw Balance",
+  "transactionHistoryTitle": "Transaction History : ",
+  "viewAll": "View All",
+  "noTransactionsYet": "No transactions yet",
+  "maxDebtLimitWarning": "Your maximum debt limit is {amount} EGP",
+  "@maxDebtLimitWarning": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "maxDebtWarningDetail": "If exceeded, incoming orders will stop until you pay",
+  "pendingReviewBadge": "Under Review",
+  "completedBadge": "Completed",
+  "rejectedBadge": "Rejected",
+  "withdrawalRequest": "Withdrawal Request",
+  "cashOrder": "Cash Order",
+  "cardOrder": "Card Order",
+  "debtSettlement": "Debt Settlement",
+  "appCommission": "App Commission",
+  "deliveryFee": "Delivery Fee",
+  "withdrawBalanceModalTitle": "Withdraw Balance",
+  "withdrawalAmountLabel": "Withdrawal Amount",
+  "enterWithdrawalAmountHint": "Enter withdrawal amount",
+  "confirmButton": "Confirm",
+  "withdrawalSuccessDialog": "Your request has been sent to administration successfully",
+  "okButton": "OK",
+  "enterValidAmount": "Please enter a valid amount greater than 0",
+  "enterAmountPrompt": "Please enter withdrawal amount",
+  "amountExceedsBalance": "Requested amount exceeds available balance ({amount} EGP)",
+  "@amountExceedsBalance": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "walletTotal": "Total",
   "walletPaymentMethod": "Payment Method",
   "walletOrderDate": "Order Date",

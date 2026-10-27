@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:delivery_app_project/core/theme/text_styles.dart';
+import 'package:delivery_app_project/features/auth/presentation/widgets/auth_back_button.dart';
 import 'package:delivery_app_project/features/orders/presentation/widgets/order_card.dart';
 import 'package:delivery_app_project/features/orders/domain/entities/order_entity.dart';
 import 'package:delivery_app_project/features/orders/presentation/pages/order_details_screen.dart';
@@ -57,16 +58,20 @@ class OrdersScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        centerTitle: false,
-        titleSpacing: 4.0,
-        title: Text(
-          l10n.ordersTitle,
-          style: AppTextStyles.appBarTitle(context),
-        ),
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
-        iconTheme: IconThemeData(
-          color: Theme.of(context).colorScheme.onSurface,
+        centerTitle: false,
+        automaticallyImplyLeading: false,
+        titleSpacing: 16.0,
+        title: Row(
+          children: [
+            const AuthBackButton(),
+            const SizedBox(width: 4),
+            Text(
+              l10n.ordersTitle,
+              style: AppTextStyles.appBarTitle(context),
+            ),
+          ],
         ),
       ),
       body: CustomScrollView(

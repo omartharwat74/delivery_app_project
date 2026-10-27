@@ -1,10 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import 'package:delivery_app_project/core/constants/app_assets.dart';
 import 'package:delivery_app_project/core/theme/app_colors.dart';
 import 'package:delivery_app_project/core/theme/text_styles.dart';
+import 'package:delivery_app_project/features/auth/presentation/widgets/auth_back_button.dart';
 import 'package:delivery_app_project/features/notifications/data/models/notification_model.dart';
 import 'package:delivery_app_project/features/notifications/presentation/bloc/notifications_cubit.dart';
 import 'package:delivery_app_project/features/notifications/presentation/bloc/notifications_state.dart';
@@ -25,13 +25,19 @@ class NotificationsScreen extends StatelessWidget {
         backgroundColor: bg,
         foregroundColor: fg,
         elevation: 0,
-        leading: BackButton(color: fg, onPressed: () => context.pop()),
-        title: Text(
-          l10n.drawerNotifications,
-          style: AppTextStyles.appBarTitle(context),
-        ),
         centerTitle: false,
-        titleSpacing: 4.0,
+        automaticallyImplyLeading: false,
+        titleSpacing: 16.0,
+        title: Row(
+          children: [
+            const AuthBackButton(),
+            const SizedBox(width: 4),
+            Text(
+              l10n.drawerNotifications,
+              style: AppTextStyles.appBarTitle(context),
+            ),
+          ],
+        ),
       ),
       body: BlocBuilder<NotificationsCubit, NotificationsState>(
         builder: (context, state) {

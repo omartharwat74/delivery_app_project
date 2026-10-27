@@ -35,6 +35,10 @@ class ApiConstants {
   // Working Hours
   static const String workingHours = '/working-hours';
 
+  // Wallet Endpoints
+  static const String wallet = '/wallet';
+  static const String walletWithdrawals = '/wallet/withdrawals';
+
   // Reviews
   static const String reviews = '/reviews';
   static const String reportReview = '/reviews/report';

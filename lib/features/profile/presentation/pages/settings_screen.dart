@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 import 'package:delivery_app_project/core/constants/app_assets.dart';
 import 'package:delivery_app_project/core/localization/app_locale_scope.dart';
@@ -9,8 +8,8 @@ import 'package:delivery_app_project/core/theme/app_theme_scope.dart';
 import 'package:delivery_app_project/core/theme/text_styles.dart';
 import 'package:delivery_app_project/core/widgets/app_media.dart';
 import 'package:delivery_app_project/features/auth/presentation/widgets/app_language_picker_modal.dart';
+import 'package:delivery_app_project/features/auth/presentation/widgets/auth_back_button.dart';
 import 'package:delivery_app_project/l10n/app_localizations.dart';
-import 'package:delivery_app_project/core/widgets/app_directional_icons.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection_container.dart';
 import '../bloc/profile_bloc.dart';
@@ -254,19 +253,7 @@ class _SettingsHeader extends StatelessWidget {
         ),
         child: Row(
           children: [
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => context.pop(),
-              child: SizedBox(
-                width: 28,
-                height: 28,
-                child: Icon(
-                  _visualBackChevronIcon(context),
-                  size: 28,
-                  color: AppColors.onSurface(context),
-                ),
-              ),
-            ),
+            const AuthBackButton(),
             const SizedBox(width: 4),
             Expanded(
               child: Text(
@@ -286,10 +273,6 @@ class _SettingsHeader extends StatelessWidget {
       ),
     );
   }
-}
-
-IconData _visualBackChevronIcon(BuildContext context) {
-  return AppDirectionalIcons.backChevron(context);
 }
 
 class _LanguageTrailing extends StatelessWidget {
