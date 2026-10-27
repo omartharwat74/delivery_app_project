@@ -11,6 +11,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/text_styles.dart';
 import '../../../../core/utils/phone_formatter.dart';
 import '../../../../core/widgets/app_directional_icons.dart';
+import '../../../../core/widgets/app_success_dialog.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../bloc/settings_cubit.dart';
 import '../bloc/settings_state.dart';
@@ -142,29 +143,18 @@ class _VerifyPhoneOtpScreenState extends State<VerifyPhoneOtpScreen> {
     _resendTimer?.cancel();
     setState(() => _isCompleting = true);
 
-    unawaited(
-      showDialog<void>(
-        context: context,
-        barrierDismissible: false,
-        barrierColor: AppColors.languageModalBarrier(context),
-        builder: (dialogContext) => const _PhoneChangedSuccessDialog(),
-      ),
+    final l10n = AppLocalizations.of(context);
+    await AppSuccessDialog.show(
+      context,
+      message: l10n?.phoneChangedTitle ?? 'تم تغيير رقم الجوال بنجاح',
     );
 
-    // Keep dialog comfortably visible for 2.2 seconds so user sees it clearly
-    await Future<void>.delayed(const Duration(milliseconds: 2200));
     if (!mounted) return;
-
-    // Dismiss dialog and return directly to settings screen
-    final navigator = Navigator.of(context, rootNavigator: true);
-    if (navigator.canPop()) navigator.pop();
-    if (mounted) {
-      context.read<SettingsCubit>().resetPhoneChangeFlow();
-      if (context.canPop()) {
-        context.pop();
-      } else {
-        context.goNamed(RouteNames.settings);
-      }
+    context.read<SettingsCubit>().resetPhoneChangeFlow();
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.goNamed(RouteNames.settings);
     }
   }
 
@@ -538,50 +528,6 @@ class _ResendCodeRow extends StatelessWidget {
             ),
           ],
         ],
-      ),
-    );
-  }
-}
-
-class _PhoneChangedSuccessDialog extends StatelessWidget {
-  const _PhoneChangedSuccessDialog();
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-
-    return Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16),
-      backgroundColor: AppColors.transparent,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsetsDirectional.fromSTEB(16, 20, 16, 20),
-        decoration: BoxDecoration(
-          color: AppColors.scaffoldBackground(context),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Image.asset(
-              AppAssets.profileSuccessIcon,
-              width: 132,
-              height: 132,
-              fit: BoxFit.contain,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              l10n.phoneChangedTitle,
-              textAlign: TextAlign.center,
-              style: AppTextStyles.heading4(context).copyWith(
-                color: AppColors.onSurface(context),
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                height: 1.4,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

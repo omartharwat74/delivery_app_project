@@ -13,6 +13,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/text_styles.dart';
 import '../../../../core/utils/auth_form_validation.dart';
 import '../../../../core/utils/auth_validators.dart';
+import '../../../../core/widgets/app_success_dialog.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../bloc/auth_cubit.dart';
 import '../bloc/auth_state.dart';
@@ -208,7 +209,14 @@ class _RegisterDriverPageState extends State<RegisterDriverPage> {
       listener: (context, state) {
         if (state is AuthRegistrationPending ||
             state is AuthRegistrationSubmitted) {
-          context.go(RouteNames.pending);
+          AppSuccessDialog.show(
+            context,
+            message: l10n.registrationPendingMessage,
+          ).then((_) {
+            if (context.mounted) {
+              context.go(RouteNames.login);
+            }
+          });
         } else if (state is AuthError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
