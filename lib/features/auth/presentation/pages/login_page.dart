@@ -7,6 +7,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../widgets/language_picker_sheet.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/text_styles.dart';
+import '../../../../core/utils/english_digits_formatter.dart';
 import '../widgets/auth_text_field.dart';
 import '../bloc/auth_cubit.dart';
 import '../bloc/auth_state.dart';
@@ -22,7 +23,9 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _phoneController = TextEditingController();
 
   void _submit() {
-    final phone = _phoneController.text.trim();
+    final phone = EnglishDigitsOnlyFormatter.toEnglishDigits(
+      _phoneController.text.trim(),
+    );
     final l10n = AppLocalizations.of(context)!;
 
     if (phone.isEmpty) {
@@ -184,9 +187,16 @@ class _LoginPageState extends State<LoginPage> {
                         controller: _phoneController,
                         label: l10n.loginPhoneLabel,
                         hintText: l10n.loginPhoneHint,
-                        keyboardType: TextInputType.phone,
-                        textAlign: TextAlign.start,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          signed: false,
+                          decimal: false,
+                        ),
+                        textAlign: TextAlign.left,
                         textDirection: TextDirection.ltr,
+                        maxLength: 11,
+                        inputFormatters: const [
+                          EnglishDigitsOnlyFormatter(maxLength: 11),
+                        ],
                         prefixIcon: isAr ? null : flagWidget,
                         suffixIcon: isAr ? flagWidget : null,
                       );

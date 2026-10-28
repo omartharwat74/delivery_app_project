@@ -132,6 +132,7 @@ class _AuthTextFieldState extends State<AuthTextField> {
                 }) => null
               : null,
           decoration: InputDecoration(
+            counterText: widget.maxLength != null ? '' : null,
             hintText: widget.hintText,
             hintStyle: AppTextStyles.inputHint(context),
             filled: true,

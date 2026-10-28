@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +8,7 @@ import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/text_styles.dart';
+import '../../../../core/utils/english_digits_formatter.dart';
 import '../../../../core/utils/phone_formatter.dart';
 import '../../../../core/widgets/app_directional_icons.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -302,12 +302,16 @@ class _PhoneNumberField extends StatelessWidget {
                   child: TextField(
                     controller: controller,
                     focusNode: focusNode,
-                    keyboardType: TextInputType.phone,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      signed: false,
+                      decimal: false,
+                    ),
                     textInputAction: TextInputAction.done,
                     textDirection: TextDirection.ltr,
-                    textAlign: TextAlign.start,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+                    textAlign: TextAlign.left,
+                    maxLength: 11,
+                    inputFormatters: const [
+                      EnglishDigitsOnlyFormatter(maxLength: 11),
                     ],
                     cursorColor: AppColors.cursor(context),
                     style: AppTextStyles.inputText(context).copyWith(
@@ -317,6 +321,7 @@ class _PhoneNumberField extends StatelessWidget {
                       height: 1.3,
                     ),
                     decoration: InputDecoration(
+                      counterText: '',
                       isDense: true,
                       hintText: hint,
                       hintStyle: AppTextStyles.inputHint(context).copyWith(

@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +8,7 @@ import '../../../../core/constants/app_assets.dart';
 import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/text_styles.dart';
+import '../../../../core/utils/english_digits_formatter.dart';
 import '../../../../core/utils/phone_formatter.dart';
 import '../../../../core/widgets/app_directional_icons.dart';
 import '../../../../core/widgets/app_success_dialog.dart';
@@ -376,13 +376,16 @@ class _OtpInput extends StatelessWidget {
                     controller: controller,
                     focusNode: focusNode,
                     autofocus: true,
-                    keyboardType: TextInputType.number,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      signed: false,
+                      decimal: false,
+                    ),
                     maxLength: 6,
                     textAlign: TextAlign.left,
                     textDirection: TextDirection.ltr,
                     textInputAction: TextInputAction.done,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+                    inputFormatters: const [
+                      EnglishDigitsOnlyFormatter(maxLength: 6),
                     ],
                     style: AppTextStyles.hiddenOtpInput,
                     showCursor: false,

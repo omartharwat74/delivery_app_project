@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/text_styles.dart';
+import '../../../../core/utils/english_digits_formatter.dart';
 import '../../../../core/widgets/app_media.dart';
 
 /// Phone field with Egypt +20 prefix locked on the physical LEFT (LTR island).
@@ -78,9 +78,13 @@ class PhoneNumberField extends StatelessWidget {
                               builder: (context, value, child) {
                                 return TextField(
                                   controller: controller,
-                                  keyboardType: TextInputType.phone,
+                                  keyboardType: const TextInputType.numberWithOptions(
+                                    signed: false,
+                                    decimal: false,
+                                  ),
                                   textDirection: TextDirection.ltr,
-                                  textAlign: TextAlign.start,
+                                  textAlign: TextAlign.left,
+                                  maxLength: 11,
                                   style: AppTextStyles.inputText(context)
                                       .copyWith(
                                         color: readOnly
@@ -89,10 +93,11 @@ class PhoneNumberField extends StatelessWidget {
                                       ),
                                   readOnly: readOnly,
                                   cursorColor: AppColors.cursor(context),
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter.digitsOnly,
+                                  inputFormatters: const [
+                                    EnglishDigitsOnlyFormatter(maxLength: 11),
                                   ],
                                   decoration: InputDecoration(
+                                    counterText: '',
                                     hintText: hintText,
                                     hintStyle: AppTextStyles.inputHint(context),
                                     border: InputBorder.none,

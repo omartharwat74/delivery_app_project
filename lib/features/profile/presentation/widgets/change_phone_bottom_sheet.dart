@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/text_styles.dart';
+import '../../../../core/utils/english_digits_formatter.dart';
 import '../../../../core/widgets/app_otp_input.dart';
 import '../../../../core/widgets/app_success_dialog.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -78,8 +79,18 @@ class _ChangePhoneBottomSheetState extends State<ChangePhoneBottomSheet> {
                 const SizedBox(height: 12),
                 TextField(
                   controller: _currentPhoneController,
-                  keyboardType: TextInputType.phone,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    signed: false,
+                    decimal: false,
+                  ),
+                  textDirection: TextDirection.ltr,
+                  textAlign: TextAlign.left,
+                  maxLength: 11,
+                  inputFormatters: const [
+                    EnglishDigitsOnlyFormatter(maxLength: 11),
+                  ],
                   decoration: InputDecoration(
+                    counterText: '',
                     labelText: l10n.currentPhoneLabel,
                     errorText: errorMessage == 'invalidPhone'
                         ? l10n.invalidPhone
@@ -127,8 +138,18 @@ class _ChangePhoneBottomSheetState extends State<ChangePhoneBottomSheet> {
                 const SizedBox(height: 12),
                 TextField(
                   controller: _newPhoneController,
-                  keyboardType: TextInputType.phone,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    signed: false,
+                    decimal: false,
+                  ),
+                  textDirection: TextDirection.ltr,
+                  textAlign: TextAlign.left,
+                  maxLength: 11,
+                  inputFormatters: const [
+                    EnglishDigitsOnlyFormatter(maxLength: 11),
+                  ],
                   decoration: InputDecoration(
+                    counterText: '',
                     labelText: l10n.newPhoneLabel,
                     errorText: errorMessage == 'invalidPhone'
                         ? l10n.invalidPhone

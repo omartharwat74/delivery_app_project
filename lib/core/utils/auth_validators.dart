@@ -1,3 +1,5 @@
+import 'english_digits_formatter.dart';
+
 class AuthValidators {
   AuthValidators._();
 
@@ -29,7 +31,7 @@ class AuthValidators {
     required String requiredMessage,
     required String invalidMessage,
   }) {
-    var digits = (value ?? '').replaceAll(RegExp(r'\D'), '');
+    var digits = EnglishDigitsOnlyFormatter.toEnglishDigits(value ?? '');
     if (digits.isEmpty) return requiredMessage;
     if (digits.startsWith('20') && digits.length >= 12) {
       digits = digits.substring(2);
@@ -44,7 +46,7 @@ class AuthValidators {
     required String requiredMessage,
     required String invalidMessage,
   }) {
-    final digits = (value ?? '').replaceAll(RegExp(r'\D'), '');
+    final digits = EnglishDigitsOnlyFormatter.toEnglishDigits(value ?? '');
     if (digits.isEmpty) return requiredMessage;
     if (digits.length != 14) return invalidMessage;
     return null;
@@ -95,9 +97,9 @@ class AuthValidators {
     required String requiredMessage,
     required String invalidMessage,
   }) {
-    final s = (value ?? '').trim();
+    final s = EnglishDigitsOnlyFormatter.toEnglishDigits(value ?? '');
     if (s.isEmpty) return requiredMessage;
-    if (s.length != 6 || RegExp(r'\D').hasMatch(s)) return invalidMessage;
+    if (s.length != 6) return invalidMessage;
     return null;
   }
 }

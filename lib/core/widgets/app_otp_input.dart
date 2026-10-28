@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../l10n/app_localizations.dart';
 import '../theme/app_colors.dart';
 import '../theme/text_styles.dart';
+import '../utils/english_digits_formatter.dart';
 
 class AppOtpInput extends StatefulWidget {
   final bool isLoading;
@@ -89,14 +89,17 @@ class _AppOtpInputState extends State<AppOtpInput> {
                     controller: _controller,
                     focusNode: _focusNode,
                     autofocus: true,
-                    keyboardType: TextInputType.number,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      signed: false,
+                      decimal: false,
+                    ),
                     maxLength: 6,
                     textAlign: TextAlign.left,
                     textDirection: TextDirection.ltr,
                     showCursor: false,
                     style: AppTextStyles.hiddenOtpInput,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
+                    inputFormatters: const [
+                      EnglishDigitsOnlyFormatter(maxLength: 6),
                     ],
                     decoration: const InputDecoration(
                       border: InputBorder.none,
