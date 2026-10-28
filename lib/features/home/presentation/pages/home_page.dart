@@ -1,34 +1,192 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-
-import '../widgets/home_drawer.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+
+import '../../../../core/di/injection_container.dart';
 import '../../../../core/router/route_names.dart';
+import '../../../../core/services/location_service.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/bloc/auth_cubit.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../orders/presentation/bloc/active_order_cubit.dart';
 import '../../../orders/presentation/bloc/active_order_state.dart';
 import '../../../orders/presentation/widgets/active_order_card.dart';
-import '../../../../l10n/app_localizations.dart';
 import '../bloc/home_cubit.dart';
 import '../bloc/home_state.dart';
+import '../widgets/driver_map_view.dart';
+import '../widgets/home_drawer.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final LocationService? locationService;
+  const HomePage({super.key, this.locationService});
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
+  late final LocationService _locationService;
+  StreamSubscription<dynamic>? _positionSubscription;
+  LatLng? _currentDriverLocation;
+  bool _hasPromptedPermission = false;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _locationService = widget.locationService ??
+        (sl.isRegistered<LocationService>()
+            ? sl<LocationService>()
+            : LocationServiceImpl());
+
     context.read<HomeCubit>().initHome(
       onOrderOfferChime: () =>
           context.read<ActiveOrderCubit>().checkCurrentOffer(),
     );
     context.read<ActiveOrderCubit>().restoreActiveOrderOrOffer();
+
+    // Check cached location from driver model first
+    final driver = context.read<HomeCubit>().state.driver;
+    if (driver != null) {
+      final lat = driver.currentLat;
+      final lng = driver.currentLng;
+      if (lat != null && lng != null) {
+        _currentDriverLocation = LatLng(lat, lng);
+      }
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startLocationUpdates();
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.detached) {
+      _stopLocationUpdates();
+    } else if (state == AppLifecycleState.resumed) {
+      _startLocationUpdates();
+    }
+  }
+
+  Future<void> _startLocationUpdates() async {
+    if (_positionSubscription != null || !mounted) return;
+
+    // 1. If we don't have an initial location, check last known position
+    if (_currentDriverLocation == null) {
+      final lastPos = await _locationService.getLastKnownPosition();
+      if (lastPos != null && mounted) {
+        setState(() {
+          _currentDriverLocation = LatLng(lastPos.latitude, lastPos.longitude);
+        });
+      }
+    }
+
+    if (!mounted) return;
+
+    // 2. Check permission status
+    final status = await _locationService.getPermissionStatus();
+    if (!mounted) return;
+
+    if (status == LocationPermissionStatus.granted) {
+      _subscribeToLocationStream();
+      return;
+    }
+
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) return;
+
+    if (status == LocationPermissionStatus.serviceDisabled) {
+      _showLocationSnackBar(
+        message: l10n.locationServiceDisabled,
+        actionLabel: l10n.enableGps,
+        onAction: () => _locationService.openLocationSettings(),
+      );
+      return;
+    }
+
+    if (status == LocationPermissionStatus.deniedForever) {
+      _showLocationSnackBar(
+        message: l10n.locationPermissionPermanentlyDenied,
+        actionLabel: l10n.openSettings,
+        onAction: () => _locationService.openAppSettings(),
+      );
+      return;
+    }
+
+    if (status == LocationPermissionStatus.denied && !_hasPromptedPermission) {
+      _hasPromptedPermission = true;
+      final requestedStatus = await _locationService.requestPermission();
+      if (!mounted) return;
+
+      if (requestedStatus == LocationPermissionStatus.granted) {
+        _subscribeToLocationStream();
+      } else if (requestedStatus == LocationPermissionStatus.deniedForever) {
+        _showLocationSnackBar(
+          message: l10n.locationPermissionPermanentlyDenied,
+          actionLabel: l10n.openSettings,
+          onAction: () => _locationService.openAppSettings(),
+        );
+      } else {
+        _showLocationSnackBar(
+          message: l10n.locationPermissionDenied,
+        );
+      }
+    }
+  }
+
+  void _subscribeToLocationStream() {
+    _positionSubscription?.cancel();
+    _positionSubscription = _locationService.getPositionStream().listen(
+      (position) {
+        if (!mounted) return;
+        setState(() {
+          _currentDriverLocation =
+              LatLng(position.latitude, position.longitude);
+        });
+      },
+      onError: (_) {
+        // Non-fatal stream error
+      },
+    );
+  }
+
+  void _showLocationSnackBar({
+    required String message,
+    String? actionLabel,
+    VoidCallback? onAction,
+  }) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Theme.of(context).colorScheme.error,
+        behavior: SnackBarBehavior.floating,
+        action: actionLabel != null && onAction != null
+            ? SnackBarAction(
+                label: actionLabel,
+                textColor: Colors.white,
+                onPressed: onAction,
+              )
+            : null,
+      ),
+    );
+  }
+
+  void _stopLocationUpdates() {
+    _positionSubscription?.cancel();
+    _positionSubscription = null;
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _stopLocationUpdates();
+    super.dispose();
   }
 
   @override
@@ -72,23 +230,42 @@ class _HomePageState extends State<HomePage> {
       ],
       child: Scaffold(
         drawer: const HomeDrawer(),
-
         body: SizedBox.expand(
           child: Stack(
             children: [
-              // Background Map Placeholder
+              // Background Real Google Map View
               Positioned.fill(
-                child: Image.asset(
-                  'assets/images/map_placeholder.png',
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    color: Colors.grey[200],
-                    child: const Center(child: Text('Map Placeholder')),
-                  ),
+                child: BlocBuilder<ActiveOrderCubit, ActiveOrderState>(
+                  builder: (context, activeOrderState) {
+                    LatLng? storeLocation;
+                    final hasActiveSheet =
+                        activeOrderState is ActiveOrderOfferReceived ||
+                            activeOrderState is ActiveOrderInProgress;
+
+                    if (activeOrderState is ActiveOrderInProgress) {
+                      final store = activeOrderState.order.store;
+                      if (store != null) {
+                        final lat = store.lat;
+                        final lng = store.long;
+                        if (lat != null && lng != null) {
+                          storeLocation = LatLng(lat, lng);
+                        }
+                      }
+                    }
+
+                    return DriverMapView(
+                      driverLocation: _currentDriverLocation,
+                      storeLocation: storeLocation,
+                      mapPadding: EdgeInsets.only(
+                        top: 80.0,
+                        bottom: hasActiveSheet ? 260.0 : 24.0,
+                      ),
+                    );
+                  },
                 ),
               ),
 
-              // Floating Overlays
+              // Floating Overlays (Menu Button & Online Switch)
               Positioned(
                 top: 0,
                 left: 0,
@@ -227,6 +404,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               ),
+
               // Active Order Card Overlay
               const Positioned(
                 bottom: 0,

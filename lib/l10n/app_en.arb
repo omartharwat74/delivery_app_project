@@ -357,5 +357,15 @@
   "loadWorkingHoursError": "Failed to load working hours",
   "@loadWorkingHoursError": { "description": "Error message when loading working hours fails" },
   "retry": "Retry",
-  "@retry": { "description": "Retry button label" }
+  "@retry": { "description": "Retry button label" },
+  "locationPermissionDenied": "Location permission was denied.",
+  "@locationPermissionDenied": { "description": "Error message when location permission is denied" },
+  "locationPermissionPermanentlyDenied": "Location permission is permanently denied. Please enable it from app settings.",
+  "@locationPermissionPermanentlyDenied": { "description": "Error message when location permission is permanently denied" },
+  "locationServiceDisabled": "Location services (GPS) are disabled. Please enable them to track your location.",
+  "@locationServiceDisabled": { "description": "Error message when GPS is turned off" },
+  "openSettings": "Settings",
+  "@openSettings": { "description": "Action button to open device settings" },
+  "enableGps": "Enable",
+  "@enableGps": { "description": "Action button to enable GPS" }
 }

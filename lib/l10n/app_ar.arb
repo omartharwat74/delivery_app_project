@@ -284,5 +284,10 @@
   "updateWorkingHoursSuccess": "تم تعديل موعد العمل بنجاح",
   "editWorkingHoursSoon": "سيتم تفعيل تعديل المواعيد قريباً من خلال الخادم",
   "loadWorkingHoursError": "حدث خطأ في تحميل مواعيد العمل",
-  "retry": "إعادة المحاولة"
+  "retry": "إعادة المحاولة",
+  "locationPermissionDenied": "تم رفض إذن الوصول إلى الموقع.",
+  "locationPermissionPermanentlyDenied": "إذن الوصول إلى الموقع مرفوض دائماً. يرجى تفعيله من إعدادات التطبيق.",
+  "locationServiceDisabled": "خدمات الموقع (GPS) معطلة. يرجى تشغيلها لتحديد موقعك بدقة.",
+  "openSettings": "الإعدادات",
+  "enableGps": "تفعيل"
 }

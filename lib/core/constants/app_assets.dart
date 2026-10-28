@@ -51,4 +51,5 @@ class AppAssets {
       'assets/images/icons/profile/profile_success_icon.gif';
   static const emptyNotifications =
       'assets/images/notifications/notification_bell.png';
+  static const scooterMarker = 'assets/icons/scooter_marker.svg';
 }

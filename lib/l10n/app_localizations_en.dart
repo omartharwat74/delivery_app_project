@@ -792,4 +792,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get retry => 'Retry';
+
+  @override
+  String get locationPermissionDenied => 'Location permission was denied.';
+
+  @override
+  String get locationPermissionPermanentlyDenied =>
+      'Location permission is permanently denied. Please enable it from app settings.';
+
+  @override
+  String get locationServiceDisabled =>
+      'Location services (GPS) are disabled. Please enable them to track your location.';
+
+  @override
+  String get openSettings => 'Settings';
+
+  @override
+  String get enableGps => 'Enable';
 }

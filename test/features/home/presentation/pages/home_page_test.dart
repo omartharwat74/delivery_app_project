@@ -14,6 +14,8 @@ import 'package:delivery_app_project/features/orders/data/models/order_model.dar
 import 'package:delivery_app_project/features/orders/domain/entities/order_entity.dart';
 import 'package:delivery_app_project/features/orders/domain/repositories/order_repository.dart';
 import 'package:delivery_app_project/features/orders/presentation/bloc/active_order_cubit.dart';
+import 'package:delivery_app_project/features/home/presentation/widgets/driver_map_view.dart';
+import 'package:delivery_app_project/core/services/location_service.dart';
 import 'package:delivery_app_project/l10n/app_localizations.dart';
 
 import '../../../auth/auth_flow_test.dart';
@@ -175,4 +177,46 @@ void main() {
 
     expect(find.text('لا يمكنك إنهاء الشيفت أو تسجيل الخروج أثناء تنفيذ طلب.'), findsOneWidget);
   });
+
+  testWidgets('renders DriverMapView instead of static Image.asset placeholder', (tester) async {
+    await tester.pumpWidget(buildHomePage());
+    await tester.pumpAndSettle();
+
+    expect(find.byType(DriverMapView), findsOneWidget);
+    expect(find.byType(Image), findsNothing);
+  });
+
+  testWidgets('displays SnackBar when GPS location services are disabled', (tester) async {
+    final mockLocService = MockLocationService();
+    mockLocService.shouldGrantPermission = false;
+
+    // Use HomePage with custom location service that reports serviceDisabled
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('ar'),
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        home: MultiBlocProvider(
+          providers: [
+            BlocProvider<HomeCubit>.value(value: homeCubit),
+            BlocProvider<AuthCubit>.value(value: authCubit),
+            BlocProvider<ActiveOrderCubit>.value(value: activeOrderCubit),
+          ],
+          child: HomePage(locationService: _DisabledGpsLocationService()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('خدمات الموقع (GPS) معطلة. يرجى تشغيلها لتحديد موقعك بدقة.'),
+      findsOneWidget,
+    );
+  });
+}
+
+class _DisabledGpsLocationService extends MockLocationService {
+  @override
+  Future<LocationPermissionStatus> getPermissionStatus() async =>
+      LocationPermissionStatus.serviceDisabled;
 }

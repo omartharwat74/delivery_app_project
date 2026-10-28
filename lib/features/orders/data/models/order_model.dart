@@ -27,6 +27,7 @@ class OrderStoreModel extends OrderStoreEntity {
   });
 
   factory OrderStoreModel.fromJson(Map<String, dynamic> json) {
+    // TODO(API): store lat/lng not returned by backend yet
     return OrderStoreModel(
       id: json['id'] != null ? _asInt(json['id']) : null,
       name: json['name']?.toString() ?? '',
@@ -34,8 +35,12 @@ class OrderStoreModel extends OrderStoreEntity {
       address: json['address']?.toString(),
       logo: json['logo']?.toString(),
       deliveryMode: json['delivery_mode']?.toString(),
-      lat: json['lat'] != null ? _asDouble(json['lat']) : null,
-      long: json['long'] != null ? _asDouble(json['long']) : null,
+      lat: (json['lat'] ?? json['latitude'] ?? json['store_lat']) != null
+          ? _asDouble(json['lat'] ?? json['latitude'] ?? json['store_lat'])
+          : null,
+      long: (json['long'] ?? json['lng'] ?? json['longitude'] ?? json['store_lng']) != null
+          ? _asDouble(json['long'] ?? json['lng'] ?? json['longitude'] ?? json['store_lng'])
+          : null,
     );
   }
 

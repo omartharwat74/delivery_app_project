@@ -20,10 +20,32 @@ class MockLocationService implements LocationService {
   Future<bool> checkAndRequestPermission() async => shouldGrantPermission;
 
   @override
+  Future<LocationPermissionStatus> getPermissionStatus() async =>
+      shouldGrantPermission
+          ? LocationPermissionStatus.granted
+          : LocationPermissionStatus.denied;
+
+  @override
+  Future<LocationPermissionStatus> requestPermission() async =>
+      shouldGrantPermission
+          ? LocationPermissionStatus.granted
+          : LocationPermissionStatus.denied;
+
+  @override
   Future<Position?> getCurrentPosition() async => positionToReturn;
 
   @override
   Future<Position?> getLastKnownPosition() async => positionToReturn;
+
+  @override
+  Stream<Position> getPositionStream({LocationSettings? locationSettings}) =>
+      const Stream.empty();
+
+  @override
+  Future<bool> openAppSettings() async => true;
+
+  @override
+  Future<bool> openLocationSettings() async => true;
 }
 
 class MockNotificationService implements NotificationService {

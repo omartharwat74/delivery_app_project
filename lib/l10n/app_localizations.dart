@@ -1567,6 +1567,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Retry'**
   String get retry;
+
+  /// Error message when location permission is denied
+  ///
+  /// In en, this message translates to:
+  /// **'Location permission was denied.'**
+  String get locationPermissionDenied;
+
+  /// Error message when location permission is permanently denied
+  ///
+  /// In en, this message translates to:
+  /// **'Location permission is permanently denied. Please enable it from app settings.'**
+  String get locationPermissionPermanentlyDenied;
+
+  /// Error message when GPS is turned off
+  ///
+  /// In en, this message translates to:
+  /// **'Location services (GPS) are disabled. Please enable them to track your location.'**
+  String get locationServiceDisabled;
+
+  /// Action button to open device settings
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get openSettings;
+
+  /// Action button to enable GPS
+  ///
+  /// In en, this message translates to:
+  /// **'Enable'**
+  String get enableGps;
 }
 
 class _AppLocalizationsDelegate

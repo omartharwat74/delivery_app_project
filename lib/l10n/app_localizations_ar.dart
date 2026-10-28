@@ -782,4 +782,21 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get retry => 'إعادة المحاولة';
+
+  @override
+  String get locationPermissionDenied => 'تم رفض إذن الوصول إلى الموقع.';
+
+  @override
+  String get locationPermissionPermanentlyDenied =>
+      'إذن الوصول إلى الموقع مرفوض دائماً. يرجى تفعيله من إعدادات التطبيق.';
+
+  @override
+  String get locationServiceDisabled =>
+      'خدمات الموقع (GPS) معطلة. يرجى تشغيلها لتحديد موقعك بدقة.';
+
+  @override
+  String get openSettings => 'الإعدادات';
+
+  @override
+  String get enableGps => 'تفعيل';
 }
