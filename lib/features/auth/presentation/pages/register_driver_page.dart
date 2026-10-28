@@ -61,6 +61,7 @@ class _RegisterDriverPageState extends State<RegisterDriverPage> {
   File? _nationalIdPhotoFile;
   File? _vehicleFrontPhotoFile;
   bool _hasAttemptedSubmit = false;
+  bool _hasHandledSuccess = false;
 
   static const _vehicleTypes = ['motorcycle', 'regular_bike'];
 
@@ -206,17 +207,30 @@ class _RegisterDriverPageState extends State<RegisterDriverPage> {
     final fieldAutovalidate = authAutovalidateMode(_hasAttemptedSubmit);
 
     return BlocConsumer<AuthCubit, AuthState>(
-      listener: (context, state) {
+      listenWhen: (prev, curr) =>
+          curr is AuthRegistrationPending ||
+          curr is AuthRegistrationSubmitted ||
+          curr is AuthError,
+      listener: (context, state) async {
         if (state is AuthRegistrationPending ||
             state is AuthRegistrationSubmitted) {
-          AppSuccessDialog.show(
+          if (_hasHandledSuccess) return;
+          _hasHandledSuccess = true;
+
+          final message = (state is AuthRegistrationPending &&
+                  state.message.isNotEmpty)
+              ? state.message
+              : l10n.registrationPendingMessage;
+
+          await AppSuccessDialog.show(
             context,
-            message: l10n.registrationPendingMessage,
-          ).then((_) {
-            if (context.mounted) {
-              context.go(RouteNames.login);
-            }
-          });
+            message: message,
+          );
+
+          if (context.mounted) {
+            context.read<AuthCubit>().reset();
+            context.go(RouteNames.login);
+          }
         } else if (state is AuthError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

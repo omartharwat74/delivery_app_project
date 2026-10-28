@@ -47,6 +47,13 @@ class AuthCubit extends Cubit<AuthState> {
     });
   }
 
+  /// Resets auth cubit state when returning to login screen
+  void reset() {
+    _phoneNumber = null;
+    _registrationToken = null;
+    emit(AuthInitial());
+  }
+
   /// Normalizes Egyptian phone number to standard format (01xxxxxxxxx)
   String _normalizeEgyptPhone(String raw) {
     var digits = raw.replaceAll(RegExp(r'\D'), '');
@@ -217,7 +224,6 @@ class AuthCubit extends Cubit<AuthState> {
       },
       (response) {
         emit(AuthRegistrationPending(message: response.message));
-        emit(AuthRegistrationSubmitted());
       },
     );
   }

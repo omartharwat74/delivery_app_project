@@ -39,17 +39,27 @@ class _AppSuccessDialogState extends State<AppSuccessDialog> {
   void initState() {
     super.initState();
     if (widget.autoDismissDuration > Duration.zero) {
-      _timer = Timer(widget.autoDismissDuration, () {
-        if (mounted) {
-          Navigator.of(context, rootNavigator: true).pop();
-        }
-      });
+      _timer = Timer(widget.autoDismissDuration, _dismiss);
+    }
+  }
+
+  void _dismiss() {
+    _timer?.cancel();
+    _timer = null;
+    if (!mounted) return;
+    final navigator = Navigator.of(context, rootNavigator: true);
+    final route = ModalRoute.of(context);
+    // Ensure we only pop this dialog if its route is currently active and can be popped,
+    // preventing popping underlying application screens or crashing GoRouter.
+    if (route != null && route.isCurrent && navigator.canPop()) {
+      navigator.pop();
     }
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _timer = null;
     super.dispose();
   }
 
@@ -59,7 +69,7 @@ class _AppSuccessDialogState extends State<AppSuccessDialog> {
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 16),
       child: GestureDetector(
-        onTap: () => Navigator.of(context, rootNavigator: true).pop(),
+        onTap: _dismiss,
         behavior: HitTestBehavior.opaque,
         child: Container(
           width: double.infinity,
