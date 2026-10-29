@@ -41,9 +41,15 @@ class AuthCubit extends Cubit<AuthState> {
     });
     // Listen for global 403 Blocked events from Dio Interceptor
     _blockedSubscription = authEventBus.onAccountBlocked.listen((_) {
-      _phoneNumber = null;
-      _registrationToken = null;
-      emit(AuthUnauthenticated());
+      final current = currentDriver;
+      if (current != null) {
+        final token =
+            (state is AuthAuthenticated) ? (state as AuthAuthenticated).token : '';
+        emit(AuthAuthenticated(
+          token: token,
+          driver: current.copyWith(status: 'blocked'),
+        ));
+      }
     });
   }
 

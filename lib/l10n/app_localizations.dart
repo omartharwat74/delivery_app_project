@@ -1250,6 +1250,12 @@ abstract class AppLocalizations {
   /// **'Customer Details :'**
   String get trackingCustomerDetails;
 
+  /// No description provided for @trackingDeliveryScope.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery Range :'**
+  String get trackingDeliveryScope;
+
   /// No description provided for @trackingConfirmPickup.
   ///
   /// In en, this message translates to:
@@ -1334,6 +1340,18 @@ abstract class AppLocalizations {
   /// **'Your account has been blocked. Contact support'**
   String get accountBlockedMessage;
 
+  /// No description provided for @accountBlockedHomeBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'You are currently blocked, please contact technical support'**
+  String get accountBlockedHomeBanner;
+
+  /// No description provided for @shiftEndedForTodayError.
+  ///
+  /// In en, this message translates to:
+  /// **'You have ended your shift today, you cannot return to work until tomorrow'**
+  String get shiftEndedForTodayError;
+
   /// No description provided for @orderStatusNew.
   ///
   /// In en, this message translates to:
@@ -1387,6 +1405,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Est. Time'**
   String get orderEstTime;
+
+  /// No description provided for @minutes.
+  ///
+  /// In en, this message translates to:
+  /// **'mins'**
+  String get minutes;
 
   /// No description provided for @orderActive.
   ///
@@ -1597,6 +1621,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enable'**
   String get enableGps;
+
+  /// Badge showing order has been reviewed
+  ///
+  /// In en, this message translates to:
+  /// **'Reviewed'**
+  String get orderReviewed;
+
+  /// Badge showing order has not been reviewed
+  ///
+  /// In en, this message translates to:
+  /// **'Not Reviewed'**
+  String get orderNotReviewed;
 }
 
 class _AppLocalizationsDelegate

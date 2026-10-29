@@ -101,22 +101,22 @@ void main() {
       expect(ApiConstants.availability, '/attendance/availability');
     });
 
-    test('updateAvailability(true) sends PATCH to /attendance/availability with {"is_online": true} and no client time', () async {
+    test('updateAvailability(true) sends PATCH to /attendance/availability with {"is_online": true, "lat": 30.095, "lng": 31.63} and no client time', () async {
       await remoteDataSource.updateAvailability(isOnline: true);
 
       expect(fakeClient.lastEndpoint, '/attendance/availability');
-      expect(fakeClient.lastBody, equals({'is_online': true}));
+      expect(fakeClient.lastBody, equals({'is_online': true, 'lat': 30.095, 'lng': 31.63}));
       // Verify no timestamp or client time is included
       final body = fakeClient.lastBody as Map<String, dynamic>;
       expect(body.containsKey('time'), isFalse);
       expect(body.containsKey('timestamp'), isFalse);
     });
 
-    test('updateAvailability(false) sends PATCH to /attendance/availability with {"is_online": false}', () async {
+    test('updateAvailability(false) sends PATCH to /attendance/availability with {"is_online": false, "lat": 30.095, "lng": 31.63}', () async {
       await remoteDataSource.updateAvailability(isOnline: false);
 
       expect(fakeClient.lastEndpoint, '/attendance/availability');
-      expect(fakeClient.lastBody, equals({'is_online': false}));
+      expect(fakeClient.lastBody, equals({'is_online': false, 'lat': 30.095, 'lng': 31.63}));
     });
   });
 }

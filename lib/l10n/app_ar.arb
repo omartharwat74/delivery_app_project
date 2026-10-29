@@ -230,6 +230,7 @@
   "trackingExpectedDistanceShort": "(حوالي {distance} كم)",
   "trackingExpectedTotalDistance": "اجمالي المسافة المتوقعة {distance} كم",
   "trackingCustomerDetails": "بيانات العميل :",
+  "trackingDeliveryScope": "نطاق التوصيل :",
   "trackingConfirmPickup": "تم استلام الطلب",
   "trackingConfirmDelivery": "تم تسليم الطلب",
   "trackingAcceptOrder": "قبول الطلب",
@@ -245,6 +246,8 @@
   "orderStatusDeliveredSub": "تم التسليم للعميل",
   "accountBlockedTitle": "الحساب محظور",
   "accountBlockedMessage": "حسابك محظور. تواصل مع الدعم",
+  "accountBlockedHomeBanner": "أنت الآن محظور، يرجى التواصل مع الدعم الفني",
+  "shiftEndedForTodayError": "لقد قمت بإنهاء ورديتك اليوم، لا يمكنك العودة للعمل حتى الغد",
   "orderStatusNew": "طلب جديد",
   "orderStatusPreparing": "جاري التجهيز",
   "orderStatusReady": "جاهز للاستلام",
@@ -254,6 +257,7 @@
   "orderFee": "الرسوم: {fee}",
   "orderItemsCount": "{count} منتجات",
   "orderEstTime": "الوقت المتوقع",
+  "minutes": "دقيقة",
   "orderActive": "نشط",
   "orderClosed": "مغلق",
   "orderDetails": "التفاصيل",
@@ -289,5 +293,7 @@
   "locationPermissionPermanentlyDenied": "إذن الوصول إلى الموقع مرفوض دائماً. يرجى تفعيله من إعدادات التطبيق.",
   "locationServiceDisabled": "خدمات الموقع (GPS) معطلة. يرجى تشغيلها لتحديد موقعك بدقة.",
   "openSettings": "الإعدادات",
-  "enableGps": "تفعيل"
+  "enableGps": "تفعيل",
+  "orderReviewed": "تم التقييم",
+  "orderNotReviewed": "لم يتم التقييم"
 }

@@ -47,6 +47,7 @@ import '../../features/settings/data/repositories/settings_repository_impl.dart'
 import '../../features/settings/domain/repositories/settings_repository.dart';
 import '../../features/settings/presentation/bloc/settings_cubit.dart';
 import '../network/api_client.dart';
+import '../localization/locale_controller.dart';
 import '../network/auth_event_bus.dart';
 import '../network/network_info.dart';
 import '../router/app_router.dart';
@@ -71,6 +72,9 @@ final sl = GetIt.instance;
 
 Future<void> init({required SharedPreferences prefs}) async {
   sl.registerLazySingleton<SharedPreferences>(() => prefs);
+  sl.registerLazySingleton<LocaleController>(
+    () => LocaleController(sl<SharedPreferences>())..hydrate(),
+  );
 
   const secureStorage = FlutterSecureStorage();
   sl.registerLazySingleton<FlutterSecureStorage>(() => secureStorage);
@@ -258,7 +262,12 @@ Future<void> init({required SharedPreferences prefs}) async {
   );
 
   sl.registerLazySingleton(
-    () => ActiveOrderCubit(orderRepository: sl()),
+    () => ActiveOrderCubit(
+      orderRepository: sl(),
+      localeController: sl.isRegistered<LocaleController>()
+          ? sl<LocaleController>()
+          : null,
+    ),
   );
   sl.registerFactory(
     () => OrdersCubit(orderRepository: sl()),

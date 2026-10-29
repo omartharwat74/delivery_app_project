@@ -19,6 +19,7 @@ class ReviewUserModel extends Equatable {
 
 class ReviewModel extends Equatable {
   final int id;
+  final dynamic orderId;
   final num rating;
   final String comment;
   final bool isReported;
@@ -27,6 +28,7 @@ class ReviewModel extends Equatable {
 
   const ReviewModel({
     required this.id,
+    this.orderId,
     required this.rating,
     required this.comment,
     required this.isReported,
@@ -37,19 +39,25 @@ class ReviewModel extends Equatable {
   factory ReviewModel.fromJson(Map<String, dynamic> json) {
     return ReviewModel(
       id: (json['id'] as num?)?.toInt() ?? 0,
+      orderId: json['order_id'],
       rating: (json['rating'] as num?) ?? 0,
       comment: json['comment']?.toString() ?? '',
       isReported: json['is_reported'] == true || json['is_reported'] == 1,
       createdAt: json['created_at']?.toString() ?? '',
       user: json['user'] is Map<String, dynamic>
           ? ReviewUserModel.fromJson(json['user'] as Map<String, dynamic>)
-          : const ReviewUserModel(name: ''),
+          : ReviewUserModel(
+              name: json['user_name']?.toString() ??
+                  json['customer_name']?.toString() ??
+                  '',
+            ),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'order_id': orderId,
       'rating': rating,
       'comment': comment,
       'is_reported': isReported,
@@ -59,7 +67,8 @@ class ReviewModel extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, rating, comment, isReported, createdAt, user];
+  List<Object?> get props =>
+      [id, orderId, rating, comment, isReported, createdAt, user];
 }
 
 class ReviewPaginatedResponse extends Equatable {

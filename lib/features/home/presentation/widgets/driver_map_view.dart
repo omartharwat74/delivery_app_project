@@ -1,5 +1,4 @@
 import 'dart:io' show Platform;
-import 'dart:math';
 import 'dart:ui' show lerpDouble;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -14,11 +13,12 @@ import '../../../../core/utils/marker_icon_helper.dart';
 /// - Reactive Dark / Light mode map styling matching [AppColors.darkMapStyle].
 /// - Displays driver position with custom scooter [BitmapDescriptor].
 /// - Smooth marker position animation on location stream updates.
-/// - Optional [storeLocation] marker and [routePoints] polyline.
-/// - Initial camera centering with respect for user manual map gestures.
+/// - Store & Customer markers and route polylines for active delivery orders.
+/// - Dynamic camera bounds fitting for driver, store, customer, and route points.
 class DriverMapView extends StatefulWidget {
   final LatLng? driverLocation;
   final LatLng? storeLocation;
+  final LatLng? customerLocation;
   final List<LatLng>? routePoints;
   final EdgeInsets mapPadding;
   final void Function(GoogleMapController controller)? onMapCreated;
@@ -27,6 +27,7 @@ class DriverMapView extends StatefulWidget {
     super.key,
     this.driverLocation,
     this.storeLocation,
+    this.customerLocation,
     this.routePoints,
     this.mapPadding = const EdgeInsets.only(top: 80, bottom: 120),
     this.onMapCreated,
@@ -53,7 +54,6 @@ class _DriverMapViewState extends State<DriverMapView>
 
   bool _hasMovedCameraToInitial = false;
   bool _userInteractedWithMap = false;
-  bool _hasFittedStoreBounds = false;
 
   @override
   void initState() {
@@ -136,33 +136,65 @@ class _DriverMapViewState extends State<DriverMapView>
       }
     }
 
-    // Handle store location changes
-    if (widget.storeLocation != null &&
-        widget.storeLocation != oldWidget.storeLocation) {
-      _fitBoundsIfStoreAvailable();
+    final routeChanged = widget.routePoints != oldWidget.routePoints ||
+        widget.storeLocation != oldWidget.storeLocation ||
+        widget.customerLocation != oldWidget.customerLocation;
+
+    if (routeChanged) {
+      _fitBoundsForActiveRoute();
     }
   }
 
-  void _fitBoundsIfStoreAvailable() {
-    if (widget.storeLocation == null || _controller == null) return;
+  void _fitBoundsForActiveRoute() {
+    if (_controller == null) return;
     final driverLoc = widget.driverLocation ?? _animatedDriverLatLng;
-    if (driverLoc == null) return;
+    final points = <LatLng>[];
+    if (driverLoc != null) points.add(driverLoc);
+    if (widget.storeLocation != null) points.add(widget.storeLocation!);
+    if (widget.customerLocation != null) points.add(widget.customerLocation!);
+    if (widget.routePoints != null && widget.routePoints!.isNotEmpty) {
+      points.addAll(widget.routePoints!);
+    }
 
-    final storeLoc = widget.storeLocation!;
-    final southwest = LatLng(
-      min(driverLoc.latitude, storeLoc.latitude),
-      min(driverLoc.longitude, storeLoc.longitude),
-    );
-    final northeast = LatLng(
-      max(driverLoc.latitude, storeLoc.latitude),
-      max(driverLoc.longitude, storeLoc.longitude),
+    if (points.isEmpty) return;
+
+    if (points.length == 1) {
+      _controller?.animateCamera(
+        CameraUpdate.newLatLngZoom(points.first, 16.0),
+      );
+      return;
+    }
+
+    double minLat = points.first.latitude;
+    double maxLat = points.first.latitude;
+    double minLng = points.first.longitude;
+    double maxLng = points.first.longitude;
+
+    for (final p in points) {
+      if (p.latitude < minLat) minLat = p.latitude;
+      if (p.latitude > maxLat) maxLat = p.latitude;
+      if (p.longitude < minLng) minLng = p.longitude;
+      if (p.longitude > maxLng) maxLng = p.longitude;
+    }
+
+    if ((maxLat - minLat).abs() < 0.0001 && (maxLng - minLng).abs() < 0.0001) {
+      _controller?.animateCamera(
+        CameraUpdate.newLatLngZoom(points.first, 16.0),
+      );
+      return;
+    }
+
+    final bounds = LatLngBounds(
+      southwest: LatLng(minLat, minLng),
+      northeast: LatLng(maxLat, maxLng),
     );
 
-    final bounds = LatLngBounds(southwest: southwest, northeast: northeast);
-    _hasFittedStoreBounds = true;
-    _controller?.animateCamera(
-      CameraUpdate.newLatLngBounds(bounds, 70.0),
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _controller == null) return;
+      _controller?.animateCamera(
+        CameraUpdate.newLatLngBounds(bounds, 80.0),
+      );
+    });
   }
 
   void _onMapCreated(GoogleMapController controller) {
@@ -177,8 +209,10 @@ class _DriverMapViewState extends State<DriverMapView>
       );
     }
 
-    if (widget.storeLocation != null && !_hasFittedStoreBounds) {
-      _fitBoundsIfStoreAvailable();
+    if (widget.storeLocation != null ||
+        widget.customerLocation != null ||
+        (widget.routePoints != null && widget.routePoints!.isNotEmpty)) {
+      _fitBoundsForActiveRoute();
     }
   }
 
@@ -220,31 +254,43 @@ class _DriverMapViewState extends State<DriverMapView>
               BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRose),
           anchor: const Offset(0.5, 0.5),
           flat: true,
-          // Side-profile icon remains upright (rotation: 0) to avoid flipping upside down
           rotation: 0.0,
-          zIndexInt: 2,
+          zIndexInt: 3,
         ),
       );
     }
 
-    // 2. Store Marker (optional, prepared for active order)
+    // 2. Store Marker (Pickup location)
     if (widget.storeLocation != null) {
       markers.add(
         Marker(
           markerId: const MarkerId('store_marker'),
           position: widget.storeLocation!,
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
-          infoWindow: const InfoWindow(title: 'Store'),
+          infoWindow: const InfoWindow(title: 'المتجر'),
           anchor: const Offset(0.5, 1.0),
-          zIndexInt: 1,
+          zIndexInt: 2,
         ),
       );
     }
 
-    // 3. Route Polyline (optional, prepared for active order)
-    // TODO(API): Directions API integration to calculate routePoints between driver and store/customer
+    // 3. Customer Marker (Delivery destination)
+    if (widget.customerLocation != null) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('customer_marker'),
+          position: widget.customerLocation!,
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+          infoWindow: const InfoWindow(title: 'العميل'),
+          anchor: const Offset(0.5, 1.0),
+          zIndexInt: 2,
+        ),
+      );
+    }
+
+    // 4. Route Polyline
     final polylines = <Polyline>{};
-    if (widget.routePoints != null && widget.routePoints!.isNotEmpty) {
+    if (widget.routePoints != null && widget.routePoints!.length >= 2) {
       polylines.add(
         Polyline(
           polylineId: const PolylineId('driver_route_polyline'),
@@ -267,7 +313,6 @@ class _DriverMapViewState extends State<DriverMapView>
         ),
         onMapCreated: _onMapCreated,
         onCameraMoveStarted: () {
-          // If the driver manually interacts with the map, stop auto-re-centering
           _userInteractedWithMap = true;
         },
         markers: markers,

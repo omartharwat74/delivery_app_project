@@ -23,24 +23,37 @@ class ActiveOrderLoading extends ActiveOrderState {
 class ActiveOrderOfferReceived extends ActiveOrderState {
   final OrderOfferEntity offer;
   final bool isAccepting;
+  final int? secondsRemaining;
+  final int initialSeconds;
+
+  int get countdownSeconds => secondsRemaining ?? offer.secondsLeft;
+  int get effectiveInitialSeconds =>
+      initialSeconds > 0 ? initialSeconds : countdownSeconds;
 
   const ActiveOrderOfferReceived({
     required this.offer,
     this.isAccepting = false,
+    this.secondsRemaining,
+    this.initialSeconds = 0,
   });
 
   ActiveOrderOfferReceived copyWith({
     OrderOfferEntity? offer,
     bool? isAccepting,
+    int? secondsRemaining,
+    int? initialSeconds,
   }) {
     return ActiveOrderOfferReceived(
       offer: offer ?? this.offer,
       isAccepting: isAccepting ?? this.isAccepting,
+      secondsRemaining: secondsRemaining ?? this.secondsRemaining,
+      initialSeconds: initialSeconds ?? effectiveInitialSeconds,
     );
   }
 
   @override
-  List<Object?> get props => [offer, isAccepting];
+  List<Object?> get props =>
+      [offer, isAccepting, secondsRemaining, effectiveInitialSeconds];
 }
 
 /// Stages 2 & 3: Order accepted and currently in progress.

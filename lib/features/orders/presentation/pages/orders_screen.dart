@@ -109,7 +109,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   ),
                 ),
                 child: Text(
-                  l10n.localeName == 'ar' ? 'إعادة المحاولة' : 'Retry',
+                  l10n.retry,
                   style: const TextStyle(color: Colors.white),
                 ),
               ),

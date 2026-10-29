@@ -71,6 +71,8 @@ class FakeHomeRemoteDataSource implements HomeRemoteDataSource {
   @override
   Future<ApiResponse<Map<String, dynamic>>> updateAvailability({
     required bool isOnline,
+    double? lat,
+    double? lng,
   }) async {
     if (updateAvailabilityException != null) {
       throw updateAvailabilityException!;

@@ -120,6 +120,8 @@ class MockHomeRepository implements HomeRepository {
   @override
   Future<Either<Failure, DriverModel>> updateAvailability({
     required bool isOnline,
+    double? lat,
+    double? lng,
   }) async {
     if (updateAvailabilityFailure != null) {
       return Left(updateAvailabilityFailure!);

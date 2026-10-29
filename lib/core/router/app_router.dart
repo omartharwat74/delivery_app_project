@@ -32,6 +32,7 @@ import '../../features/reviews/presentation/bloc/reviews_cubit.dart';
 import '../../features/profile/presentation/pages/notifications_screen.dart';
 import '../../features/profile/presentation/pages/reviews_screen.dart';
 import '../../features/profile/presentation/pages/support_screen.dart';
+import '../../features/support/presentation/pages/full_screen_image_viewer_screen.dart';
 import '../../features/auth/presentation/pages/terms_and_conditions_screen.dart';
 import 'route_names.dart';
 
@@ -75,7 +76,8 @@ class AppRouter {
       redirectToLogin();
     });
     _blockedSubscription = bus.onAccountBlocked.listen((message) {
-      redirectToBlocked(message);
+      // In case of 403, keep driver inside the app on Home screen with warning banner.
+      // Do not force logout or redirect away.
     });
   }
 
@@ -210,6 +212,13 @@ class AppRouter {
       GoRoute(
         path: RouteNames.profile,
         builder: (c, s) => const ProfileScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.fullScreenImageViewer,
+        builder: (c, s) {
+          final imageUrl = (s.extra as String?) ?? '';
+          return FullScreenImageViewerScreen(imageUrl: imageUrl);
+        },
       ),
     ],
   );

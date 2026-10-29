@@ -133,6 +133,7 @@ void main() {
 
     // Cubit should have toggled to true
     expect(homeCubit.state.isOnline, isTrue);
+    activeOrderCubit.stopFallbackPolling();
   });
 
   testWidgets('displays SnackBar and keeps toggle unchanged when availability update fails (422/403)', (tester) async {
@@ -212,6 +213,32 @@ void main() {
       find.text('خدمات الموقع (GPS) معطلة. يرجى تشغيلها لتحديد موقعك بدقة.'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('displays red warning banner and disables online toggle when driver status is blocked', (tester) async {
+    homeRepository.cachedDriver = const DriverModel(
+      id: 1,
+      name: 'Blocked Driver',
+      phone: '01012345678',
+      status: 'blocked',
+      isOnline: false,
+    );
+
+    await tester.pumpWidget(buildHomePage());
+    await tester.pumpAndSettle();
+
+    // Red warning banner should be displayed
+    expect(find.text('أنت الآن محظور، يرجى التواصل مع الدعم الفني'), findsOneWidget);
+
+    // Toggle button should be disabled
+    final toggleFinder = find.byType(AnimatedContainer);
+    expect(toggleFinder, findsOneWidget);
+
+    await tester.tap(toggleFinder);
+    await tester.pump();
+
+    // Still offline
+    expect(homeCubit.state.isOnline, isFalse);
   });
 }
 

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -14,6 +15,7 @@ import 'package:delivery_app_project/l10n/app_localizations.dart';
 import 'package:delivery_app_project/core/di/injection_container.dart' as di;
 import 'package:delivery_app_project/features/support/domain/entities/support_conversation.dart';
 import 'package:delivery_app_project/features/support/presentation/cubit/support_cubit.dart';
+import 'package:delivery_app_project/features/support/presentation/pages/full_screen_image_viewer_screen.dart';
 
 /// Thin view-model bridging [SupportChatMsg] to the UI widgets.
 class _SupportChatVm {
@@ -435,6 +437,7 @@ class _MessageContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
     final validImageUrl =
         message.attachments.where((u) => u.trim().isNotEmpty).firstOrNull;
 
@@ -442,24 +445,46 @@ class _MessageContent extends StatelessWidget {
       return ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 220),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment:
+              isArabic ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.network(
-                validImageUrl,
-                width: double.infinity,
-                height: 200,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => const SizedBox(
-                  height: 200,
-                  child: Center(child: Icon(Icons.broken_image_outlined)),
+            GestureDetector(
+              onTap: () => FullScreenImageViewerScreen.open(context, validImageUrl),
+              child: Hero(
+                tag: validImageUrl,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: CachedNetworkImage(
+                    imageUrl: validImageUrl,
+                    width: double.infinity,
+                    height: 200,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Container(
+                      height: 200,
+                      color: Colors.black12,
+                      child: const Center(
+                        child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                    ),
+                    errorWidget: (context, url, error) => const SizedBox(
+                      height: 200,
+                      child: Center(child: Icon(Icons.broken_image_outlined)),
+                    ),
+                  ),
                 ),
               ),
             ),
             if (message.text.trim().isNotEmpty)
-              _TextMessageContent(text: message.text),
+              _TextMessageContent(
+                text: message.text,
+                alignment: isArabic ? Alignment.centerRight : Alignment.centerLeft,
+                textAlign: isArabic ? TextAlign.right : TextAlign.left,
+              ),
           ],
         ),
       );
@@ -469,22 +494,35 @@ class _MessageContent extends StatelessWidget {
 }
 
 class _TextMessageContent extends StatelessWidget {
-  const _TextMessageContent({required this.text});
+  const _TextMessageContent({
+    required this.text,
+    this.alignment,
+    this.textAlign,
+  });
 
   final String text;
+  final AlignmentGeometry? alignment;
+  final TextAlign? textAlign;
 
   @override
   Widget build(BuildContext context) {
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+    final effectiveAlign =
+        alignment ?? (isArabic ? Alignment.centerRight : Alignment.centerLeft);
+    final effectiveTextAlign =
+        textAlign ?? (isArabic ? TextAlign.right : TextAlign.left);
+
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 220),
-      child: Padding(
+      child: Container(
+        alignment: effectiveAlign,
         padding: const EdgeInsetsDirectional.symmetric(
           horizontal: 12,
           vertical: 8,
         ),
         child: Text(
           text,
-          textAlign: TextAlign.start,
+          textAlign: effectiveTextAlign,
           style: AppTextStyles.caption(context).copyWith(
             color: AppColors.onSurface(context),
             fontSize: 12,

@@ -1,20 +1,36 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/error/failures.dart';
+import '../../../../core/localization/locale_controller.dart';
 import '../../domain/repositories/order_repository.dart';
 import 'active_order_state.dart';
 
 class ActiveOrderCubit extends Cubit<ActiveOrderState> {
   final OrderRepository orderRepository;
+  final LocaleController? localeController;
+  VoidCallback? _localeListener;
 
   Timer? _pollingTimer;
   Timer? _countdownTimer;
+  Timer? _fallbackPollingTimer;
   int _remainingSeconds = 0;
 
   int get remainingSeconds => _remainingSeconds;
+  bool get isPollingActive => _pollingTimer != null && _pollingTimer!.isActive;
+  bool get isFallbackPollingActive =>
+      _fallbackPollingTimer != null && _fallbackPollingTimer!.isActive;
 
-  ActiveOrderCubit({required this.orderRepository})
-      : super(const ActiveOrderIdle());
+  ActiveOrderCubit({
+    required this.orderRepository,
+    this.localeController,
+  }) : super(const ActiveOrderIdle()) {
+    if (localeController != null) {
+      _localeListener = () => reloadActiveOrder();
+      localeController!.addListener(_localeListener!);
+    }
+  }
 
   /// 1. State Restoration:
   /// Checks if driver has an ongoing assigned or on_the_way order.
@@ -58,25 +74,38 @@ class ActiveOrderCubit extends Cubit<ActiveOrderState> {
     final offerResult = await orderRepository.getCurrentOffer();
 
     offerResult.fold(
-      (_) {
+      (failure) {
         if (state is ActiveOrderOfferReceived) {
-          cancelTimers();
+          cancelOfferTimers();
           emit(const ActiveOrderIdle());
         }
       },
       (offer) {
         if (offer != null && offer.secondsLeft > 0) {
-          // If we are already on this offer, just sync remaining seconds
+          // If we are already on this offer, sync smoothly without resetting initialSeconds
           if (state is ActiveOrderOfferReceived &&
               (state as ActiveOrderOfferReceived).offer.id == offer.id) {
-            _remainingSeconds = offer.secondsLeft;
+            final curr = state as ActiveOrderOfferReceived;
+            // Only adjust _remainingSeconds if drift from server is noticeable (> 2s) to prevent jitter
+            if ((_remainingSeconds - offer.secondsLeft).abs() > 2) {
+              _remainingSeconds = offer.secondsLeft;
+            }
+            emit(curr.copyWith(
+              offer: offer,
+              secondsRemaining: _remainingSeconds,
+            ));
           } else {
-            emit(ActiveOrderOfferReceived(offer: offer));
+            _remainingSeconds = offer.secondsLeft;
+            emit(ActiveOrderOfferReceived(
+              offer: offer,
+              secondsRemaining: offer.secondsLeft,
+              initialSeconds: offer.secondsLeft,
+            ));
             _startOfferTimers(offer.secondsLeft);
           }
         } else {
           if (state is ActiveOrderOfferReceived) {
-            cancelTimers();
+            cancelOfferTimers();
             emit(const ActiveOrderIdle());
           }
         }
@@ -99,7 +128,7 @@ class ActiveOrderCubit extends Cubit<ActiveOrderState> {
 
     result.fold(
       (failure) {
-        cancelTimers();
+        cancelOfferTimers();
         // 404 or 422: offer no longer available
         emit(
           ActiveOrderActionError(
@@ -109,7 +138,7 @@ class ActiveOrderCubit extends Cubit<ActiveOrderState> {
         );
       },
       (acceptedOrder) {
-        cancelTimers();
+        cancelOfferTimers();
         emit(ActiveOrderInProgress(order: acceptedOrder));
       },
     );
@@ -194,39 +223,129 @@ class ActiveOrderCubit extends Cubit<ActiveOrderState> {
     );
   }
 
+  /// Reloads active order details from the server when an order is in progress
+  /// (e.g. status is 'assigned' or 'on_the_way', NOT a pending waiting offer).
+  ///
+  /// Typically called when the app language changes so that localized text
+  /// (such as restaurant name and addresses) is returned in the newly selected language.
+  Future<void> reloadActiveOrder() async {
+    final curr = state;
+    if (curr is ActiveOrderInProgress) {
+      final orderId = curr.order.id;
+      final res = await orderRepository.getOrderDetails(orderId);
+      if (isClosed) return;
+      await res.fold(
+        (failure) async {
+          // Fallback to getOrders(scope: 'current') if getOrderDetails fails
+          final fallbackRes = await orderRepository.getOrders(
+            scope: 'current',
+            perPage: 5,
+            page: 1,
+          );
+          if (isClosed) return;
+          fallbackRes.fold(
+            (_) {},
+            (paginated) {
+              if (paginated.items.isNotEmpty) {
+                final first = paginated.items.first;
+                if (first.status == 'assigned' || first.status == 'on_the_way') {
+                  emit(ActiveOrderInProgress(order: first));
+                }
+              }
+            },
+          );
+        },
+        (order) async {
+          if (order.status == 'delivered') {
+            emit(const ActiveOrderIdle());
+          } else if (order.status == 'assigned' || order.status == 'on_the_way') {
+            emit(ActiveOrderInProgress(order: order));
+          }
+        },
+      );
+    }
+  }
+
   void _startOfferTimers(int secondsLeft) {
-    cancelTimers();
+    cancelOfferTimers();
     _remainingSeconds = secondsLeft;
 
-    // 1-second countdown timer to dismiss offer when local time expires
+    // 1-second countdown timer: decrements remaining seconds and updates state
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       _remainingSeconds--;
       if (_remainingSeconds <= 0) {
-        cancelTimers();
+        cancelOfferTimers();
         emit(const ActiveOrderIdle());
-        // Verify with server
-        checkCurrentOffer();
+      } else {
+        final curr = state;
+        if (curr is ActiveOrderOfferReceived) {
+          emit(curr.copyWith(secondsRemaining: _remainingSeconds));
+        }
       }
     });
 
     // 5-second polling timer per Section 3 requirement
     _pollingTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
+      // Avoid polling while user is actively accepting the offer
+      if (state is ActiveOrderOfferReceived &&
+          (state as ActiveOrderOfferReceived).isAccepting) {
+        return;
+      }
+
       final res = await orderRepository.getCurrentOffer();
       res.fold(
-        (_) {},
+        (failure) {
+          if (failure is NotFoundFailure || failure.statusCode == 404) {
+            cancelOfferTimers();
+            emit(const ActiveOrderIdle());
+          }
+        },
         (offer) {
           if (offer == null) {
-            cancelTimers();
+            // Offer expired or taken by another driver -> cancel timers and close screen immediately
+            cancelOfferTimers();
             emit(const ActiveOrderIdle());
-          } else if (offer.secondsLeft < _remainingSeconds) {
-            _remainingSeconds = offer.secondsLeft;
+          } else {
+            // Keep remaining seconds in sync if server seconds_left is lower
+            if (offer.secondsLeft < _remainingSeconds || _remainingSeconds <= 0) {
+              _remainingSeconds = offer.secondsLeft;
+            }
+            final curr = state;
+            if (curr is ActiveOrderOfferReceived) {
+              emit(curr.copyWith(
+                offer: offer,
+                secondsRemaining: _remainingSeconds,
+              ));
+            }
           }
         },
       );
     });
   }
 
-  void cancelTimers() {
+  /// Starts lightweight fallback polling (every 15-30s, default 20s) when app is in foreground and driver is online
+  void startFallbackPolling({
+    Duration interval = const Duration(seconds: 20),
+    bool Function()? isOnline,
+  }) {
+    stopFallbackPolling();
+    _fallbackPollingTimer = Timer.periodic(interval, (_) async {
+      if (isOnline != null && !isOnline()) {
+        return;
+      }
+      // Only poll for an offer if currently idle (no active order or offer)
+      if (state is ActiveOrderIdle) {
+        await checkCurrentOffer();
+      }
+    });
+  }
+
+  void stopFallbackPolling() {
+    _fallbackPollingTimer?.cancel();
+    _fallbackPollingTimer = null;
+  }
+
+  void cancelOfferTimers() {
     _pollingTimer?.cancel();
     _pollingTimer = null;
     _countdownTimer?.cancel();
@@ -234,8 +353,17 @@ class ActiveOrderCubit extends Cubit<ActiveOrderState> {
     _remainingSeconds = 0;
   }
 
+  void cancelTimers() {
+    cancelOfferTimers();
+    stopFallbackPolling();
+  }
+
   @override
   Future<void> close() {
+    if (_localeListener != null && localeController != null) {
+      localeController!.removeListener(_localeListener!);
+      _localeListener = null;
+    }
     cancelTimers();
     return super.close();
   }

@@ -36,7 +36,13 @@ class HomeCubit extends Cubit<HomeState> {
       _isUnauthorized = true;
     });
     _blockedSubscription = this.authEventBus.onAccountBlocked.listen((_) {
-      _isUnauthorized = true;
+      final currentDriver = state.driver;
+      if (currentDriver != null) {
+        emit(HomeLoaded(
+          isOnline: false,
+          driver: currentDriver.copyWith(status: 'blocked'),
+        ));
+      }
     });
   }
 
@@ -73,6 +79,10 @@ class HomeCubit extends Cubit<HomeState> {
       _updateLocationSilently(lat: lat, lng: lng),
     ]);
   }
+
+  /// Explicitly updates FCM token on the backend (e.g. directly after login or permission grant)
+  Future<void> updateFcmToken({String? fcmToken}) =>
+      _updateFcmSilently(fcmToken: fcmToken);
 
   Future<void> _updateFcmSilently({String? fcmToken}) async {
     if (_isUnauthorized) return;
@@ -177,10 +187,20 @@ class HomeCubit extends Cubit<HomeState> {
           _isUnauthorized = true;
           return;
         }
+        String errorMsg = failure.message;
+        if (targetOnline && (failure.statusCode == 422 || failure is ValidationFailure)) {
+          if (errorMsg.isEmpty ||
+              errorMsg.contains('إنهاء') ||
+              errorMsg.contains('وردية') ||
+              errorMsg.contains('ended') ||
+              errorMsg.contains('shift')) {
+            errorMsg = 'لقد قمت بإنهاء ورديتك اليوم، لا يمكنك العودة للعمل حتى الغد';
+          }
+        }
         emit(HomeAvailabilityError(
           isOnline: currentOnline,
           driver: currentDriver,
-          message: failure.message,
+          message: errorMsg,
         ));
       },
       (updatedDriver) {

@@ -15,8 +15,7 @@ void main() async {
   );
   final prefs = await SharedPreferences.getInstance();
   await di.init(prefs: prefs);
-  final localeController = LocaleController(prefs);
-  localeController.hydrate();
+  final localeController = di.sl<LocaleController>();
   final themeController = ThemeController(prefs);
   themeController.hydrate();
   runApp(

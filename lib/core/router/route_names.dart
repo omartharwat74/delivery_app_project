@@ -22,6 +22,7 @@ class RouteNames {
   static const support = '/support';
   static const termsAndConditions = '/terms-and-conditions';
   static const profile = '/profile';
+  static const fullScreenImageViewer = '/image-viewer';
   static const changePhone = '/settings/change-phone';
   static const verifyPhoneOtp = '/settings/otp';
 }

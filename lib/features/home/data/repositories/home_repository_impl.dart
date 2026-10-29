@@ -106,10 +106,14 @@ class HomeRepositoryImpl implements HomeRepository {
   @override
   Future<Either<Failure, DriverModel>> updateAvailability({
     required bool isOnline,
+    double? lat,
+    double? lng,
   }) async {
     try {
       final response = await remoteDataSource.updateAvailability(
         isOnline: isOnline,
+        lat: lat,
+        lng: lng,
       );
       final data = response.data;
 

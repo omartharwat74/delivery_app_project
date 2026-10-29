@@ -622,6 +622,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get trackingCustomerDetails => 'Customer Details :';
 
   @override
+  String get trackingDeliveryScope => 'Delivery Range :';
+
+  @override
   String get trackingConfirmPickup => 'Confirm Pickup';
 
   @override
@@ -665,6 +668,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your account has been blocked. Contact support';
 
   @override
+  String get accountBlockedHomeBanner =>
+      'You are currently blocked, please contact technical support';
+
+  @override
+  String get shiftEndedForTodayError =>
+      'You have ended your shift today, you cannot return to work until tomorrow';
+
+  @override
   String get orderStatusNew => 'New Request';
 
   @override
@@ -694,6 +705,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get orderEstTime => 'Est. Time';
+
+  @override
+  String get minutes => 'mins';
 
   @override
   String get orderActive => 'Active';
@@ -809,4 +823,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get enableGps => 'Enable';
+
+  @override
+  String get orderReviewed => 'Reviewed';
+
+  @override
+  String get orderNotReviewed => 'Not Reviewed';
 }

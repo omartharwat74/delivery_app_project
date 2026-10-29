@@ -19,6 +19,8 @@ abstract class HomeRemoteDataSource {
   /// PATCH /attendance/availability (Attendance punch clock)
   Future<ApiResponse<Map<String, dynamic>>> updateAvailability({
     required bool isOnline,
+    double? lat,
+    double? lng,
   });
 
   Future<Map<String, dynamic>> getTodayStats();
@@ -52,11 +54,15 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
     required double lat,
     required double lng,
   }) {
+    // Uses real GPS coordinates when available; falls back to default test location if 0.0
+    final effectiveLat = lat != 0.0 ? lat : 30.095;
+    final effectiveLng = lng != 0.0 ? lng : 31.63;
+
     return client.patchResponse<Map<String, dynamic>>(
       ApiConstants.location,
       body: {
-        'lat': lat,
-        'lng': lng,
+        'lat': effectiveLat,
+        'lng': effectiveLng,
       },
       fromJson: (data) =>
           data is Map<String, dynamic> ? data : <String, dynamic>{},
@@ -66,11 +72,19 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
   @override
   Future<ApiResponse<Map<String, dynamic>>> updateAvailability({
     required bool isOnline,
+    double? lat,
+    double? lng,
   }) {
+    // Uses real GPS coordinates when available; falls back to default test location if null or 0.0
+    final effectiveLat = (lat != null && lat != 0.0) ? lat : 30.095;
+    final effectiveLng = (lng != null && lng != 0.0) ? lng : 31.63;
+
     return client.patchResponse<Map<String, dynamic>>(
       ApiConstants.availability,
       body: {
         'is_online': isOnline,
+        'lat': effectiveLat,
+        'lng': effectiveLng,
       },
       fromJson: (data) =>
           data is Map<String, dynamic> ? data : <String, dynamic>{},

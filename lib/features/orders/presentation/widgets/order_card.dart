@@ -14,11 +14,11 @@ class OrderCard extends StatelessWidget {
   String _statusLabel(AppLocalizations l10n) {
     switch (order.status) {
       case 'assigned':
-        return l10n.localeName == 'ar' ? 'طلب مسند' : 'Assigned';
+        return l10n.orderStatusAssigned;
       case 'on_the_way':
-        return l10n.localeName == 'ar' ? 'في الطريق' : 'On The Way';
+        return l10n.orderStatusOnWay;
       case 'delivered':
-        return l10n.localeName == 'ar' ? 'طلب مغلق' : 'Closed Order';
+        return l10n.orderStatusDelivered;
       case 'cancelled':
         return l10n.orderStatusCancelled;
       default:
@@ -29,11 +29,11 @@ class OrderCard extends StatelessWidget {
   String _subStatusLabel(AppLocalizations l10n) {
     switch (order.status) {
       case 'assigned':
-        return l10n.localeName == 'ar' ? 'تم قبول الطلب' : 'Order Accepted';
+        return l10n.orderStatusAssignedSub;
       case 'on_the_way':
-        return l10n.localeName == 'ar' ? 'المندوب في الطريق' : 'Driver on the way';
+        return l10n.orderStatusOnWaySub;
       case 'delivered':
-        return l10n.localeName == 'ar' ? 'تم التسليم للعميل' : 'Delivered to customer';
+        return l10n.orderStatusDeliveredSub;
       case 'cancelled':
         return l10n.orderStatusCancelled;
       default:
@@ -55,10 +55,22 @@ class OrderCard extends StatelessWidget {
     }
   }
 
+  String _formatEstimatedTime(String? time, AppLocalizations l10n) {
+    if (time == null || time.isEmpty) return '';
+    final cleaned = time
+        .replaceAll('دقيقة', '')
+        .replaceAll('دقائق', '')
+        .replaceAll('mins', '')
+        .replaceAll('min', '')
+        .trim();
+    return '$cleaned ${l10n.minutes}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final primary = Theme.of(context).colorScheme.primary;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Material(
       color: Colors.transparent,
@@ -67,11 +79,19 @@ class OrderCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         child: Ink(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isDark ? const Color(0xFF141414) : Colors.white,
             borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDark
+                  ? const Color(0xFF262626)
+                  : const Color(0xFFE5E5E5),
+              width: 0.5,
+            ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
+                color: isDark
+                    ? const Color(0x33000000)
+                    : Colors.black.withValues(alpha: 0.06),
                 blurRadius: 10,
                 offset: const Offset(0, 3),
               ),
@@ -111,7 +131,9 @@ class OrderCard extends StatelessWidget {
                                 fontFamily: 'ExpoArabic',
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
-                                color: Theme.of(context).colorScheme.onSurface,
+                                color: isDark
+                                    ? Colors.white
+                                    : const Color(0xFF1B1B1B),
                               ),
                             ),
                           ),
@@ -119,17 +141,19 @@ class OrderCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    // ── LEFT: "3 منتجات • 340 ج.م" ────────────────────
+                    // ── LEFT: Items • Price ────────────────────────────
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          '${order.totalItems} منتجات',
+                          l10n.trackingItems(order.totalItems.toString()),
                           style: AppTextStyles.caption(context).copyWith(
                             fontFamily: 'ExpoArabic',
                             fontSize: 13,
                             fontWeight: FontWeight.w400,
-                            color: AppColors.paragraph(context),
+                            color: isDark
+                                ? const Color(0xFFA0A0A0)
+                                : AppColors.paragraph(context),
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -143,12 +167,14 @@ class OrderCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          '${order.deliveryFee.toStringAsFixed(0)} ج.م',
+                          '${order.deliveryFee.toStringAsFixed(0)} ${l10n.currencyEgp}',
                           style: AppTextStyles.body(context).copyWith(
                             fontFamily: 'ExpoArabic',
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
-                            color: Theme.of(context).colorScheme.onSurface,
+                            color: isDark
+                                ? Colors.white
+                                : const Color(0xFF1B1B1B),
                           ),
                         ),
                       ],
@@ -159,12 +185,14 @@ class OrderCard extends StatelessWidget {
                 Divider(
                   height: 20,
                   thickness: 0.5,
-                  color: AppColors.border(context),
+                  color: isDark
+                      ? const Color(0xFF262626)
+                      : AppColors.border(context),
                 ),
 
                 // ── MIDDLE ROW ────────────────────────────────────────────
-                // Right: status icon (40×40) + "طلب مغلق" / "تم التسليم"
-                // Left:  "وقت التوصيل المتوقع" / "15 : 20 دقيقة"
+                // Right: status icon (40×40) + status label / substatus
+                // Left:  "وقت التوصيل المتوقع"
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -197,36 +225,41 @@ class OrderCard extends StatelessWidget {
                               fontFamily: 'ExpoArabic',
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
-                              color: Theme.of(context).colorScheme.onSurface,
+                              color: isDark
+                                  ? Colors.white
+                                  : const Color(0xFF1B1B1B),
                             ),
                           ),
                         ],
                       ),
                     ),
                     // Expected time column
-                    // TODO(API): static for now
                     if (order.estimatedTime != null)
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Text(
-                            'وقت التوصيل المتوقع',
+                            l10n.orderEstTime,
                             overflow: TextOverflow.ellipsis,
                             style: AppTextStyles.caption(context).copyWith(
                               fontFamily: 'ExpoArabic',
                               fontSize: 11,
                               fontWeight: FontWeight.w400,
-                              color: AppColors.paragraph(context),
+                              color: isDark
+                                  ? const Color(0xFFA0A0A0)
+                                  : AppColors.paragraph(context),
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            order.estimatedTime!,
+                            _formatEstimatedTime(order.estimatedTime, l10n),
                             style: AppTextStyles.body(context).copyWith(
                               fontFamily: 'ExpoArabic',
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
-                              color: Theme.of(context).colorScheme.onSurface,
+                              color: isDark
+                                  ? Colors.white
+                                  : const Color(0xFF1B1B1B),
                             ),
                           ),
                         ],
@@ -246,7 +279,9 @@ class OrderCard extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: i < order.progressSegments
                                 ? primary
-                                : const Color(0xFFE0E0E0),
+                                : (isDark
+                                    ? const Color(0xFF2C2C2C)
+                                    : const Color(0xFFE0E0E0)),
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),

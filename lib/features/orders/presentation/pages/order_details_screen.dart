@@ -119,42 +119,42 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          backgroundColor: Colors.white,
-          elevation: 0,
-          titleSpacing: 16,
-          title: Row(
-            children: [
-              InkWell(
-                onTap: () => Navigator.of(context).pop(),
-                child: Transform.flip(
-                  flipX: Directionality.of(context) == TextDirection.ltr,
-                  child: Image.asset(
-                    'assets/images/orders/back.png',
-                    width: 28,
-                    height: 28,
-                  ),
+    return Scaffold(
+      backgroundColor: isDark ? Colors.black : Colors.white,
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        backgroundColor: isDark ? Colors.black : Colors.white,
+        elevation: 0,
+        titleSpacing: 16,
+        title: Row(
+          children: [
+            InkWell(
+              onTap: () => Navigator.of(context).pop(),
+              child: Transform.flip(
+                flipX: Directionality.of(context) == TextDirection.ltr,
+                child: Image.asset(
+                  'assets/images/orders/back.png',
+                  width: 28,
+                  height: 28,
+                  color: isDark ? Colors.white : const Color(0xFF1B1B1B),
                 ),
               ),
-              const SizedBox(width: 4),
-              const Text(
-                'تفاصيل الطلب',
-                style: TextStyle(
-                  color: Color(0xFF1B1B1B),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'ExpoArabic',
-                ),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              l10n.localeName == 'ar' ? 'تفاصيل الطلب' : 'Order Details',
+              style: TextStyle(
+                color: isDark ? Colors.white : const Color(0xFF1B1B1B),
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                fontFamily: 'ExpoArabic',
               ),
-            ],
-          ),
+            ),
+          ],
         ),
+      ),
         body: LayoutBuilder(
           builder: (context, constraints) {
             final availableHeight = constraints.maxHeight;
@@ -189,17 +189,19 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                   right: 0,
                   bottom: 0,
                   child: Container(
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.only(
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF141414) : Colors.white,
+                      borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(30),
                         topRight: Radius.circular(30),
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Color(0x18000000),
+                          color: isDark
+                              ? const Color(0x33000000)
+                              : const Color(0x18000000),
                           blurRadius: 20,
-                          offset: Offset(0, -6),
+                          offset: const Offset(0, -6),
                         ),
                       ],
                     ),
@@ -312,7 +314,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             );
           },
         ),
-      ),
     );
   }
 }
@@ -326,65 +327,56 @@ class _OrderHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final displayPrice = order.totalPrice > 0
         ? order.totalPrice.toStringAsFixed(0)
         : order.deliveryFee.toStringAsFixed(0);
 
     return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        // Right (start): Order ID fixing RTL Bidirectional rendering
+        // Order ID
+        Text(
+          l10n.trackingOrderNo(
+              order.code.isNotEmpty ? order.code : order.id.toString()),
+          style: AppTextStyles.body(context).copyWith(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: isDark ? Colors.white : const Color(0xFF1B1B1B),
+          ),
+        ),
+        // Items • Price
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'طلب رقم : ',
-              style: AppTextStyles.body(context).copyWith(
+              l10n.trackingItems(order.totalItems.toString()),
+              style: AppTextStyles.caption(context).copyWith(
                 fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFF787878),
+                color:
+                    isDark ? const Color(0xFFA0A0A0) : const Color(0xFF787878),
               ),
             ),
+            const SizedBox(width: 6),
+            Container(
+              width: 4,
+              height: 4,
+              decoration: const BoxDecoration(
+                color: Color(0xFFA3090F),
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 6),
             Text(
-              '#${order.code.isNotEmpty ? order.code : order.id}',
-              textDirection: TextDirection.ltr,
-              style: AppTextStyles.body(context).copyWith(
+              '$displayPrice ${l10n.currencyEgp}',
+              style: AppTextStyles.caption(context).copyWith(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: const Color(0xFF1B1B1B),
+                color: isDark ? Colors.white : const Color(0xFF1B1B1B),
               ),
             ),
           ],
-        ),
-        const Spacer(),
-        // Left (end): items • price
-        RichText(
-          textDirection: TextDirection.rtl,
-          text: TextSpan(
-            children: [
-              TextSpan(
-                text: '${order.totalItems} منتجات ',
-                style: AppTextStyles.caption(context).copyWith(
-                  fontSize: 12,
-                  color: const Color(0xFF787878),
-                ),
-              ),
-              TextSpan(
-                text: '• ',
-                style: AppTextStyles.caption(context).copyWith(
-                  fontSize: 12,
-                  color: const Color(0xFFA3090F),
-                ),
-              ),
-              TextSpan(
-                text: '$displayPrice ج.م',
-                style: AppTextStyles.caption(context).copyWith(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: const Color(0xFF1B1B1B),
-                ),
-              ),
-            ],
-          ),
         ),
       ],
     );
@@ -413,6 +405,7 @@ class _RestaurantSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final storeLogo = order.store?.logo;
 
     return Column(
@@ -451,7 +444,7 @@ class _RestaurantSection extends StatelessWidget {
                     style: AppTextStyles.body(context).copyWith(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: const Color(0xFF1B1B1B),
+                      color: isDark ? Colors.white : const Color(0xFF1B1B1B),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -490,15 +483,18 @@ class _CustomerSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'بيانات العميل :',
+          l10n.trackingCustomerDetails,
           style: AppTextStyles.body(context).copyWith(
             fontSize: 15,
             fontWeight: FontWeight.w600,
-            color: const Color(0xFF1B1B1B),
+            color: isDark ? Colors.white : const Color(0xFF1B1B1B),
           ),
         ),
         const SizedBox(height: 10),
@@ -510,7 +506,7 @@ class _CustomerSection extends StatelessWidget {
               style: AppTextStyles.body(context).copyWith(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: const Color(0xFF1B1B1B),
+                color: isDark ? Colors.white : const Color(0xFF1B1B1B),
               ),
             ),
             if (order.customerPhone.isNotEmpty) ...[
@@ -525,7 +521,9 @@ class _CustomerSection extends StatelessWidget {
                     textDirection: TextDirection.ltr,
                     style: AppTextStyles.caption(context).copyWith(
                       fontSize: 12,
-                      color: AppColors.paragraph(context),
+                      color: isDark
+                          ? const Color(0xFFA0A0A0)
+                          : AppColors.paragraph(context),
                     ),
                   ),
                 ],
@@ -547,15 +545,18 @@ class _DeliveryRouteSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'نطاق التوصيل :',
+          l10n.trackingDeliveryScope,
           style: AppTextStyles.body(context).copyWith(
             fontSize: 15,
             fontWeight: FontWeight.w600,
-            color: const Color(0xFF1B1B1B),
+            color: isDark ? Colors.white : const Color(0xFF1B1B1B),
           ),
         ),
         const SizedBox(height: 16),
@@ -569,7 +570,9 @@ class _DeliveryRouteSection extends StatelessWidget {
                   'assets/icons/orders/pin_location.svg',
                   width: 22,
                   height: 22,
-                  colorFilter: const ColorFilter.mode(Colors.black87, BlendMode.srcIn),
+                  colorFilter: ColorFilter.mode(
+                      isDark ? Colors.white : Colors.black87,
+                      BlendMode.srcIn),
                 ),
                 SizedBox(
                   height: 36,
@@ -580,7 +583,8 @@ class _DeliveryRouteSection extends StatelessWidget {
                   'assets/icons/orders/pin_location.svg',
                   width: 22,
                   height: 22,
-                  colorFilter: ColorFilter.mode(AppColors.primary, BlendMode.srcIn),
+                  colorFilter: const ColorFilter.mode(
+                      AppColors.primary, BlendMode.srcIn),
                 ),
               ],
             ),
@@ -591,36 +595,22 @@ class _DeliveryRouteSection extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'من :',
-                    style: AppTextStyles.caption(context).copyWith(
-                      fontSize: 11,
-                      color: AppColors.paragraph(context),
-                    ),
-                  ),
-                  Text(
-                    order.pickupAddress,
+                    l10n.trackingFrom(order.pickupAddress),
                     style: AppTextStyles.body(context).copyWith(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
+                      color: isDark ? Colors.white : const Color(0xFF1B1B1B),
                     ),
                   ),
-                  // TODO(API): static for now
                   const SizedBox(height: 20),
                   Text(
-                    'الى :',
-                    style: AppTextStyles.caption(context).copyWith(
-                      fontSize: 11,
-                      color: AppColors.paragraph(context),
-                    ),
-                  ),
-                  Text(
-                    order.deliveryAddress,
+                    l10n.trackingTo(order.deliveryAddress),
                     style: AppTextStyles.body(context).copyWith(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
+                      color: isDark ? Colors.white : const Color(0xFF1B1B1B),
                     ),
                   ),
-                  // TODO(API): static for now
                 ],
               ),
             ),
@@ -639,19 +629,21 @@ class _RatingSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'تقييم العميل :',
+          isAr ? 'تقييم العميل :' : 'Customer Review :',
           style: AppTextStyles.body(context).copyWith(
             fontSize: 15,
             fontWeight: FontWeight.w600,
-            color: const Color(0xFF1B1B1B),
+            color: isDark ? Colors.white : const Color(0xFF1B1B1B),
           ),
         ),
         const SizedBox(height: 10),
-        // TODO(API): static for now
         Row(
           mainAxisSize: MainAxisSize.min,
           children: List.generate(
@@ -679,12 +671,15 @@ class _RatingSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        // TODO(API): static for now
         Text(
-          'المندوب كان في غاية من الاحترام ، والسرعة',
+          isAr
+              ? 'المندوب كان في غاية من الاحترام ، والسرعة'
+              : 'The delivery driver was very polite and fast',
           style: AppTextStyles.body(context).copyWith(
             fontSize: 12,
-            color: AppColors.paragraph(context),
+            color: isDark
+                ? const Color(0xFFA0A0A0)
+                : AppColors.paragraph(context),
             height: 1.7,
           ),
         ),

@@ -112,6 +112,8 @@ class OrderEntity extends Equatable {
   final OrderAddressEntity? address;
   final DateTime? createdAt;
   final String? cancelReason;
+  final String? note;
+  final bool isReviewed;
 
   // Static placeholders for attributes not currently calculated in backend
   // TODO(API): static for now
@@ -134,6 +136,8 @@ class OrderEntity extends Equatable {
     this.address,
     this.createdAt,
     this.cancelReason,
+    this.note,
+    this.isReviewed = false,
     this.estimatedDistance,
     this.estimatedTime,
   });
@@ -177,6 +181,8 @@ class OrderEntity extends Equatable {
         address,
         createdAt,
         cancelReason,
+        note,
+        isReviewed,
         estimatedDistance,
         estimatedTime,
       ];

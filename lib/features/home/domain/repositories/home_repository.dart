@@ -17,9 +17,11 @@ abstract class HomeRepository {
     required double lng,
   });
 
-  /// PATCH /auth/availability
+  /// PATCH /attendance/availability
   Future<Either<Failure, DriverModel>> updateAvailability({
     required bool isOnline,
+    double? lat,
+    double? lng,
   });
 
   /// Locally cached driver and online status

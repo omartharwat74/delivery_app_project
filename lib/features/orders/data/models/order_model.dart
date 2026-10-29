@@ -148,8 +148,12 @@ class OrderAddressModel extends OrderAddressEntity {
       id: json['id'] != null ? _asInt(json['id']) : null,
       name: json['name']?.toString(),
       fullAddress: json['full_address']?.toString() ?? json['address']?.toString() ?? '',
-      lat: json['lat'] != null ? _asDouble(json['lat']) : null,
-      long: json['long'] != null ? _asDouble(json['long']) : null,
+      lat: (json['lat'] ?? json['latitude'] ?? json['customer_lat']) != null
+          ? _asDouble(json['lat'] ?? json['latitude'] ?? json['customer_lat'])
+          : null,
+      long: (json['long'] ?? json['lng'] ?? json['longitude'] ?? json['customer_lng']) != null
+          ? _asDouble(json['long'] ?? json['lng'] ?? json['longitude'] ?? json['customer_lng'])
+          : null,
     );
   }
 
@@ -178,6 +182,8 @@ class OrderModel extends OrderEntity {
     super.address,
     super.createdAt,
     super.cancelReason,
+    super.note,
+    super.isReviewed = false,
     super.estimatedDistance,
     super.estimatedTime,
   });
@@ -217,10 +223,12 @@ class OrderModel extends OrderEntity {
           ? DateTime.tryParse(json['created_at'].toString())
           : null,
       cancelReason: json['cancel_reason']?.toString(),
+      note: json['note']?.toString(),
+      isReviewed: json['is_reviewed'] == true || json['is_reviewed'] == 1,
       // TODO(API): static for now
       estimatedDistance: '2.5',
       // TODO(API): static for now
-      estimatedTime: '20 : 15 دقيقة',
+      estimatedTime: json['estimated_time']?.toString() ?? '20 : 15',
     );
   }
 
@@ -239,6 +247,8 @@ class OrderModel extends OrderEntity {
         'address': (address as OrderAddressModel?)?.toJson(),
         'created_at': createdAt?.toIso8601String(),
         'cancel_reason': cancelReason,
+        'note': note,
+        'is_reviewed': isReviewed,
       };
 }
 

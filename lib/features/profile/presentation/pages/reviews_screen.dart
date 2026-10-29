@@ -177,21 +177,83 @@ class ReviewCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final userName = review.user.name.trim().isNotEmpty
         ? review.user.name
-        : l10n.drawerGuestName;
+        : (l10n.localeName == 'ar' ? 'عميل' : l10n.drawerGuestName);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceCard(context),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColors.border(context),
+          width: 0.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Header Row: Customer Name, Order ID badge, Date
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                userName,
-                style: AppTextStyles.body(
-                  context,
-                ).copyWith(fontSize: 13, fontWeight: FontWeight.w600),
+              Expanded(
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 14,
+                      backgroundColor:
+                          AppColors.primary.withValues(alpha: 0.12),
+                      child: const Icon(
+                        Icons.person_rounded,
+                        size: 16,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        userName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.body(
+                          context,
+                        ).copyWith(fontSize: 13, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    if (review.orderId != null) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? const Color(0xFF2A2A2A)
+                              : const Color(0xFFF0F0F0),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          '#${review.orderId}',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontFamily: 'ExpoArabic',
+                            color: AppColors.paragraph(context),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
               Text(
                 _formatDate(review.createdAt),
@@ -203,31 +265,47 @@ class ReviewCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
+
+          // Rating Stars Row
           Row(
             mainAxisSize: MainAxisSize.min,
-            children: List.generate(
-              5,
-              (starIndex) => Padding(
-                padding: EdgeInsetsDirectional.only(
-                  end: starIndex < 4 ? 4.0 : 0.0,
-                ),
-                child: Icon(
-                  Icons.star_rounded,
-                  size: 14,
-                  color: starIndex < review.rating.round()
-                      ? AppColors.ratingStar
-                      : AppColors.border(context),
+            children: [
+              ...List.generate(
+                5,
+                (starIndex) => Padding(
+                  padding: EdgeInsetsDirectional.only(
+                    end: starIndex < 4 ? 3.0 : 0.0,
+                  ),
+                  child: Icon(
+                    Icons.star_rounded,
+                    size: 16,
+                    color: starIndex < review.rating.round()
+                        ? AppColors.ratingStar
+                        : AppColors.border(context),
+                  ),
                 ),
               ),
-            ),
+              const SizedBox(width: 6),
+              Text(
+                review.rating.toStringAsFixed(1),
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.ratingStar,
+                  fontFamily: 'ExpoArabic',
+                ),
+              ),
+            ],
           ),
+
+          // Comment
           if (review.comment.trim().isNotEmpty) ...[
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Text(
               review.comment,
               style: AppTextStyles.body(context).copyWith(
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight: FontWeight.w400,
                 color: AppColors.paragraph(context),
                 height: 1.4,
@@ -235,12 +313,6 @@ class ReviewCard extends StatelessWidget {
               textAlign: TextAlign.start,
             ),
           ],
-          const SizedBox(height: 10),
-          Divider(
-            height: 0.5,
-            thickness: 0.5,
-            color: AppColors.border(context),
-          ),
         ],
       ),
     );

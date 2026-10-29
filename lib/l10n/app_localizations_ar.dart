@@ -613,6 +613,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get trackingCustomerDetails => 'بيانات العميل :';
 
   @override
+  String get trackingDeliveryScope => 'نطاق التوصيل :';
+
+  @override
   String get trackingConfirmPickup => 'تم استلام الطلب';
 
   @override
@@ -655,6 +658,14 @@ class AppLocalizationsAr extends AppLocalizations {
   String get accountBlockedMessage => 'حسابك محظور. تواصل مع الدعم';
 
   @override
+  String get accountBlockedHomeBanner =>
+      'أنت الآن محظور، يرجى التواصل مع الدعم الفني';
+
+  @override
+  String get shiftEndedForTodayError =>
+      'لقد قمت بإنهاء ورديتك اليوم، لا يمكنك العودة للعمل حتى الغد';
+
+  @override
   String get orderStatusNew => 'طلب جديد';
 
   @override
@@ -684,6 +695,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get orderEstTime => 'الوقت المتوقع';
+
+  @override
+  String get minutes => 'دقيقة';
 
   @override
   String get orderActive => 'نشط';
@@ -799,4 +813,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get enableGps => 'تفعيل';
+
+  @override
+  String get orderReviewed => 'تم التقييم';
+
+  @override
+  String get orderNotReviewed => 'لم يتم التقييم';
 }

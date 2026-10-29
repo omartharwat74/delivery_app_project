@@ -73,13 +73,11 @@ class AppInterceptor extends Interceptor {
         authEventBus.emitUnauthorized();
       }
     }
-    // 2. In case of 403 Forbidden / Blocked, clear session and emit account blocked
+    // 2. In case of 403 Forbidden / Blocked, do NOT clear session or logout.
+    // The driver must stay logged into their session to contact support.
     else if (err.response?.statusCode == 403) {
       if (!_isHandlingBlocked) {
         _isHandlingBlocked = true;
-        try {
-          await localDataSource.clearSession();
-        } catch (_) {}
         String? message;
         final data = err.response?.data;
         if (data is Map<String, dynamic> && data['msg'] != null) {

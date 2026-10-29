@@ -265,6 +265,7 @@
     }
   },
   "trackingCustomerDetails": "Customer Details :",
+  "trackingDeliveryScope": "Delivery Range :",
   "trackingConfirmPickup": "Confirm Pickup",
   "trackingConfirmDelivery": "Confirm Delivery",
   "trackingAcceptOrder": "Accept Order",
@@ -280,6 +281,8 @@
   "orderStatusDeliveredSub": "Delivered to customer",
   "accountBlockedTitle": "Account Blocked",
   "accountBlockedMessage": "Your account has been blocked. Contact support",
+  "accountBlockedHomeBanner": "You are currently blocked, please contact technical support",
+  "shiftEndedForTodayError": "You have ended your shift today, you cannot return to work until tomorrow",
   "orderStatusNew": "New Request",
   "orderStatusPreparing": "Restaurant Preparing",
   "orderStatusReady": "Ready for Pickup",
@@ -299,6 +302,7 @@
     }
   },
   "orderEstTime": "Est. Time",
+  "minutes": "mins",
   "orderActive": "Active",
   "orderClosed": "Closed",
   "orderDetails": "Details",
@@ -367,5 +371,9 @@
   "openSettings": "Settings",
   "@openSettings": { "description": "Action button to open device settings" },
   "enableGps": "Enable",
-  "@enableGps": { "description": "Action button to enable GPS" }
+  "@enableGps": { "description": "Action button to enable GPS" },
+  "orderReviewed": "Reviewed",
+  "@orderReviewed": { "description": "Badge showing order has been reviewed" },
+  "orderNotReviewed": "Not Reviewed",
+  "@orderNotReviewed": { "description": "Badge showing order has not been reviewed" }
 }

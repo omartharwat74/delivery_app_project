@@ -75,6 +75,7 @@ class NotificationServiceImpl implements NotificationService {
       await requestPermission();
       final token = await _instance.getToken();
       developer.log('Device FCM Token: $token', name: 'NotificationService');
+      debugPrint('🔔 [FCM] Device Token: $token');
       return token;
     } catch (e, stack) {
       developer.log(
@@ -107,7 +108,19 @@ class NotificationServiceImpl implements NotificationService {
   }) async {
     try {
       // 1. Request permission
-      await requestPermission();
+      final settings = await requestPermission();
+
+      // If permissions were granted, fetch token immediately and update backend
+      if (settings != null &&
+          (settings.authorizationStatus == AuthorizationStatus.authorized ||
+              settings.authorizationStatus == AuthorizationStatus.provisional)) {
+        try {
+          final token = await _instance.getToken();
+          if (token != null && token.isNotEmpty && onTokenRefresh != null) {
+            onTokenRefresh(token);
+          }
+        } catch (_) {}
+      }
 
       // 2. Configure foreground presentation options (iOS & Android)
       await _instance.setForegroundNotificationPresentationOptions(
@@ -125,34 +138,42 @@ class NotificationServiceImpl implements NotificationService {
         });
       }
 
+      void handleMessage(RemoteMessage message, String source) {
+        developer.log(
+          'FCM Message ($source): title=${message.notification?.title}, data=${message.data}',
+          name: 'NotificationService',
+        );
+        debugPrint('🔔 [FCM Message - $source] Title: "${message.notification?.title}", Data: ${message.data}');
+        final title = message.notification?.title ?? '';
+        // If notification title indicates "طلب جديد" or data payload is empty (per business requirement)
+        // or any order notification arrives, immediately fetch current offer:
+        final isNewOrderNotification = title.contains('طلب جديد') ||
+            title.toLowerCase().contains('new order') ||
+            title.contains('طلب') ||
+            message.data.isEmpty;
+
+        if (isNewOrderNotification) {
+          debugPrint('🚀 [FCM Action] "طلب جديد" detected -> trigger GET /orders/offer immediately');
+          onOrderOfferChime?.call();
+        }
+      }
+
       // 4. Foreground message listener
       _foregroundSub?.cancel();
       _foregroundSub = onMessage.listen((message) {
-        developer.log(
-          'FCM Message received in foreground: ${message.data}',
-          name: 'NotificationService',
-        );
-        onOrderOfferChime?.call();
+        handleMessage(message, 'foreground');
       });
 
       // 5. Background message clicked
       _openedAppSub?.cancel();
       _openedAppSub = onMessageOpenedApp.listen((message) {
-        developer.log(
-          'FCM Message opened from background: ${message.data}',
-          name: 'NotificationService',
-        );
-        onOrderOfferChime?.call();
+        handleMessage(message, 'background_clicked');
       });
 
       // 6. Terminated launch message
       final initialMessage = await getInitialMessage();
       if (initialMessage != null) {
-        developer.log(
-          'FCM Initial message opened from terminated: ${initialMessage.data}',
-          name: 'NotificationService',
-        );
-        onOrderOfferChime?.call();
+        handleMessage(initialMessage, 'terminated_launch');
       }
     } catch (e, stack) {
       developer.log(
