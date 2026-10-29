@@ -1,8 +1,10 @@
+import 'dart:convert';
 import 'dart:io' show Platform;
 import 'dart:ui' show lerpDouble;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:http/http.dart' as http;
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/marker_icon_helper.dart';
@@ -22,6 +24,7 @@ class DriverMapView extends StatefulWidget {
   final List<LatLng>? routePoints;
   final EdgeInsets mapPadding;
   final void Function(GoogleMapController controller)? onMapCreated;
+  final http.Client? httpClient;
 
   const DriverMapView({
     super.key,
@@ -31,6 +34,7 @@ class DriverMapView extends StatefulWidget {
     this.routePoints,
     this.mapPadding = const EdgeInsets.only(top: 80, bottom: 120),
     this.onMapCreated,
+    this.httpClient,
   });
 
   /// Default fallback location in Egypt (Cairo)
@@ -52,6 +56,11 @@ class _DriverMapViewState extends State<DriverMapView>
   LatLng? _prevDriverLatLng;
   LatLng? _targetDriverLatLng;
 
+  // Routed polyline points via OSRM
+  List<LatLng>? _routedPoints;
+  LatLng? _lastRouteStart;
+  LatLng? _lastRouteEnd;
+
   bool _hasMovedCameraToInitial = false;
   bool _userInteractedWithMap = false;
 
@@ -60,6 +69,7 @@ class _DriverMapViewState extends State<DriverMapView>
     super.initState();
     _animatedDriverLatLng = widget.driverLocation;
     _targetDriverLatLng = widget.driverLocation;
+    _updateRouteIfNeeded();
 
     _markerAnimController = AnimationController(
       vsync: this,
@@ -141,8 +151,64 @@ class _DriverMapViewState extends State<DriverMapView>
         widget.customerLocation != oldWidget.customerLocation;
 
     if (routeChanged) {
+      _updateRouteIfNeeded();
       _fitBoundsForActiveRoute();
     }
+  }
+
+  void _updateRouteIfNeeded() {
+    if (widget.routePoints == null || widget.routePoints!.length < 2) {
+      if (_routedPoints != null) {
+        setState(() {
+          _routedPoints = null;
+          _lastRouteStart = null;
+          _lastRouteEnd = null;
+        });
+      }
+      return;
+    }
+
+    // If caller provided an already computed multi-point street path, use it directly
+    if (widget.routePoints!.length > 2) {
+      if (_routedPoints != null) {
+        setState(() {
+          _routedPoints = null;
+        });
+      }
+      return;
+    }
+
+    final start = widget.routePoints!.first;
+    final end = widget.routePoints!.last;
+
+    final isSameEnd = _lastRouteEnd != null &&
+        (_lastRouteEnd!.latitude - end.latitude).abs() < 0.0001 &&
+        (_lastRouteEnd!.longitude - end.longitude).abs() < 0.0001;
+
+    final isSameStart = _lastRouteStart != null &&
+        (_lastRouteStart!.latitude - start.latitude).abs() < 0.0005 &&
+        (_lastRouteStart!.longitude - start.longitude).abs() < 0.0005;
+
+    if (isSameEnd && isSameStart && _routedPoints != null) {
+      return;
+    }
+
+    _lastRouteStart = start;
+    _lastRouteEnd = end;
+    _fetchRoute(start, end);
+  }
+
+  Future<void> _fetchRoute(LatLng start, LatLng end) async {
+    final points = await getRoutePolyline(
+      start,
+      end,
+      client: widget.httpClient,
+    );
+    if (!mounted) return;
+    setState(() {
+      _routedPoints = points;
+    });
+    _fitBoundsForActiveRoute();
   }
 
   void _fitBoundsForActiveRoute() {
@@ -152,8 +218,9 @@ class _DriverMapViewState extends State<DriverMapView>
     if (driverLoc != null) points.add(driverLoc);
     if (widget.storeLocation != null) points.add(widget.storeLocation!);
     if (widget.customerLocation != null) points.add(widget.customerLocation!);
-    if (widget.routePoints != null && widget.routePoints!.isNotEmpty) {
-      points.addAll(widget.routePoints!);
+    final activeRoute = _routedPoints ?? widget.routePoints;
+    if (activeRoute != null && activeRoute.isNotEmpty) {
+      points.addAll(activeRoute);
     }
 
     if (points.isEmpty) return;
@@ -290,11 +357,12 @@ class _DriverMapViewState extends State<DriverMapView>
 
     // 4. Route Polyline
     final polylines = <Polyline>{};
-    if (widget.routePoints != null && widget.routePoints!.length >= 2) {
+    final activePoints = _routedPoints ?? widget.routePoints;
+    if (activePoints != null && activePoints.length >= 2) {
       polylines.add(
         Polyline(
           polylineId: const PolylineId('driver_route_polyline'),
-          points: widget.routePoints!,
+          points: activePoints,
           color: AppColors.primary,
           width: 5,
           jointType: JointType.round,
@@ -326,4 +394,96 @@ class _DriverMapViewState extends State<DriverMapView>
       ),
     );
   }
+}
+
+/// Decodes an encoded polyline string (Google / OSRM algorithm) into a list of [LatLng].
+List<LatLng> decodePolyline(String encoded) {
+  final List<LatLng> points = [];
+  int index = 0;
+  final int len = encoded.length;
+  int lat = 0;
+  int lng = 0;
+
+  while (index < len) {
+    int b;
+    int shift = 0;
+    int result = 0;
+    do {
+      b = encoded.codeUnitAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    final int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+    lat += dlat;
+
+    shift = 0;
+    result = 0;
+    do {
+      b = encoded.codeUnitAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    final int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+    lng += dlng;
+
+    points.add(LatLng(lat / 1e5, lng / 1e5));
+  }
+
+  return points;
+}
+
+/// Fetches a real-world driving street route polyline between [start] and [end]
+/// using the free Open Source Routing Machine (OSRM) API.
+///
+/// Falls back to a straight line `[start, end]` if the API fails or is unreachable.
+Future<List<LatLng>> getRoutePolyline(
+  LatLng start,
+  LatLng end, {
+  http.Client? client,
+}) async {
+  // If running in headless flutter test without an injected client, fallback immediately
+  if (!kIsWeb &&
+      Platform.environment.containsKey('FLUTTER_TEST') &&
+      client == null) {
+    return [start, end];
+  }
+
+  final httpClient = client ?? http.Client();
+  final url = Uri.parse(
+    'https://router.project-osrm.org/route/v1/driving/'
+    '${start.longitude},${start.latitude};${end.longitude},${end.latitude}'
+    '?overview=full&geometries=polyline',
+  );
+
+  try {
+    final response = await httpClient
+        .get(url)
+        .timeout(const Duration(seconds: 10));
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      if (data['code'] == 'Ok' && data['routes'] != null) {
+        final routes = data['routes'] as List<dynamic>;
+        if (routes.isNotEmpty) {
+          final firstRoute = routes[0] as Map<String, dynamic>;
+          final geometry = firstRoute['geometry'] as String?;
+          if (geometry != null && geometry.isNotEmpty) {
+            final decoded = decodePolyline(geometry);
+            if (decoded.isNotEmpty) {
+              return decoded;
+            }
+          }
+        }
+      }
+    }
+  } catch (e) {
+    debugPrint('OSRM routing request failed: $e. Falling back to straight line.');
+  } finally {
+    if (client == null) {
+      httpClient.close();
+    }
+  }
+
+  // Fallback to straight line on failure or empty route
+  return [start, end];
 }
