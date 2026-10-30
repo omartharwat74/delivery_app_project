@@ -22,11 +22,14 @@ class NotificationsRemoteDataSourceImpl implements NotificationsRemoteDataSource
               .map(NotificationModel.fromJson)
               .toList();
         }
-        if (data is Map<String, dynamic> && data['data'] is List) {
-          return (data['data'] as List)
-              .whereType<Map<String, dynamic>>()
-              .map(NotificationModel.fromJson)
-              .toList();
+        if (data is Map<String, dynamic>) {
+          final rawList = data['items'] ?? data['data'] ?? data['notifications'];
+          if (rawList is List) {
+            return rawList
+                .whereType<Map<String, dynamic>>()
+                .map(NotificationModel.fromJson)
+                .toList();
+          }
         }
         return <NotificationModel>[];
       },

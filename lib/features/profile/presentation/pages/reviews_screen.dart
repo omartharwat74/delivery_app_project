@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:delivery_app_project/core/theme/app_colors.dart';
 import 'package:delivery_app_project/core/theme/text_styles.dart';
+import 'package:delivery_app_project/core/widgets/error_state_view.dart';
+import 'package:delivery_app_project/features/auth/presentation/bloc/auth_cubit.dart';
 import 'package:delivery_app_project/features/auth/presentation/widgets/auth_back_button.dart';
 import 'package:delivery_app_project/features/reviews/data/models/review_model.dart';
 import 'package:delivery_app_project/features/reviews/presentation/bloc/reviews_cubit.dart';
@@ -73,46 +75,40 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
           }
 
           if (state is ReviewsError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.error_outline_rounded,
-                      size: 48,
-                      color: AppColors.error,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      state.message,
-                      style: AppTextStyles.body(context),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () => context.read<ReviewsCubit>().loadReviews(),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: Text(l10n.confirm),
-                    ),
-                  ],
-                ),
-              ),
+            return ErrorStateView(
+              message: state.message,
+              onRetry: () {
+                context.read<ReviewsCubit>().loadReviews();
+                try {
+                  context.read<AuthCubit>().loadDriverProfile();
+                } catch (_) {}
+              },
             );
           }
 
           if (state is ReviewsLoaded) {
             if (state.reviews.isEmpty) {
-              return Center(
-                child: Text(
-                  l10n.noReviewsYet,
-                  style: AppTextStyles.body(context).copyWith(
-                    color: AppColors.paragraph(context),
+              return RefreshIndicator(
+                color: AppColors.primary,
+                onRefresh: () =>
+                    context.read<ReviewsCubit>().loadReviews(refresh: true),
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(
+                    parent: ClampingScrollPhysics(),
                   ),
+                  children: [
+                    SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.7,
+                      child: Center(
+                        child: Text(
+                          l10n.noReviewsYet,
+                          style: AppTextStyles.body(context).copyWith(
+                            color: AppColors.paragraph(context),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               );
             }
@@ -165,156 +161,128 @@ class ReviewCard extends StatelessWidget {
   final AppLocalizations l10n;
 
   String _formatDate(String isoString) {
-    try {
-      final dt = DateTime.parse(isoString);
+    if (isoString.trim().isEmpty) return '';
+    final dt = DateTime.tryParse(isoString.replaceFirst(' ', 'T')) ??
+        DateTime.tryParse(isoString);
+    if (dt != null) {
       return '${dt.year}/${dt.month}/${dt.day}';
-    } catch (_) {
-      return isoString;
     }
+    return isoString;
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
     final userName = review.user.name.trim().isNotEmpty
         ? review.user.name
         : (l10n.localeName == 'ar' ? 'عميل' : l10n.drawerGuestName);
 
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceCard(context),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.border(context),
-          width: 0.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Header Row: Customer Name, Order ID badge, Date
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 14,
-                      backgroundColor:
-                          AppColors.primary.withValues(alpha: 0.12),
+              // Header Row: Customer Name on start, Date on end (no user photo, no order ID)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      userName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontFamily: 'ExpoArabic',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.onSurface(context),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    _formatDate(review.createdAt),
+                    style: TextStyle(
+                      fontFamily: 'ExpoArabic',
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.paragraph(context),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+
+              // Rating Stars Row (5 stars, no numeric text)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: List.generate(5, (starIndex) {
+                  final starValue = starIndex + 1;
+                  Widget starIcon;
+                  if (review.rating >= starValue) {
+                    starIcon = const Icon(
+                      Icons.star_rounded,
+                      size: 14,
+                      color: AppColors.ratingStar,
+                    );
+                  } else if (review.rating >= starValue - 0.5) {
+                    starIcon = Transform.flip(
+                      flipX: isRtl,
                       child: const Icon(
-                        Icons.person_rounded,
-                        size: 16,
-                        color: AppColors.primary,
+                        Icons.star_half_rounded,
+                        size: 14,
+                        color: AppColors.ratingStar,
                       ),
+                    );
+                  } else {
+                    starIcon = Icon(
+                      Icons.star_rounded,
+                      size: 14,
+                      color: isDark
+                          ? const Color(0xFF333333)
+                          : const Color(0xFFE5E5E5),
+                    );
+                  }
+
+                  return Padding(
+                    padding: EdgeInsetsDirectional.only(
+                      end: starIndex < 4 ? 4.0 : 0.0,
                     ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        userName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTextStyles.body(
-                          context,
-                        ).copyWith(fontSize: 13, fontWeight: FontWeight.w700),
-                      ),
-                    ),
-                    if (review.orderId != null) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).brightness == Brightness.dark
-                              ? const Color(0xFF2A2A2A)
-                              : const Color(0xFFF0F0F0),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          '#${review.orderId}',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontFamily: 'ExpoArabic',
-                            color: AppColors.paragraph(context),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
+                    child: starIcon,
+                  );
+                }),
               ),
-              Text(
-                _formatDate(review.createdAt),
-                style: AppTextStyles.caption(context).copyWith(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.paragraph(context),
+
+              // Comment text (if any)
+              if (review.comment.trim().isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(
+                  review.comment,
+                  style: TextStyle(
+                    fontFamily: 'ExpoArabic',
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    color: AppColors.paragraph(context),
+                    height: 1.3,
+                  ),
+                  textAlign: TextAlign.start,
                 ),
-              ),
+              ],
             ],
           ),
-          const SizedBox(height: 8),
-
-          // Rating Stars Row
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ...List.generate(
-                5,
-                (starIndex) => Padding(
-                  padding: EdgeInsetsDirectional.only(
-                    end: starIndex < 4 ? 3.0 : 0.0,
-                  ),
-                  child: Icon(
-                    Icons.star_rounded,
-                    size: 16,
-                    color: starIndex < review.rating.round()
-                        ? AppColors.ratingStar
-                        : AppColors.border(context),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                review.rating.toStringAsFixed(1),
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.ratingStar,
-                  fontFamily: 'ExpoArabic',
-                ),
-              ),
-            ],
-          ),
-
-          // Comment
-          if (review.comment.trim().isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              review.comment,
-              style: AppTextStyles.body(context).copyWith(
-                fontSize: 13,
-                fontWeight: FontWeight.w400,
-                color: AppColors.paragraph(context),
-                height: 1.4,
-              ),
-              textAlign: TextAlign.start,
-            ),
-          ],
-        ],
-      ),
+        ),
+        const SizedBox(height: 10),
+        Divider(
+          height: 1,
+          thickness: 0.5,
+          color: isDark ? AppColors.darkOutline : const Color(0xFFE5E5E5),
+        ),
+        const SizedBox(height: 10),
+      ],
     );
   }
 }

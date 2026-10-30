@@ -238,5 +238,52 @@ void main() {
 
       await sub.cancel();
     });
+
+    test('resets isHandlingBlocked and emits onAccountUnblocked when 200 response arrives after 403', () async {
+      // 1. First trigger 403 Blocked
+      final dioException403 = DioException(
+        requestOptions: RequestOptions(path: '/orders/offer'),
+        response: Response(
+          requestOptions: RequestOptions(path: '/orders/offer'),
+          statusCode: 403,
+          data: {'msg': 'حسابك محظور. تواصل مع الدعم'},
+        ),
+      );
+      interceptor.onError(dioException403, FakeErrorInterceptorHandler());
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(interceptor.isHandlingBlocked, isTrue);
+
+      // 2. Listen for unblock event
+      bool unblockedEmitted = false;
+      final unblockSub = authEventBus.onAccountUnblocked.listen((_) {
+        unblockedEmitted = true;
+      });
+
+      // 3. Now 200 response arrives (e.g. admin unblocked driver)
+      final successResponse = Response(
+        requestOptions: RequestOptions(path: '/auth/me'),
+        statusCode: 200,
+        data: {'data': {'id': 1, 'status': 'active'}},
+      );
+      final respHandler = FakeResponseInterceptorHandler();
+      interceptor.onResponse(successResponse, respHandler);
+
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(interceptor.isHandlingBlocked, isFalse);
+      expect(unblockedEmitted, isTrue);
+      expect(respHandler.responsePassed, successResponse);
+
+      await unblockSub.cancel();
+    });
   });
+}
+
+class FakeResponseInterceptorHandler extends ResponseInterceptorHandler {
+  Response? responsePassed;
+
+  @override
+  void next(Response response) {
+    responsePassed = response;
+  }
 }

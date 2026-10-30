@@ -176,7 +176,7 @@ class TimeRangePickerWidget extends StatelessWidget {
             : _parseTimeOfDay(shift?.endsAt) ?? const TimeOfDay(hour: 17, minute: 0));
 
     final baseDate = DateTime(2026, 1, 1);
-    var initialDateTime = DateTime(
+    final initialDateTime = DateTime(
       baseDate.year,
       baseDate.month,
       baseDate.day,
@@ -184,51 +184,8 @@ class TimeRangePickerWidget extends StatelessWidget {
       initialTime.minute,
     );
 
-    // Calculate shift bounds
-    DateTime? minDateTime;
-    DateTime? maxDateTime;
-
-    if (shift != null) {
-      final start = _parseTimeOfDay(shift!.startsAt);
-      final end = _parseTimeOfDay(shift!.endsAt);
-      if (start != null && end != null) {
-        final startDt = DateTime(baseDate.year, baseDate.month, baseDate.day, start.hour, start.minute);
-        final endDt = DateTime(baseDate.year, baseDate.month, baseDate.day, end.hour, end.minute);
-        if (startDt.isBefore(endDt)) {
-          minDateTime = startDt;
-          maxDateTime = endDt;
-        }
-      }
-    }
-
-    // Constrain: start time cannot exceed endsAt (if selected), end time cannot precede startsAt (if selected)
-    if (isStart) {
-      final end = _parseTimeOfDay(endsAt);
-      if (end != null) {
-        final endDt = DateTime(baseDate.year, baseDate.month, baseDate.day, end.hour, end.minute);
-        if (maxDateTime == null || endDt.isBefore(maxDateTime)) {
-          maxDateTime = endDt;
-        }
-      }
-    } else {
-      final start = _parseTimeOfDay(startsAt);
-      if (start != null) {
-        final startDt = DateTime(baseDate.year, baseDate.month, baseDate.day, start.hour, start.minute);
-        if (minDateTime == null || startDt.isAfter(minDateTime)) {
-          minDateTime = startDt;
-        }
-      }
-    }
-
-    // Clamp initialDateTime so it always falls strictly within [minDateTime, maxDateTime]
-    if (minDateTime != null && initialDateTime.isBefore(minDateTime)) {
-      initialDateTime = minDateTime;
-    }
-    if (maxDateTime != null && initialDateTime.isAfter(maxDateTime)) {
-      initialDateTime = maxDateTime;
-    }
-
     DateTime selectedDateTime = initialDateTime;
+    String? sheetError;
 
     await showModalBottomSheet<void>(
       context: context,
@@ -237,109 +194,200 @@ class TimeRangePickerWidget extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (BuildContext sheetContext) {
-        return SafeArea(
-          top: false,
-          child: SizedBox(
-            height: 290,
-            child: Column(
-              children: [
-                // Top bar with Cancel ("إلغاء"), Title, and Confirm ("تأكيد")
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.of(sheetContext).pop(),
-                        child: Text(
-                          l10n?.cancel ?? 'إلغاء',
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: isDark ? const Color(0xFFA7A7A7) : Colors.grey.shade600,
-                            fontFamily: 'ExpoArabic',
-                            fontFamilyFallback: const ['Expo Arabic', 'ExpoArabic'],
+        return StatefulBuilder(
+          builder: (sheetContext, setModalState) {
+            return SafeArea(
+              top: false,
+              child: SizedBox(
+                height: 300,
+                child: Column(
+                  children: [
+                    // Top bar with Cancel ("إلغاء"), Title, and Confirm ("تأكيد")
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.of(sheetContext).pop(),
+                            child: Text(
+                              l10n?.cancel ?? 'إلغاء',
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: isDark ? const Color(0xFFA7A7A7) : Colors.grey.shade600,
+                                fontFamily: 'ExpoArabic',
+                                fontFamilyFallback: const ['Expo Arabic', 'ExpoArabic'],
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                      Text(
-                        isStart
-                            ? (l10n?.selectStartTimeTitle ?? 'تحديد وقت البداية (من)')
-                            : (l10n?.selectEndTimeTitle ?? 'تحديد وقت النهاية (الى)'),
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.onSurface(sheetContext),
-                          fontFamily: 'ExpoArabic',
-                          fontFamilyFallback: const ['Expo Arabic', 'ExpoArabic'],
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.of(sheetContext).pop();
-                          final picked24h = WorkingHoursFormatters.timeOfDayTo24h(
-                            selectedDateTime.hour,
-                            selectedDateTime.minute,
-                          );
-                          if (isStart) {
-                            onTimesChanged(picked24h, endsAt ?? '');
-                          } else {
-                            onTimesChanged(startsAt ?? '', picked24h);
-                          }
-                        },
-                        child: Text(
-                          l10n?.confirm ?? 'تأكيد',
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
-                            fontFamily: 'ExpoArabic',
-                            fontFamilyFallback: ['Expo Arabic', 'ExpoArabic'],
+                          Text(
+                            isStart
+                                ? (l10n?.selectStartTimeTitle ?? 'تحديد وقت البداية (من)')
+                                : (l10n?.selectEndTimeTitle ?? 'تحديد وقت النهاية (الى)'),
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.onSurface(sheetContext),
+                              fontFamily: 'ExpoArabic',
+                              fontFamilyFallback: const ['Expo Arabic', 'ExpoArabic'],
+                            ),
                           ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Divider(
-                  height: 1,
-                  color: isDark ? AppColors.darkOutline : const Color(0xFFF0F0F0),
-                ),
+                          TextButton(
+                            onPressed: () {
+                              final isArabic = Localizations.localeOf(context).languageCode.toLowerCase() == 'ar';
+                              final selectedMin = selectedDateTime.hour * 60 + selectedDateTime.minute;
 
-                // Native iOS Cupertino Wheel Time Picker (Hours on left, Minutes on right, AM/PM)
-                Expanded(
-                  child: CupertinoTheme(
-                    data: CupertinoThemeData(
-                      brightness: isDark ? Brightness.dark : Brightness.light,
-                      textTheme: CupertinoTextThemeData(
-                        pickerTextStyle: TextStyle(
-                          color: isDark ? Colors.white : const Color(0xFF1B1B1B),
-                          fontSize: 21,
+                              // 1. Validate against shift bounds (only upon clicking Confirm)
+                              if (shift != null) {
+                                final shiftStart = _parseTimeOfDay(shift!.startsAt);
+                                final shiftEnd = _parseTimeOfDay(shift!.endsAt);
+                                if (shiftStart != null && shiftEnd != null) {
+                                  final shiftStartMin = shiftStart.hour * 60 + shiftStart.minute;
+                                  final shiftEndMin = shiftEnd.hour * 60 + shiftEnd.minute;
+
+                                  if (selectedMin < shiftStartMin || selectedMin > shiftEndMin) {
+                                    final s12 = WorkingHoursFormatters.format12Hour(shift!.startsAt);
+                                    final e12 = WorkingHoursFormatters.format12Hour(shift!.endsAt);
+                                    final errorMsg = isArabic
+                                        ? 'يجب أن يكون الوقت ضمن فترة الشيفت (من $s12 إلى $e12)'
+                                        : 'Time must be within shift period ($s12 - $e12)';
+                                    setModalState(() {
+                                      sheetError = errorMsg;
+                                    });
+                                    onError?.call(errorMsg);
+                                    return;
+                                  }
+                                }
+                              }
+
+                              // 2. Validate startsAt < endsAt
+                              if (isStart) {
+                                final endTod = _parseTimeOfDay(endsAt);
+                                if (endTod != null) {
+                                  final endMin = endTod.hour * 60 + endTod.minute;
+                                  if (selectedMin >= endMin) {
+                                    final errorMsg = isArabic
+                                        ? 'يجب أن يكون وقت البداية قبل وقت النهاية'
+                                        : 'Start time must be before end time';
+                                    setModalState(() {
+                                      sheetError = errorMsg;
+                                    });
+                                    onError?.call(errorMsg);
+                                    return;
+                                  }
+                                }
+                              } else {
+                                final startTod = _parseTimeOfDay(startsAt);
+                                if (startTod != null) {
+                                  final startMin = startTod.hour * 60 + startTod.minute;
+                                  if (selectedMin <= startMin) {
+                                    final errorMsg = isArabic
+                                        ? 'يجب أن يكون وقت النهاية بعد وقت البداية'
+                                        : 'End time must be after start time';
+                                    setModalState(() {
+                                      sheetError = errorMsg;
+                                    });
+                                    onError?.call(errorMsg);
+                                    return;
+                                  }
+                                }
+                              }
+
+                              // Validation passed
+                              Navigator.of(sheetContext).pop();
+                              final picked24h = WorkingHoursFormatters.timeOfDayTo24h(
+                                selectedDateTime.hour,
+                                selectedDateTime.minute,
+                              );
+                              if (isStart) {
+                                onTimesChanged(picked24h, endsAt ?? '');
+                              } else {
+                                onTimesChanged(startsAt ?? '', picked24h);
+                              }
+                            },
+                            child: Text(
+                              l10n?.confirm ?? 'تأكيد',
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                                fontFamily: 'ExpoArabic',
+                                fontFamilyFallback: ['Expo Arabic', 'ExpoArabic'],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Divider(
+                      height: 1,
+                      color: isDark ? AppColors.darkOutline : const Color(0xFFF0F0F0),
+                    ),
+
+                    if (sheetError != null)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                        color: AppColors.error.withValues(alpha: 0.1),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.error_outline, color: AppColors.error, size: 16),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                sheetError!,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.error,
+                                  fontFamily: 'ExpoArabic',
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                    // Native iOS Cupertino Wheel Time Picker with smooth unconstrained wheel
+                    Expanded(
+                      child: CupertinoTheme(
+                        data: CupertinoThemeData(
+                          brightness: isDark ? Brightness.dark : Brightness.light,
+                          textTheme: CupertinoTextThemeData(
+                            pickerTextStyle: TextStyle(
+                              color: isDark ? Colors.white : const Color(0xFF1B1B1B),
+                              fontSize: 21,
+                            ),
+                          ),
+                        ),
+                        child: Localizations.override(
+                          context: sheetContext,
+                          locale: const Locale('en'),
+                          delegates: const [_AmPmCupertinoLocalizationsDelegate()],
+                          child: Directionality(
+                            textDirection: TextDirection.ltr,
+                            child: CupertinoDatePicker(
+                              mode: CupertinoDatePickerMode.time,
+                              use24hFormat: false,
+                              initialDateTime: initialDateTime,
+                              onDateTimeChanged: (DateTime newDateTime) {
+                                selectedDateTime = newDateTime;
+                                if (sheetError != null) {
+                                  setModalState(() {
+                                    sheetError = null;
+                                  });
+                                }
+                              },
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                    child: Localizations.override(
-                      context: sheetContext,
-                      locale: const Locale('en'),
-                      delegates: const [_AmPmCupertinoLocalizationsDelegate()],
-                      child: Directionality(
-                        textDirection: TextDirection.ltr,
-                        child: CupertinoDatePicker(
-                          mode: CupertinoDatePickerMode.time,
-                          use24hFormat: false,
-                          initialDateTime: initialDateTime,
-                          minimumDate: minDateTime,
-                          maximumDate: maxDateTime,
-                          onDateTimeChanged: (DateTime newDateTime) {
-                            selectedDateTime = newDateTime;
-                          },
-                        ),
-                      ),
-                    ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );

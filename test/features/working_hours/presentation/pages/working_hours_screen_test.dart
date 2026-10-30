@@ -150,9 +150,9 @@ void main() {
     // Title
     expect(find.text('مواعيد العمل'), findsOneWidget);
 
-    // Center Shift Info
+    // Center Shift Info (In Arabic: start time on right, end time on left)
     expect(find.text('فترة العمل المحددة'), findsOneWidget);
-    expect(find.text('09:00 AM - 05:00 PM'), findsOneWidget);
+    expect(find.text('05:00 PM - 09:00 AM'), findsOneWidget);
 
     // No detail card buttons or bottom button
     expect(find.text('تأكيد'), findsNothing);
@@ -196,9 +196,9 @@ void main() {
     await tester.tap(day18Finder);
     await tester.pumpAndSettle();
 
-    // Card shows formatted booking time and date (DD/MM/YYYY)
+    // Card shows formatted booking time and date (DD/MM/YYYY) (In Arabic: start time on right, end time on left)
     expect(find.text('18/11/2026'), findsOneWidget);
-    expect(find.text('09:00 AM - 12:00 PM'), findsOneWidget);
+    expect(find.text('12:00 PM - 09:00 AM'), findsOneWidget);
 
     // Card buttons appear
     expect(find.text('تعديل الموعد'), findsOneWidget);
@@ -307,8 +307,12 @@ void main() {
     await tester.tap(find.text('من'));
     await tester.pumpAndSettle();
 
-    // Verify CupertinoDatePicker is displayed in the modal
-    expect(find.byType(CupertinoDatePicker), findsOneWidget);
+    // Verify CupertinoDatePicker is displayed in the modal with unconstrained wheel (no min/max date lag)
+    final datePickerFinder = find.byType(CupertinoDatePicker);
+    expect(datePickerFinder, findsOneWidget);
+    final datePicker = tester.widget<CupertinoDatePicker>(datePickerFinder);
+    expect(datePicker.minimumDate, isNull);
+    expect(datePicker.maximumDate, isNull);
     expect(find.text('تحديد وقت البداية (من)'), findsOneWidget);
     expect(find.text('إلغاء'), findsOneWidget);
 
@@ -324,6 +328,84 @@ void main() {
     expect(find.byType(CupertinoDatePicker), findsNothing);
   });
 
+  testWidgets('Time picker: modal shows error and stays open if confirmed time is outside shift period', (tester) async {
+    final fakeRepo = FakeTestRepository(testEntity);
+    final cubit = createCubit(fakeRepo);
+
+    await tester.pumpWidget(createTestWidget(tester, cubit));
+    await tester.pumpAndSettle();
+
+    // Tap day 20 (unbooked) to enter State 2
+    await tester.tap(find.text('20'));
+    await tester.pumpAndSettle();
+
+    // Tap "من" time field
+    await tester.tap(find.text('من'));
+    await tester.pumpAndSettle();
+
+    // Find CupertinoDatePicker and simulate spinning wheel to 05:00 AM (shift is 09:00 - 17:00)
+    final datePickerFinder = find.byType(CupertinoDatePicker);
+    final datePicker = tester.widget<CupertinoDatePicker>(datePickerFinder);
+    datePicker.onDateTimeChanged(DateTime(2026, 1, 1, 5, 0));
+    await tester.pump();
+
+    // Tap "تأكيد" in the modal bottom sheet
+    final modalConfirmBtn = find.descendant(
+      of: find.byType(BottomSheet),
+      matching: find.widgetWithText(TextButton, 'تأكيد'),
+    );
+    await tester.tap(modalConfirmBtn);
+    await tester.pumpAndSettle();
+
+    // Modal is STILL open and displays error
+    expect(find.byType(CupertinoDatePicker), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(BottomSheet),
+        matching: find.textContaining('يجب أن يكون الوقت ضمن فترة الشيفت'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.byType(SnackBar), findsOneWidget);
+  });
+
+  testWidgets('Time picker: modal shows error if start time is after end time', (tester) async {
+    final fakeRepo = FakeTestRepository(testEntity);
+    final cubit = createCubit(fakeRepo);
+
+    await tester.pumpWidget(createTestWidget(tester, cubit));
+    await tester.pumpAndSettle();
+
+    // Tap day 20 (unbooked) to enter State 2
+    await tester.tap(find.text('20'));
+    await tester.pumpAndSettle();
+
+    // Tap "من" time field (default endsAt is 17:00, pick 17:30 or 17:00)
+    await tester.tap(find.text('من'));
+    await tester.pumpAndSettle();
+
+    final datePickerFinder = find.byType(CupertinoDatePicker);
+    final datePicker = tester.widget<CupertinoDatePicker>(datePickerFinder);
+    datePicker.onDateTimeChanged(DateTime(2026, 1, 1, 17, 0));
+    await tester.pump();
+
+    final modalConfirmBtn = find.descendant(
+      of: find.byType(BottomSheet),
+      matching: find.widgetWithText(TextButton, 'تأكيد'),
+    );
+    await tester.tap(modalConfirmBtn);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CupertinoDatePicker), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(BottomSheet),
+        matching: find.textContaining('يجب أن يكون وقت البداية قبل وقت النهاية'),
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('English localization: displays English texts for title, shift info, calendar, and actions', (tester) async {
     final fakeRepo = FakeTestRepository(testEntity);
     final cubit = createCubit(fakeRepo);
@@ -334,8 +416,9 @@ void main() {
     // English Title
     expect(find.text('Working Hours'), findsOneWidget);
 
-    // English Shift Period label
+    // English Shift Period label and time (start on left, end on right)
     expect(find.text('Specified Working Period'), findsOneWidget);
+    expect(find.text('09:00 AM - 05:00 PM'), findsOneWidget);
 
     // English Month name
     expect(find.text('November'), findsOneWidget);
@@ -440,8 +523,8 @@ void main() {
     expect(find.text('تأكيد التعديل'), findsNothing);
     expect(find.text('تأكيد'), findsNothing);
 
-    // Returned to booked day view showing updated times
-    expect(find.text('11:00 AM - 03:00 PM'), findsOneWidget);
+    // Returned to booked day view showing updated times (In Arabic: start time on right, end time on left)
+    expect(find.text('03:00 PM - 11:00 AM'), findsOneWidget);
     expect(find.text('تعديل الموعد'), findsOneWidget);
     expect(find.text('حذف'), findsOneWidget);
   });

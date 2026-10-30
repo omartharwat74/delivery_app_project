@@ -21,22 +21,7 @@ class ReviewsRemoteDataSourceImpl implements ReviewsRemoteDataSource {
       queryParams: {'page': page, 'per_page': perPage},
       fromJson: (data) {
         if (data is Map<String, dynamic>) {
-          final itemsList = data['data'];
-          final reviews = itemsList is List
-              ? itemsList
-                  .whereType<Map<String, dynamic>>()
-                  .map(ReviewModel.fromJson)
-                  .toList()
-              : <ReviewModel>[];
-          final currentPage = (data['current_page'] as num?)?.toInt() ?? page;
-          final lastPage = (data['last_page'] as num?)?.toInt() ?? currentPage;
-          final total = (data['total'] as num?)?.toInt() ?? reviews.length;
-          return ReviewPaginatedResponse(
-            reviews: reviews,
-            currentPage: currentPage,
-            lastPage: lastPage,
-            total: total,
-          );
+          return ReviewPaginatedResponse.fromJson(data, page);
         } else if (data is List) {
           final reviews = data
               .whereType<Map<String, dynamic>>()

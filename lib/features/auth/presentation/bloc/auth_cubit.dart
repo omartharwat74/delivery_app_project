@@ -16,6 +16,7 @@ class AuthCubit extends Cubit<AuthState> {
 
   StreamSubscription<void>? _unauthorizedSubscription;
   StreamSubscription<String?>? _blockedSubscription;
+  StreamSubscription<void>? _unblockedSubscription;
   String? _phoneNumber;
   String? _registrationToken;
 
@@ -50,6 +51,10 @@ class AuthCubit extends Cubit<AuthState> {
           driver: current.copyWith(status: 'blocked'),
         ));
       }
+    });
+    // Listen for global unblocked events from Dio Interceptor (e.g. 200 OK after unblock)
+    _unblockedSubscription = authEventBus.onAccountUnblocked.listen((_) {
+      loadDriverProfile();
     });
   }
 
@@ -124,9 +129,12 @@ class AuthCubit extends Cubit<AuthState> {
     final token = await authRepository.getAccessToken();
     if (token == null || token.isEmpty) return;
 
-    final cached = await authRepository.getCachedDriver();
-    if (cached != null) {
-      emit(AuthAuthenticated(token: token, driver: cached));
+    final s = state;
+    if (s is! AuthAuthenticated || s.driver == null) {
+      final cached = await authRepository.getCachedDriver();
+      if (cached != null) {
+        emit(AuthAuthenticated(token: token, driver: cached));
+      }
     }
 
     final meResult = await authRepository.getMe();
@@ -358,6 +366,7 @@ class AuthCubit extends Cubit<AuthState> {
   Future<void> close() {
     _unauthorizedSubscription?.cancel();
     _blockedSubscription?.cancel();
+    _unblockedSubscription?.cancel();
     return super.close();
   }
 }

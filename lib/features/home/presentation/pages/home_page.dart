@@ -7,6 +7,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/router/app_router.dart';
 import '../../../../core/router/route_names.dart';
 import '../../../../core/services/location_service.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -28,13 +29,15 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
+class _HomePageState extends State<HomePage>
+    with WidgetsBindingObserver, RouteAware {
   late final LocationService _locationService;
   StreamSubscription<dynamic>? _positionSubscription;
   LatLng? _currentDriverLocation;
   bool _hasPromptedPermission = false;
   LatLng? _activeStoreLocation;
   LatLng? _activeCustomerLocation;
+  Timer? _blockedCheckTimer;
 
   @override
   void initState() {
@@ -243,6 +246,23 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     } else if (state == AppLifecycleState.resumed) {
       _startLocationUpdates();
       _updateFallbackPolling();
+      if (mounted) {
+        context.read<AuthCubit>().loadDriverProfile();
+      }
+    }
+  }
+
+  void _syncBlockedPolling(bool isBlocked) {
+    if (isBlocked) {
+      if (_blockedCheckTimer == null || !_blockedCheckTimer!.isActive) {
+        _blockedCheckTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+          if (!mounted) return;
+          context.read<AuthCubit>().loadDriverProfile();
+        });
+      }
+    } else {
+      _blockedCheckTimer?.cancel();
+      _blockedCheckTimer = null;
     }
   }
 
@@ -356,7 +376,31 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final modalRoute = ModalRoute.of(context);
+    if (modalRoute != null) {
+      AppRouter.routeObserver.subscribe(this, modalRoute);
+    }
+  }
+
+  @override
+  void didPopNext() {
+    super.didPopNext();
+    // iOS viewWillAppear equivalent: called whenever HomePage becomes top route again
+    _onViewWillAppear();
+  }
+
+  void _onViewWillAppear() {
+    if (!mounted) return;
+    context.read<AuthCubit>().loadDriverProfile();
+    _updateFallbackPolling();
+  }
+
+  @override
   void dispose() {
+    AppRouter.routeObserver.unsubscribe(this);
+    _blockedCheckTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _stopLocationUpdates();
     try {
@@ -371,7 +415,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       listeners: [
         BlocListener<AuthCubit, AuthState>(
           listenWhen: (previous, current) =>
-              current is AuthUnauthenticated || current is AuthError,
+              current is AuthUnauthenticated ||
+              current is AuthError ||
+              (current is AuthAuthenticated && current.driver != null),
           listener: (context, state) {
             if (state is AuthUnauthenticated) {
               while (Navigator.of(context, rootNavigator: true).canPop()) {
@@ -386,6 +432,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   behavior: SnackBarBehavior.floating,
                 ),
               );
+            } else if (state is AuthAuthenticated && state.driver != null) {
+              context.read<HomeCubit>().updateDriver(state.driver!);
+              final isBlocked = state.driver!.status.toLowerCase() == 'blocked';
+              _syncBlockedPolling(isBlocked);
             }
           },
         ),
@@ -667,41 +717,52 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
                     return SafeArea(
                       bottom: false,
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16.0,
-                          vertical: 10.0,
-                        ),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFDC2626),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black26,
-                              blurRadius: 4,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.block,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                l10n.accountBlockedHomeBanner,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
+                      child: GestureDetector(
+                        onTap: () {
+                          context.read<AuthCubit>().loadDriverProfile();
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16.0,
+                            vertical: 10.0,
+                          ),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFDC2626),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black26,
+                                blurRadius: 4,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.block,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  l10n.accountBlockedHomeBanner,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 8),
+                              const Icon(
+                                Icons.refresh,
+                                color: Colors.white,
+                                size: 18,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     );

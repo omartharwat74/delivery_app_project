@@ -71,18 +71,20 @@ class _SupportScreenContentState extends State<_SupportScreenContent> {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
   File? _selectedImage;
+  late final SupportCubit _supportCubit;
 
   @override
   void initState() {
     super.initState();
+    _supportCubit = context.read<SupportCubit>();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) context.read<SupportCubit>().loadInitialSupport();
+      if (mounted) _supportCubit.loadInitialSupport();
     });
   }
 
   @override
   void dispose() {
-    context.read<SupportCubit>().cleanupListeners();
+    _supportCubit.cleanupListeners();
     _controller.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -445,8 +447,7 @@ class _MessageContent extends StatelessWidget {
       return ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 220),
         child: Column(
-          crossAxisAlignment:
-              isArabic ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: [
             GestureDetector(
@@ -515,6 +516,7 @@ class _TextMessageContent extends StatelessWidget {
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 220),
       child: Container(
+        width: alignment != null ? double.infinity : null,
         alignment: effectiveAlign,
         padding: const EdgeInsetsDirectional.symmetric(
           horizontal: 12,

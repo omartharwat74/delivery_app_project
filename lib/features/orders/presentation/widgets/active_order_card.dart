@@ -90,9 +90,7 @@ class ActiveOrderCard extends StatelessWidget {
         final isOnTheWay = inProgress && order.isOnTheWay;
 
         // ── values ────────────────────────────────────────────────────────
-        final displayPrice = order.totalPrice > 0
-            ? order.totalPrice.toStringAsFixed(0)
-            : order.deliveryFee.toStringAsFixed(0);
+        final displayPrice = order.formattedPrice;
 
         final itemsCountStr = order.totalItems > 0
             ? order.totalItems.toString()

@@ -19,10 +19,12 @@ class ShiftInfoWidget extends StatelessWidget {
 
     final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isArabic = Localizations.localeOf(context).languageCode.toLowerCase() == 'ar';
 
     final formattedShift = WorkingHoursFormatters.formatShiftPeriod(
       shift!.startsAt,
       shift!.endsAt,
+      isArabic: isArabic,
     );
 
     return Column(

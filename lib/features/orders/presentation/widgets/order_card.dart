@@ -167,7 +167,7 @@ class OrderCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          '${order.deliveryFee.toStringAsFixed(0)} ${l10n.currencyEgp}',
+                          '${order.formattedPrice} ${l10n.currencyEgp}',
                           style: AppTextStyles.body(context).copyWith(
                             fontFamily: 'ExpoArabic',
                             fontSize: 14,

@@ -329,9 +329,7 @@ class _OrderHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final displayPrice = order.totalPrice > 0
-        ? order.totalPrice.toStringAsFixed(0)
-        : order.deliveryFee.toStringAsFixed(0);
+    final displayPrice = order.formattedPrice;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,

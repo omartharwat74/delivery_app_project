@@ -8,6 +8,7 @@ import '../../../../core/network/auth_event_bus.dart';
 import '../../../../core/services/location_service.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../../../core/utils/device_id_helper.dart';
+import '../../../auth/data/models/driver_model.dart';
 import '../../domain/repositories/home_repository.dart';
 import 'home_state.dart';
 
@@ -20,6 +21,7 @@ class HomeCubit extends Cubit<HomeState> {
 
   StreamSubscription<void>? _unauthorizedSubscription;
   StreamSubscription<String?>? _blockedSubscription;
+  StreamSubscription<void>? _unblockedSubscription;
   bool _isUnauthorized = false;
 
   HomeCubit({
@@ -41,6 +43,18 @@ class HomeCubit extends Cubit<HomeState> {
         emit(HomeLoaded(
           isOnline: false,
           driver: currentDriver.copyWith(status: 'blocked'),
+        ));
+      }
+    });
+    _unblockedSubscription = this.authEventBus.onAccountUnblocked.listen((_) async {
+      final currentDriver = state.driver;
+      if (currentDriver != null && currentDriver.status.toLowerCase() == 'blocked') {
+        // Driver was unblocked! Update status to active/pending
+        final cached = await homeRepository.getCachedDriver();
+        final effective = cached ?? currentDriver.copyWith(status: 'active');
+        emit(HomeLoaded(
+          isOnline: effective.isOnline,
+          driver: effective,
         ));
       }
     });
@@ -213,10 +227,19 @@ class HomeCubit extends Cubit<HomeState> {
     );
   }
 
+  /// Updates driver data directly in Home state
+  void updateDriver(DriverModel updatedDriver) {
+    emit(HomeLoaded(
+      isOnline: updatedDriver.isOnline,
+      driver: updatedDriver,
+    ));
+  }
+
   @override
   Future<void> close() {
     _unauthorizedSubscription?.cancel();
     _blockedSubscription?.cancel();
+    _unblockedSubscription?.cancel();
     return super.close();
   }
 }

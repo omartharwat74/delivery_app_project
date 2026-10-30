@@ -4,6 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:delivery_app_project/core/constants/app_assets.dart';
 import 'package:delivery_app_project/core/theme/app_colors.dart';
 import 'package:delivery_app_project/core/theme/text_styles.dart';
+import 'package:delivery_app_project/core/widgets/error_state_view.dart';
+import 'package:delivery_app_project/features/auth/presentation/bloc/auth_cubit.dart';
 import 'package:delivery_app_project/features/auth/presentation/widgets/auth_back_button.dart';
 import 'package:delivery_app_project/features/notifications/data/models/notification_model.dart';
 import 'package:delivery_app_project/features/notifications/presentation/bloc/notifications_cubit.dart';
@@ -48,35 +50,14 @@ class NotificationsScreen extends StatelessWidget {
           }
 
           if (state is NotificationsError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.error_outline_rounded,
-                      size: 48,
-                      color: AppColors.error,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      state.message,
-                      style: AppTextStyles.body(context),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () => context.read<NotificationsCubit>().loadNotifications(),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: Text(l10n.confirm),
-                    ),
-                  ],
-                ),
-              ),
+            return ErrorStateView(
+              message: state.message,
+              onRetry: () {
+                context.read<NotificationsCubit>().loadNotifications();
+                try {
+                  context.read<AuthCubit>().loadDriverProfile();
+                } catch (_) {}
+              },
             );
           }
 

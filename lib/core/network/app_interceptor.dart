@@ -62,6 +62,19 @@ class AppInterceptor extends Interceptor {
   }
 
   @override
+  void onResponse(Response response, ResponseInterceptorHandler handler) {
+    if (response.statusCode != null &&
+        response.statusCode! >= 200 &&
+        response.statusCode! < 300) {
+      if (_isHandlingBlocked) {
+        _isHandlingBlocked = false;
+        authEventBus.emitAccountUnblocked();
+      }
+    }
+    return handler.next(response);
+  }
+
+  @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
     // 1. In case of 401 Unauthorized, clear session and emit unauthorized
     if (err.response?.statusCode == 401) {

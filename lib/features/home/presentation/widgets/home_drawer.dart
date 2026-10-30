@@ -24,6 +24,14 @@ class HomeDrawer extends StatelessWidget {
   static const _colorTerms = Color(0xFF0DA8E9); // Blue
   static const _colorLogout = Color(0xFFA3090F); // Primary Red
 
+  Future<void> _navigate(BuildContext context, String routeName) async {
+    Navigator.of(context).pop();
+    await context.push(routeName);
+    if (context.mounted) {
+      context.read<AuthCubit>().loadDriverProfile();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -74,74 +82,50 @@ class HomeDrawer extends StatelessWidget {
                         title: l10n.drawerOrders,
                         iconAsset: 'assets/images/ic_drawer_orders.png',
                         iconBgColor: _colorOrders,
-                        onTap: () {
-                          Navigator.of(context).pop();
-                          context.push(RouteNames.orders);
-                        },
+                        onTap: () => _navigate(context, RouteNames.orders),
                       ),
                       DrawerItemTile(
                         title: l10n.workingHoursTitle,
                         iconAsset: 'assets/images/ic_drawer_reviews.png',
                         iconBgColor: const Color(0xFFF8AC8E),
                         iconColor: Colors.white,
-                        onTap: () {
-                          Navigator.of(context).pop();
-                          context.push(RouteNames.workHours);
-                        },
+                        onTap: () => _navigate(context, RouteNames.workHours),
                       ),
                       DrawerItemTile(
                         title: l10n.drawerGeneralSettings,
                         iconAsset: 'assets/images/ic_drawer_settings.png',
                         iconBgColor: _colorSettings,
-                        onTap: () {
-                          Navigator.of(context).pop();
-                          context.push(RouteNames.settings);
-                        },
+                        onTap: () => _navigate(context, RouteNames.settings),
                       ),
                       DrawerItemTile(
                         title: l10n.drawerNotifications,
                         iconAsset: 'assets/images/ic_drawer_notifications.png',
                         iconBgColor: _colorNotifications,
-                        onTap: () {
-                          Navigator.of(context).pop();
-                          context.push(RouteNames.notifications);
-                        },
+                        onTap: () => _navigate(context, RouteNames.notifications),
                       ),
                       DrawerItemTile(
                         title: l10n.drawerReviews,
                         iconAsset: 'assets/images/ic_drawer_reviews.png',
                         iconBgColor: _colorReviews,
-                        onTap: () {
-                          Navigator.of(context).pop();
-                          context.push(RouteNames.reviews);
-                        },
+                        onTap: () => _navigate(context, RouteNames.reviews),
                       ),
                       DrawerItemTile(
                         title: l10n.drawerWallet,
                         iconAsset: 'assets/images/ic_drawer_wallet.png',
                         iconBgColor: _colorWallet,
-                        onTap: () {
-                          Navigator.of(context).pop();
-                          context.push(RouteNames.wallet);
-                        },
+                        onTap: () => _navigate(context, RouteNames.wallet),
                       ),
                       DrawerItemTile(
                         title: l10n.drawerSupport,
                         iconAsset: 'assets/images/ic_drawer_support.png',
                         iconBgColor: _colorSupport,
-                        onTap: () {
-                          Navigator.of(context).pop();
-                          context.push(RouteNames.support);
-                        },
+                        onTap: () => _navigate(context, RouteNames.support),
                       ),
                       DrawerItemTile(
                         title: l10n.drawerTerms,
                         iconAsset: 'assets/images/ic_drawer_terms.png',
                         iconBgColor: _colorTerms,
-                        onTap: () {
-                          Navigator.of(context).pop();
-                          context.push(RouteNames.termsAndConditions);
-                        },
+                        onTap: () => _navigate(context, RouteNames.termsAndConditions),
                         showDivider:
                             false, // hide the divider for the last item
                       ),
@@ -242,6 +226,14 @@ class _DrawerHeader extends StatelessWidget {
     return digits.isNotEmpty ? '+20 $digits' : '+20';
   }
 
+  Future<void> _navigate(BuildContext context, String routeName) async {
+    Navigator.of(context).pop();
+    await context.push(routeName);
+    if (context.mounted) {
+      context.read<AuthCubit>().loadDriverProfile();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -274,10 +266,7 @@ class _DrawerHeader extends StatelessWidget {
               // START: Avatar + Name + Phone
               Expanded(
                 child: InkWell(
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    context.push(RouteNames.profile);
-                  },
+                  onTap: () => _navigate(context, RouteNames.profile),
                   borderRadius: BorderRadius.circular(8),
                   child: Row(
                     children: [

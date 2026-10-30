@@ -28,9 +28,11 @@ class BookedDayCard extends StatelessWidget {
 
     final dayName = WorkingHoursFormatters.localizedDayName(context, selectedDate);
     final dateSlash = WorkingHoursFormatters.formatDateSlash(selectedDate);
+    final isArabic = Localizations.localeOf(context).languageCode.toLowerCase() == 'ar';
     final period = WorkingHoursFormatters.formatShiftPeriod(
       day.startsAt,
       day.endsAt,
+      isArabic: isArabic,
     );
 
     final isLocked = day.isLocked;

@@ -60,6 +60,7 @@ class _DriverMapViewState extends State<DriverMapView>
   List<LatLng>? _routedPoints;
   LatLng? _lastRouteStart;
   LatLng? _lastRouteEnd;
+  bool _isFetchingRoute = false;
 
   bool _hasMovedCameraToInitial = false;
   bool _userInteractedWithMap = false;
@@ -178,6 +179,8 @@ class _DriverMapViewState extends State<DriverMapView>
       return;
     }
 
+    if (_isFetchingRoute) return;
+
     final start = widget.routePoints!.first;
     final end = widget.routePoints!.last;
 
@@ -189,26 +192,35 @@ class _DriverMapViewState extends State<DriverMapView>
         (_lastRouteStart!.latitude - start.latitude).abs() < 0.0005 &&
         (_lastRouteStart!.longitude - start.longitude).abs() < 0.0005;
 
-    if (isSameEnd && isSameStart && _routedPoints != null) {
+    if (isSameEnd && isSameStart && _routedPoints != null && _routedPoints!.length > 2) {
       return;
     }
 
-    _lastRouteStart = start;
-    _lastRouteEnd = end;
     _fetchRoute(start, end);
   }
 
   Future<void> _fetchRoute(LatLng start, LatLng end) async {
-    final points = await getRoutePolyline(
-      start,
-      end,
-      client: widget.httpClient,
-    );
-    if (!mounted) return;
-    setState(() {
-      _routedPoints = points;
-    });
-    _fitBoundsForActiveRoute();
+    if (_isFetchingRoute) return;
+    _isFetchingRoute = true;
+    try {
+      final points = await getRoutePolyline(
+        start,
+        end,
+        client: widget.httpClient,
+      );
+      if (!mounted) return;
+      // If we received a street route (> 2 points), or if we don't have a route yet, update it
+      if (points.length > 2 || _routedPoints == null || _routedPoints!.length <= 2) {
+        setState(() {
+          _routedPoints = points;
+          _lastRouteStart = start;
+          _lastRouteEnd = end;
+        });
+        _fitBoundsForActiveRoute();
+      }
+    } finally {
+      _isFetchingRoute = false;
+    }
   }
 
   void _fitBoundsForActiveRoute() {
@@ -449,35 +461,51 @@ Future<List<LatLng>> getRoutePolyline(
   }
 
   final httpClient = client ?? http.Client();
-  final url = Uri.parse(
+  final endpoints = [
     'https://router.project-osrm.org/route/v1/driving/'
-    '${start.longitude},${start.latitude};${end.longitude},${end.latitude}'
-    '?overview=full&geometries=polyline',
-  );
+        '${start.longitude},${start.latitude};${end.longitude},${end.latitude}'
+        '?overview=full&geometries=polyline',
+    'https://routing.openstreetmap.de/routed-car/route/v1/driving/'
+        '${start.longitude},${start.latitude};${end.longitude},${end.latitude}'
+        '?overview=full&geometries=polyline',
+  ];
+
+  final headers = {
+    'User-Agent': 'DeliveryApp/1.0 (Mobile; Flutter)',
+    'Accept': 'application/json',
+  };
 
   try {
-    final response = await httpClient
-        .get(url)
-        .timeout(const Duration(seconds: 10));
+    for (final rawUrl in endpoints) {
+      try {
+        final url = Uri.parse(rawUrl);
+        final response = await httpClient
+            .get(url, headers: headers)
+            .timeout(const Duration(seconds: 6));
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      if (data['code'] == 'Ok' && data['routes'] != null) {
-        final routes = data['routes'] as List<dynamic>;
-        if (routes.isNotEmpty) {
-          final firstRoute = routes[0] as Map<String, dynamic>;
-          final geometry = firstRoute['geometry'] as String?;
-          if (geometry != null && geometry.isNotEmpty) {
-            final decoded = decodePolyline(geometry);
-            if (decoded.isNotEmpty) {
-              return decoded;
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body) as Map<String, dynamic>;
+          if (data['code'] == 'Ok' && data['routes'] != null) {
+            final routes = data['routes'] as List<dynamic>;
+            if (routes.isNotEmpty) {
+              final firstRoute = routes[0] as Map<String, dynamic>;
+              final geometry = firstRoute['geometry'] as String?;
+              if (geometry != null && geometry.isNotEmpty) {
+                final decoded = decodePolyline(geometry);
+                if (decoded.isNotEmpty) {
+                  return decoded;
+                }
+              }
             }
           }
         }
+      } catch (e) {
+        // Try next endpoint if available
+        debugPrint('Endpoint $rawUrl failed: $e');
       }
     }
   } catch (e) {
-    debugPrint('OSRM routing request failed: $e. Falling back to straight line.');
+    debugPrint('Routing request failed: $e. Falling back to straight line.');
   } finally {
     if (client == null) {
       httpClient.close();

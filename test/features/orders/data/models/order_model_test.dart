@@ -142,5 +142,39 @@ void main() {
       expect(deliveredOrder.progressSegments, 3);
       expect(deliveredOrder.isDelivered, isTrue);
     });
+
+    test('OrderEntity formattedPrice preserves decimals and does not strip fractions', () {
+      const order1 = OrderEntity(
+        id: 1,
+        code: '1',
+        status: 'assigned',
+        summary: OrderSummaryEntity(total: 245.5),
+      );
+      expect(order1.formattedPrice, '245.5');
+
+      const order2 = OrderEntity(
+        id: 2,
+        code: '2',
+        status: 'assigned',
+        summary: OrderSummaryEntity(total: 245.75),
+      );
+      expect(order2.formattedPrice, '245.75');
+
+      const order3 = OrderEntity(
+        id: 3,
+        code: '3',
+        status: 'assigned',
+        summary: OrderSummaryEntity(total: 245.0),
+      );
+      expect(order3.formattedPrice, '245');
+
+      const order4 = OrderEntity(
+        id: 4,
+        code: '4',
+        status: 'assigned',
+        earning: 25.5,
+      );
+      expect(order4.formattedPrice, '25.5');
+    });
   });
 }

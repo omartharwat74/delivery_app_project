@@ -42,6 +42,9 @@ class AppRouter {
   static final GlobalKey<NavigatorState> navigatorKey =
       GlobalKey<NavigatorState>(debugLabel: 'app_root_navigator');
 
+  static final RouteObserver<ModalRoute<void>> routeObserver =
+      RouteObserver<ModalRoute<void>>();
+
   static StreamSubscription<void>? _unauthorizedSubscription;
   static StreamSubscription<String?>? _blockedSubscription;
 
@@ -90,6 +93,7 @@ class AppRouter {
 
   static final router = GoRouter(
     navigatorKey: navigatorKey,
+    observers: [routeObserver],
     initialLocation: RouteNames.splash,
     routes: [
       GoRoute(path: RouteNames.splash, builder: (c, s) => const SplashScreen()),

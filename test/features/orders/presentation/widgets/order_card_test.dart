@@ -69,4 +69,34 @@ void main() {
 
     expect(find.text('20 : 15 mins'), findsOneWidget);
   });
+
+  testWidgets('displays decimal price correctly without stripping fractions (e.g. 245.5 ج.م)', (tester) async {
+    const order = OrderEntity(
+      id: 4,
+      code: 'ORD-004',
+      status: 'assigned',
+      store: OrderStoreEntity(name: 'مطعم السعادة'),
+      summary: OrderSummaryEntity(total: 245.5),
+    );
+
+    await tester.pumpWidget(createWidget(order, locale: const Locale('ar')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('245.5 ج.م'), findsOneWidget);
+  });
+
+  testWidgets('displays two decimal fractions correctly (e.g. 245.75 EGP)', (tester) async {
+    const order = OrderEntity(
+      id: 5,
+      code: 'ORD-005',
+      status: 'assigned',
+      store: OrderStoreEntity(name: 'Happy Restaurant'),
+      summary: OrderSummaryEntity(total: 245.75),
+    );
+
+    await tester.pumpWidget(createWidget(order, locale: const Locale('en')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('245.75 EGP'), findsOneWidget);
+  });
 }

@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/text_styles.dart';
+import '../../../../core/widgets/error_state_view.dart';
+import '../../../auth/presentation/bloc/auth_cubit.dart';
 import '../../../auth/presentation/widgets/auth_back_button.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../bloc/orders_cubit.dart';
@@ -86,36 +88,14 @@ class _OrdersScreenState extends State<OrdersScreen> {
     }
 
     if (state.status == OrdersStatus.error && state.orders.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                state.errorMessage ?? 'حدث خطأ أثناء تحميل الطلبات',
-                textAlign: TextAlign.center,
-                style: AppTextStyles.body(context).copyWith(
-                  color: AppColors.paragraph(context),
-                ),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => context.read<OrdersCubit>().loadOrders(),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: Text(
-                  l10n.retry,
-                  style: const TextStyle(color: Colors.white),
-                ),
-              ),
-            ],
-          ),
-        ),
+      return ErrorStateView(
+        message: state.errorMessage,
+        onRetry: () {
+          context.read<OrdersCubit>().loadOrders();
+          try {
+            context.read<AuthCubit>().loadDriverProfile();
+          } catch (_) {}
+        },
       );
     }
 

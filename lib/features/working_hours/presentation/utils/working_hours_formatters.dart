@@ -30,11 +30,20 @@ class WorkingHoursFormatters {
     return '$hourStr:$minuteStr $period';
   }
 
-  /// Formats start and end times into "09:00 AM - 12:00 PM".
-  static String formatShiftPeriod(String? startsAt, String? endsAt) {
+  /// Formats start and end times into a period string.
+  /// In Arabic, start time is placed on the right and end time on the left ("$endFormatted - $startFormatted").
+  /// In English LTR, start time is placed on the left ("$startFormatted - $endFormatted").
+  static String formatShiftPeriod(
+    String? startsAt,
+    String? endsAt, {
+    bool isArabic = false,
+  }) {
     final startFormatted = format12Hour(startsAt);
     final endFormatted = format12Hour(endsAt);
     if (startFormatted.isEmpty && endFormatted.isEmpty) return '';
+    if (isArabic) {
+      return '$endFormatted - $startFormatted';
+    }
     return '$startFormatted - $endFormatted';
   }
 

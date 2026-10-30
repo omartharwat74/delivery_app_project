@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/error/exceptions.dart';
 import '../../domain/repositories/reviews_repository.dart';
 import 'reviews_state.dart';
 
@@ -23,7 +24,8 @@ class ReviewsCubit extends Cubit<ReviewsState> {
         ),
       );
     } catch (e) {
-      emit(ReviewsError(message: e.toString()));
+      final msg = e is ApiException ? e.message : e.toString();
+      emit(ReviewsError(message: msg));
     }
   }
 

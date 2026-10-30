@@ -150,6 +150,23 @@ class OrderEntity extends Equatable {
   String get customerPhone => customer?.phone ?? '';
   double get deliveryFee => earning ?? summary?.delivery ?? 0.0;
   double get totalPrice => summary?.total ?? 0.0;
+
+  /// Returns the effective price to be collected/earned for this order
+  double get effectivePrice => totalPrice > 0 ? totalPrice : deliveryFee;
+
+  /// Returns the formatted price string preserving all decimals (e.g. 245.5, 245.75, 245).
+  /// Fractions are never truncated so drivers always see and collect the exact amount.
+  String get formattedPrice {
+    final price = effectivePrice;
+    if (price % 1 == 0) {
+      return price.toInt().toString();
+    }
+    final fixed2 = price.toStringAsFixed(2);
+    if (fixed2.endsWith('0')) {
+      return price.toStringAsFixed(1);
+    }
+    return fixed2;
+  }
   int get totalItems => items.isNotEmpty
       ? items.fold<int>(0, (sum, i) => sum + i.quantity)
       : 0;

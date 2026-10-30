@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/di/injection_container.dart' as di;
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/error_state_view.dart';
+import '../../../auth/presentation/bloc/auth_cubit.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../cubit/wallet_cubit.dart';
 import '../cubit/wallet_state.dart';
@@ -96,50 +98,14 @@ class _WalletScreenContent extends StatelessWidget {
             }
 
             if (state.hasError && state.wallet == null) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.error_outline,
-                        color: AppColors.error,
-                        size: 48,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        state.errorMessage ?? 'حدث خطأ في تحميل بيانات المحفظة',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontFamily: 'ExpoArabic',
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400,
-                          color: AppColors.onSurface(context),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () => context.read<WalletCubit>().fetchWallet(),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        child: const Text(
-                          'إعادة المحاولة',
-                          style: TextStyle(
-                            fontFamily: 'ExpoArabic',
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              return ErrorStateView(
+                message: state.errorMessage,
+                onRetry: () {
+                  context.read<WalletCubit>().fetchWallet();
+                  try {
+                    context.read<AuthCubit>().loadDriverProfile();
+                  } catch (_) {}
+                },
               );
             }
 
