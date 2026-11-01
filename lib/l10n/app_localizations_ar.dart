@@ -819,4 +819,25 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get orderNotReviewed => 'لم يتم التقييم';
+
+  @override
+  String get orderDetailsTitle => 'تفاصيل الطلب';
+
+  @override
+  String get deliveryPrice => 'سعر التوصيل';
+
+  @override
+  String get customerReview => 'تقييم العميل :';
+
+  @override
+  String get orderReviewDefault => 'المندوب كان في غاية من الاحترام ، والسرعة';
+
+  @override
+  String get orderNoPrefix => 'طلب رقم :';
+
+  @override
+  String get fromPrefix => 'من :';
+
+  @override
+  String get toPrefix => 'الى :';
 }

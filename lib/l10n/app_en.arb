@@ -375,5 +375,19 @@
   "orderReviewed": "Reviewed",
   "@orderReviewed": { "description": "Badge showing order has been reviewed" },
   "orderNotReviewed": "Not Reviewed",
-  "@orderNotReviewed": { "description": "Badge showing order has not been reviewed" }
+  "@orderNotReviewed": { "description": "Badge showing order has not been reviewed" },
+  "orderDetailsTitle": "Order Details",
+  "@orderDetailsTitle": { "description": "Title of completed order details screen" },
+  "deliveryPrice": "Delivery Price",
+  "@deliveryPrice": { "description": "Delivery price label" },
+  "customerReview": "Customer Review :",
+  "@customerReview": { "description": "Customer review section title" },
+  "orderReviewDefault": "The delivery driver was very polite and fast",
+  "@orderReviewDefault": { "description": "Default review text for courier" },
+  "orderNoPrefix": "Order No :",
+  "@orderNoPrefix": { "description": "Prefix for order number" },
+  "fromPrefix": "From :",
+  "@fromPrefix": { "description": "Prefix for pickup location" },
+  "toPrefix": "To :",
+  "@toPrefix": { "description": "Prefix for delivery destination" }
 }

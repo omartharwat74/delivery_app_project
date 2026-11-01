@@ -167,6 +167,19 @@ class OrderEntity extends Equatable {
     }
     return fixed2;
   }
+
+  /// Returns the formatted delivery fee string preserving decimals if present
+  String get formattedDeliveryFee {
+    final fee = deliveryFee;
+    if (fee % 1 == 0) {
+      return fee.toInt().toString();
+    }
+    final fixed2 = fee.toStringAsFixed(2);
+    if (fixed2.endsWith('0')) {
+      return fee.toStringAsFixed(1);
+    }
+    return fixed2;
+  }
   int get totalItems => items.isNotEmpty
       ? items.fold<int>(0, (sum, i) => sum + i.quantity)
       : 0;

@@ -295,5 +295,12 @@
   "openSettings": "الإعدادات",
   "enableGps": "تفعيل",
   "orderReviewed": "تم التقييم",
-  "orderNotReviewed": "لم يتم التقييم"
+  "orderNotReviewed": "لم يتم التقييم",
+  "orderDetailsTitle": "تفاصيل الطلب",
+  "deliveryPrice": "سعر التوصيل",
+  "customerReview": "تقييم العميل :",
+  "orderReviewDefault": "المندوب كان في غاية من الاحترام ، والسرعة",
+  "orderNoPrefix": "طلب رقم :",
+  "fromPrefix": "من :",
+  "toPrefix": "الى :"
 }

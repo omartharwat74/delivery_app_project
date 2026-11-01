@@ -1633,6 +1633,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not Reviewed'**
   String get orderNotReviewed;
+
+  /// Title of completed order details screen
+  ///
+  /// In en, this message translates to:
+  /// **'Order Details'**
+  String get orderDetailsTitle;
+
+  /// Delivery price label
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery Price'**
+  String get deliveryPrice;
+
+  /// Customer review section title
+  ///
+  /// In en, this message translates to:
+  /// **'Customer Review :'**
+  String get customerReview;
+
+  /// Default review text for courier
+  ///
+  /// In en, this message translates to:
+  /// **'The delivery driver was very polite and fast'**
+  String get orderReviewDefault;
+
+  /// Prefix for order number
+  ///
+  /// In en, this message translates to:
+  /// **'Order No :'**
+  String get orderNoPrefix;
+
+  /// Prefix for pickup location
+  ///
+  /// In en, this message translates to:
+  /// **'From :'**
+  String get fromPrefix;
+
+  /// Prefix for delivery destination
+  ///
+  /// In en, this message translates to:
+  /// **'To :'**
+  String get toPrefix;
 }
 
 class _AppLocalizationsDelegate

@@ -40,34 +40,42 @@ void main() {
     expect(find.text('Reviewed'), findsNothing);
   });
 
-  testWidgets('formats estimated time with localized minute in Arabic', (tester) async {
+  testWidgets('displays delivery price with currency in Arabic', (tester) async {
     const order = OrderEntity(
       id: 2,
       code: 'ORD-002',
       status: 'delivered',
       store: OrderStoreEntity(name: 'مطعم السعادة'),
-      estimatedTime: '20 : 15 دقيقة',
+      earning: 70.0,
+      summary: OrderSummaryEntity(total: 340.0),
     );
 
     await tester.pumpWidget(createWidget(order, locale: const Locale('ar')));
     await tester.pumpAndSettle();
 
-    expect(find.text('20 : 15 دقيقة'), findsOneWidget);
+    expect(find.text('سعر التوصيل'), findsOneWidget);
+    expect(find.text('70 ج.م'), findsOneWidget);
+    expect(find.text('340 ج.م'), findsOneWidget);
+    expect(find.text('الوقت المتوقع'), findsNothing);
   });
 
-  testWidgets('formats estimated time with localized minute in English', (tester) async {
+  testWidgets('displays delivery price with currency in English', (tester) async {
     const order = OrderEntity(
       id: 3,
       code: 'ORD-003',
       status: 'delivered',
       store: OrderStoreEntity(name: 'Happy Restaurant'),
-      estimatedTime: '20 : 15 دقيقة',
+      earning: 70.0,
+      summary: OrderSummaryEntity(total: 340.0),
     );
 
     await tester.pumpWidget(createWidget(order, locale: const Locale('en')));
     await tester.pumpAndSettle();
 
-    expect(find.text('20 : 15 mins'), findsOneWidget);
+    expect(find.text('Delivery Price'), findsOneWidget);
+    expect(find.text('70 EGP'), findsOneWidget);
+    expect(find.text('340 EGP'), findsOneWidget);
+    expect(find.text('Est. Time'), findsNothing);
   });
 
   testWidgets('displays decimal price correctly without stripping fractions (e.g. 245.5 ج.م)', (tester) async {

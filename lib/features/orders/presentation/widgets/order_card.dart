@@ -55,17 +55,6 @@ class OrderCard extends StatelessWidget {
     }
   }
 
-  String _formatEstimatedTime(String? time, AppLocalizations l10n) {
-    if (time == null || time.isEmpty) return '';
-    final cleaned = time
-        .replaceAll('دقيقة', '')
-        .replaceAll('دقائق', '')
-        .replaceAll('mins', '')
-        .replaceAll('min', '')
-        .trim();
-    return '$cleaned ${l10n.minutes}';
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -233,37 +222,36 @@ class OrderCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    // Expected time column
-                    if (order.estimatedTime != null)
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text(
-                            l10n.orderEstTime,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTextStyles.caption(context).copyWith(
-                              fontFamily: 'ExpoArabic',
-                              fontSize: 11,
-                              fontWeight: FontWeight.w400,
-                              color: isDark
-                                  ? const Color(0xFFA0A0A0)
-                                  : AppColors.paragraph(context),
-                            ),
+                    // Delivery price column
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          l10n.deliveryPrice,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.caption(context).copyWith(
+                            fontFamily: 'ExpoArabic',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w400,
+                            color: isDark
+                                ? const Color(0xFFA0A0A0)
+                                : AppColors.paragraph(context),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _formatEstimatedTime(order.estimatedTime, l10n),
-                            style: AppTextStyles.body(context).copyWith(
-                              fontFamily: 'ExpoArabic',
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: isDark
-                                  ? Colors.white
-                                  : const Color(0xFF1B1B1B),
-                            ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${order.formattedDeliveryFee} ${l10n.currencyEgp}',
+                          style: AppTextStyles.body(context).copyWith(
+                            fontFamily: 'ExpoArabic',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: isDark
+                                ? Colors.white
+                                : const Color(0xFF1B1B1B),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
 

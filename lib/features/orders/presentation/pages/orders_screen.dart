@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/text_styles.dart';
 import '../../../../core/widgets/error_state_view.dart';
@@ -141,11 +143,21 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 final order = state.orders[index];
                 return OrderCard(
                   order: order,
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => OrderDetailsScreen(order: order),
-                    ),
-                  ),
+                  onTap: () {
+                    if (order.isDelivered || order.status == 'delivered') {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => OrderDetailsScreen(order: order),
+                        ),
+                      );
+                    } else {
+                      if (Navigator.of(context).canPop()) {
+                        Navigator.of(context).pop();
+                      } else {
+                        context.go(RouteNames.home);
+                      }
+                    }
+                  },
                 );
               },
               separatorBuilder: (_, _) => const SizedBox(height: 16),

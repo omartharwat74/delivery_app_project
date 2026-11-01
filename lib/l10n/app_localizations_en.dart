@@ -829,4 +829,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get orderNotReviewed => 'Not Reviewed';
+
+  @override
+  String get orderDetailsTitle => 'Order Details';
+
+  @override
+  String get deliveryPrice => 'Delivery Price';
+
+  @override
+  String get customerReview => 'Customer Review :';
+
+  @override
+  String get orderReviewDefault =>
+      'The delivery driver was very polite and fast';
+
+  @override
+  String get orderNoPrefix => 'Order No :';
+
+  @override
+  String get fromPrefix => 'From :';
+
+  @override
+  String get toPrefix => 'To :';
 }
