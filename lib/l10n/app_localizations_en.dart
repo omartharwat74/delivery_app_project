@@ -688,7 +688,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get orderStatusOnWay => 'On the way to Customer';
 
   @override
-  String get orderStatusDelivered => 'Delivered';
+  String get orderStatusDelivered => 'Closed Order';
 
   @override
   String get orderStatusCancelled => 'Cancelled';

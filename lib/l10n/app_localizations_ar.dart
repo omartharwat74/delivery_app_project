@@ -678,7 +678,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get orderStatusOnWay => 'في الطريق للعميل';
 
   @override
-  String get orderStatusDelivered => 'تم التوصيل';
+  String get orderStatusDelivered => 'طلب مغلق';
 
   @override
   String get orderStatusCancelled => 'ملغي';

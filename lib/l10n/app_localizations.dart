@@ -1379,7 +1379,7 @@ abstract class AppLocalizations {
   /// No description provided for @orderStatusDelivered.
   ///
   /// In en, this message translates to:
-  /// **'Delivered'**
+  /// **'Closed Order'**
   String get orderStatusDelivered;
 
   /// No description provided for @orderStatusCancelled.

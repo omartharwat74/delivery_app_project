@@ -287,7 +287,7 @@
   "orderStatusPreparing": "Restaurant Preparing",
   "orderStatusReady": "Ready for Pickup",
   "orderStatusOnWay": "On the way to Customer",
-  "orderStatusDelivered": "Delivered",
+  "orderStatusDelivered": "Closed Order",
   "orderStatusCancelled": "Cancelled",
   "orderFee": "Fee: {fee}",
   "@orderFee": {

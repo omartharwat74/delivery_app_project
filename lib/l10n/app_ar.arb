@@ -252,7 +252,7 @@
   "orderStatusPreparing": "جاري التجهيز",
   "orderStatusReady": "جاهز للاستلام",
   "orderStatusOnWay": "في الطريق للعميل",
-  "orderStatusDelivered": "تم التوصيل",
+  "orderStatusDelivered": "طلب مغلق",
   "orderStatusCancelled": "ملغي",
   "orderFee": "الرسوم: {fee}",
   "orderItemsCount": "{count} منتجات",
