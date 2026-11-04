@@ -11,49 +11,14 @@ class OrderCard extends StatelessWidget {
 
   const OrderCard({super.key, required this.order, this.onTap});
 
-  String _statusLabel(AppLocalizations l10n) {
-    switch (order.status) {
-      case 'assigned':
-        return l10n.orderStatusAssigned;
-      case 'on_the_way':
-        return l10n.orderStatusOnWay;
-      case 'delivered':
-        return l10n.orderStatusDelivered;
-      case 'cancelled':
-        return l10n.orderStatusCancelled;
-      default:
-        return l10n.orderStatusNew;
-    }
-  }
+  String _statusLabel(AppLocalizations l10n) =>
+      order.orderStatus.badgeText(l10n);
 
-  String _subStatusLabel(AppLocalizations l10n) {
-    switch (order.status) {
-      case 'assigned':
-        return l10n.orderStatusAssignedSub;
-      case 'on_the_way':
-        return l10n.orderStatusOnWaySub;
-      case 'delivered':
-        return l10n.orderStatusDeliveredSub;
-      case 'cancelled':
-        return l10n.orderStatusCancelled;
-      default:
-        return l10n.orderStatusNew;
-    }
-  }
+  String _subStatusLabel(AppLocalizations l10n) =>
+      order.orderStatus.titleText(l10n);
 
-  Color _statusColor() {
-    switch (order.status) {
-      case 'assigned':
-        return AppColors.statusWarning;
-      case 'on_the_way':
-        return AppColors.primary;
-      case 'delivered':
-      case 'cancelled':
-        return const Color(0xFF9E9E9E); // grey for closed
-      default:
-        return AppColors.primary;
-    }
-  }
+  Color _statusColor(BuildContext context) =>
+      order.orderStatus.badgeColor(context);
 
   @override
   Widget build(BuildContext context) {
@@ -185,9 +150,9 @@ class OrderCard extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Order status icon — 40×40
+                    // Order status icon — 40×40 (unified icon for all statuses)
                     Image.asset(
-                      'assets/images/orders/order_status_icon.png',
+                      order.orderStatus.iconPath,
                       width: 40,
                       height: 40,
                       fit: BoxFit.contain,
@@ -204,7 +169,7 @@ class OrderCard extends StatelessWidget {
                               fontFamily: 'ExpoArabic',
                               fontSize: 12,
                               fontWeight: FontWeight.w400,
-                              color: _statusColor(),
+                              color: _statusColor(context),
                             ),
                           ),
                           const SizedBox(height: 4),

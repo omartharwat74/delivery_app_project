@@ -1,5 +1,9 @@
 import 'package:equatable/equatable.dart';
 
+import 'order_status.dart';
+
+export 'order_status.dart';
+
 class OrderStoreEntity extends Equatable {
   final int? id;
   final String name;
@@ -114,6 +118,8 @@ class OrderEntity extends Equatable {
   final String? cancelReason;
   final String? note;
   final bool isReviewed;
+  final double? customerRating;
+  final String? customerReview;
 
   // Static placeholders for attributes not currently calculated in backend
   // TODO(API): static for now
@@ -138,6 +144,8 @@ class OrderEntity extends Equatable {
     this.cancelReason,
     this.note,
     this.isReviewed = false,
+    this.customerRating,
+    this.customerReview,
     this.estimatedDistance,
     this.estimatedTime,
   });
@@ -184,16 +192,16 @@ class OrderEntity extends Equatable {
       ? items.fold<int>(0, (sum, i) => sum + i.quantity)
       : 0;
 
-  bool get isAssigned => status == 'assigned';
-  bool get isOnTheWay => status == 'on_the_way';
-  bool get isDelivered => status == 'delivered';
+  bool get hasCustomerRating => customerRating != null && customerRating! > 0;
 
-  /// 3-segment progress: assigned = 1, on_the_way = 2, delivered = 3
-  int get progressSegments {
-    if (isDelivered) return 3;
-    if (isOnTheWay) return 2;
-    return 1;
-  }
+  DriverOrderStatus get orderStatus => DriverOrderStatus.fromString(status);
+
+  bool get isAssigned => status == 'assigned' || status == 'pending';
+  bool get isOnTheWay => status == 'on_the_way' || status == 'delivering';
+  bool get isDelivered => status == 'delivered' || status == 'completed';
+
+  /// 3-segment progress: pending/assigned = 1, on_the_way = 2, delivered/completed = 3
+  int get progressSegments => orderStatus.progressSegments;
 
   @override
   List<Object?> get props => [
@@ -213,6 +221,8 @@ class OrderEntity extends Equatable {
         cancelReason,
         note,
         isReviewed,
+        customerRating,
+        customerReview,
         estimatedDistance,
         estimatedTime,
       ];

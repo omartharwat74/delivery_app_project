@@ -113,6 +113,7 @@ void main() {
       delivery: 70,
       total: 340,
     ),
+    customerRating: 4.5,
   );
 
   Widget createWidget(
@@ -213,6 +214,57 @@ void main() {
       find.text('The delivery driver was very polite and fast'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('hides customer review section completely when customerRating is null',
+      (tester) async {
+    const unratedOrder = OrderEntity(
+      id: 10333,
+      code: '10333',
+      status: 'delivered',
+      customerRating: null,
+      customerReview: null,
+    );
+
+    await tester.pumpWidget(createWidget(unratedOrder, locale: const Locale('ar')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('تقييم العميل :'), findsNothing);
+    expect(find.text('المندوب كان في غاية من الاحترام ، والسرعة'), findsNothing);
+  });
+
+  testWidgets('hides customer review section completely when customerRating is 0',
+      (tester) async {
+    const zeroRatedOrder = OrderEntity(
+      id: 10334,
+      code: '10334',
+      status: 'delivered',
+      customerRating: 0.0,
+      customerReview: 'some review',
+    );
+
+    await tester.pumpWidget(createWidget(zeroRatedOrder, locale: const Locale('ar')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('تقييم العميل :'), findsNothing);
+    expect(find.text('some review'), findsNothing);
+  });
+
+  testWidgets('shows customer review section when customerRating is greater than 0',
+      (tester) async {
+    const ratedOrder = OrderEntity(
+      id: 10335,
+      code: '10335',
+      status: 'delivered',
+      customerRating: 5.0,
+      customerReview: 'خدمة رائعة جدا ومميزة',
+    );
+
+    await tester.pumpWidget(createWidget(ratedOrder, locale: const Locale('ar')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('تقييم العميل :'), findsOneWidget);
+    expect(find.text('خدمة رائعة جدا ومميزة'), findsOneWidget);
   });
 
   testWidgets('renders cleanly in dark mode without error', (tester) async {

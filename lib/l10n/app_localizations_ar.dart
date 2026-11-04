@@ -640,16 +640,34 @@ class AppLocalizationsAr extends AppLocalizations {
   String get noOrdersFound => 'لا توجد طلبات';
 
   @override
-  String get orderStatusAssigned => 'طلب مسند';
+  String get orderStatusAssigned => 'طلب جاري';
 
   @override
-  String get orderStatusAssignedSub => 'تم قبول الطلب';
+  String get orderStatusAssignedSub => 'بإنتظار إستلام الطلب';
 
   @override
-  String get orderStatusOnWaySub => 'المندوب في الطريق';
+  String get orderStatusOnWaySub => 'في الطريق الى العميل';
 
   @override
   String get orderStatusDeliveredSub => 'تم التسليم للعميل';
+
+  @override
+  String get orderStatusPendingBadge => 'طلب جاري';
+
+  @override
+  String get orderStatusPendingTitle => 'بإنتظار إستلام الطلب';
+
+  @override
+  String get orderStatusOnWayBadge => 'جاري التوصيل';
+
+  @override
+  String get orderStatusOnWayTitle => 'في الطريق الى العميل';
+
+  @override
+  String get orderStatusCompletedBadge => 'طلب مغلق';
+
+  @override
+  String get orderStatusCompletedTitle => 'تم التسليم للعميل';
 
   @override
   String get accountBlockedTitle => 'الحساب محظور';
@@ -675,7 +693,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get orderStatusReady => 'جاهز للاستلام';
 
   @override
-  String get orderStatusOnWay => 'في الطريق للعميل';
+  String get orderStatusOnWay => 'جاري التوصيل';
 
   @override
   String get orderStatusDelivered => 'طلب مغلق';

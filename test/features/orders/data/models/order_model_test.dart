@@ -176,5 +176,26 @@ void main() {
       );
       expect(order4.formattedPrice, '25.5');
     });
+
+    test('OrderModel parses customer_rating and customer_review correctly', () {
+      final json = {
+        "id": 99,
+        "code": "ORD-99",
+        "status": "delivered",
+        "customer_rating": 4.5,
+        "customer_review": "المندوب كان في غاية من الاحترام ، والسرعة",
+      };
+
+      final order = OrderModel.fromJson(json);
+
+      expect(order.customerRating, 4.5);
+      expect(order.customerReview, "المندوب كان في غاية من الاحترام ، والسرعة");
+      expect(order.hasCustomerRating, isTrue);
+      expect(order.isReviewed, isTrue);
+
+      final serialized = order.toJson();
+      expect(serialized['customer_rating'], 4.5);
+      expect(serialized['customer_review'], "المندوب كان في غاية من الاحترام ، والسرعة");
+    });
   });
 }

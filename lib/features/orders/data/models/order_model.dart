@@ -184,6 +184,8 @@ class OrderModel extends OrderEntity {
     super.cancelReason,
     super.note,
     super.isReviewed = false,
+    super.customerRating,
+    super.customerReview,
     super.estimatedDistance,
     super.estimatedTime,
   });
@@ -224,7 +226,33 @@ class OrderModel extends OrderEntity {
           : null,
       cancelReason: json['cancel_reason']?.toString(),
       note: json['note']?.toString(),
-      isReviewed: json['is_reviewed'] == true || json['is_reviewed'] == 1,
+      isReviewed: json['is_reviewed'] == true ||
+          json['is_reviewed'] == 1 ||
+          ((json['customer_rating'] ?? json['driver_rating'] ?? json['rating']) !=
+                  null &&
+              _asDouble(json['customer_rating'] ??
+                      json['driver_rating'] ??
+                      json['rating']) >
+                  0),
+      customerRating: (json['customer_rating'] ??
+              json['customer_rate'] ??
+              json['driver_rating'] ??
+              json['driver_rate'] ??
+              json['rating'] ??
+              json['rate']) !=
+          null
+          ? _asDouble(json['customer_rating'] ??
+              json['customer_rate'] ??
+              json['driver_rating'] ??
+              json['driver_rate'] ??
+              json['rating'] ??
+              json['rate'])
+          : null,
+      customerReview: json['customer_review']?.toString() ??
+          json['customer_comment']?.toString() ??
+          json['driver_review']?.toString() ??
+          json['review']?.toString() ??
+          json['comment']?.toString(),
       // TODO(API): static for now
       estimatedDistance: '2.5',
       // TODO(API): static for now
@@ -249,6 +277,8 @@ class OrderModel extends OrderEntity {
         'cancel_reason': cancelReason,
         'note': note,
         'is_reviewed': isReviewed,
+        'customer_rating': customerRating,
+        'customer_review': customerReview,
       };
 }
 

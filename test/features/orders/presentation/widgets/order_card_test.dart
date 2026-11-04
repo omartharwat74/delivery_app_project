@@ -107,4 +107,69 @@ void main() {
 
     expect(find.text('245.75 EGP'), findsOneWidget);
   });
+
+  group('Order Status Texts & Unified Icon Tests', () {
+    testWidgets('Status 1 (pending): shows طلب جاري badge and بإنتظار إستلام الطلب with unified icon',
+        (tester) async {
+      const order = OrderEntity(
+        id: 10,
+        code: 'ORD-010',
+        status: 'pending',
+        store: OrderStoreEntity(name: 'مطعم عز الشام'),
+      );
+
+      await tester.pumpWidget(createWidget(order, locale: const Locale('ar')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('طلب جاري'), findsOneWidget);
+      expect(find.text('بإنتظار إستلام الطلب'), findsOneWidget);
+
+      final imageFinder = find.byWidgetPredicate(
+        (w) => w is Image && w.image is AssetImage && (w.image as AssetImage).assetName == 'assets/images/orders/order_status_icon.png',
+      );
+      expect(imageFinder, findsOneWidget);
+    });
+
+    testWidgets('Status 2 (on_the_way): shows جاري التوصيل badge and في الطريق الى العميل with unified icon',
+        (tester) async {
+      const order = OrderEntity(
+        id: 11,
+        code: 'ORD-011',
+        status: 'on_the_way',
+        store: OrderStoreEntity(name: 'مطعم عز الشام'),
+      );
+
+      await tester.pumpWidget(createWidget(order, locale: const Locale('ar')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('جاري التوصيل'), findsOneWidget);
+      expect(find.text('في الطريق الى العميل'), findsOneWidget);
+
+      final imageFinder = find.byWidgetPredicate(
+        (w) => w is Image && w.image is AssetImage && (w.image as AssetImage).assetName == 'assets/images/orders/order_status_icon.png',
+      );
+      expect(imageFinder, findsOneWidget);
+    });
+
+    testWidgets('Status 3 (completed): shows طلب مغلق badge and تم التسليم للعميل with unified icon',
+        (tester) async {
+      const order = OrderEntity(
+        id: 12,
+        code: 'ORD-012',
+        status: 'completed',
+        store: OrderStoreEntity(name: 'مطعم عز الشام'),
+      );
+
+      await tester.pumpWidget(createWidget(order, locale: const Locale('ar')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('طلب مغلق'), findsOneWidget);
+      expect(find.text('تم التسليم للعميل'), findsOneWidget);
+
+      final imageFinder = find.byWidgetPredicate(
+        (w) => w is Image && w.image is AssetImage && (w.image as AssetImage).assetName == 'assets/images/orders/order_status_icon.png',
+      );
+      expect(imageFinder, findsOneWidget);
+    });
+  });
 }

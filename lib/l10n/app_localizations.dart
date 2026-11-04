@@ -1307,26 +1307,62 @@ abstract class AppLocalizations {
   /// No description provided for @orderStatusAssigned.
   ///
   /// In en, this message translates to:
-  /// **'Assigned'**
+  /// **'Ongoing Order'**
   String get orderStatusAssigned;
 
   /// No description provided for @orderStatusAssignedSub.
   ///
   /// In en, this message translates to:
-  /// **'Order Accepted'**
+  /// **'Waiting for Pickup'**
   String get orderStatusAssignedSub;
 
   /// No description provided for @orderStatusOnWaySub.
   ///
   /// In en, this message translates to:
-  /// **'Driver on the way'**
+  /// **'On the way to Customer'**
   String get orderStatusOnWaySub;
 
   /// No description provided for @orderStatusDeliveredSub.
   ///
   /// In en, this message translates to:
-  /// **'Delivered to customer'**
+  /// **'Delivered to Customer'**
   String get orderStatusDeliveredSub;
+
+  /// No description provided for @orderStatusPendingBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Ongoing Order'**
+  String get orderStatusPendingBadge;
+
+  /// No description provided for @orderStatusPendingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for Pickup'**
+  String get orderStatusPendingTitle;
+
+  /// No description provided for @orderStatusOnWayBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivering'**
+  String get orderStatusOnWayBadge;
+
+  /// No description provided for @orderStatusOnWayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'On the way to Customer'**
+  String get orderStatusOnWayTitle;
+
+  /// No description provided for @orderStatusCompletedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed Order'**
+  String get orderStatusCompletedBadge;
+
+  /// No description provided for @orderStatusCompletedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered to Customer'**
+  String get orderStatusCompletedTitle;
 
   /// No description provided for @accountBlockedTitle.
   ///
@@ -1373,7 +1409,7 @@ abstract class AppLocalizations {
   /// No description provided for @orderStatusOnWay.
   ///
   /// In en, this message translates to:
-  /// **'On the way to Customer'**
+  /// **'Delivering'**
   String get orderStatusOnWay;
 
   /// No description provided for @orderStatusDelivered.

@@ -649,16 +649,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noOrdersFound => 'No orders found';
 
   @override
-  String get orderStatusAssigned => 'Assigned';
+  String get orderStatusAssigned => 'Ongoing Order';
 
   @override
-  String get orderStatusAssignedSub => 'Order Accepted';
+  String get orderStatusAssignedSub => 'Waiting for Pickup';
 
   @override
-  String get orderStatusOnWaySub => 'Driver on the way';
+  String get orderStatusOnWaySub => 'On the way to Customer';
 
   @override
-  String get orderStatusDeliveredSub => 'Delivered to customer';
+  String get orderStatusDeliveredSub => 'Delivered to Customer';
+
+  @override
+  String get orderStatusPendingBadge => 'Ongoing Order';
+
+  @override
+  String get orderStatusPendingTitle => 'Waiting for Pickup';
+
+  @override
+  String get orderStatusOnWayBadge => 'Delivering';
+
+  @override
+  String get orderStatusOnWayTitle => 'On the way to Customer';
+
+  @override
+  String get orderStatusCompletedBadge => 'Closed Order';
+
+  @override
+  String get orderStatusCompletedTitle => 'Delivered to Customer';
 
   @override
   String get accountBlockedTitle => 'Account Blocked';
@@ -685,7 +703,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get orderStatusReady => 'Ready for Pickup';
 
   @override
-  String get orderStatusOnWay => 'On the way to Customer';
+  String get orderStatusOnWay => 'Delivering';
 
   @override
   String get orderStatusDelivered => 'Closed Order';

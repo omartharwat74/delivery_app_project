@@ -90,10 +90,10 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
 
               // ── 4. Delivery Route Scope ─────────────────────────────
               _DeliveryRouteSection(order: _order),
-              const _Divider(),
-
-              // ── 5. Customer Rating ──────────────────────────────────
-              const _RatingSection(),
+              if (_order.hasCustomerRating) ...[
+                const _Divider(),
+                _RatingSection(order: _order),
+              ],
 
               const SizedBox(height: 24),
             ],
@@ -483,12 +483,22 @@ class _DeliveryRouteSection extends StatelessWidget {
 // RATING SECTION
 // ─────────────────────────────────────────────────────────────────────────────
 class _RatingSection extends StatelessWidget {
-  const _RatingSection();
+  final OrderEntity order;
+  const _RatingSection({required this.order});
 
   @override
   Widget build(BuildContext context) {
+    final rating = order.customerRating;
+    if (rating == null || rating <= 0) {
+      return const SizedBox.shrink();
+    }
+
     final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final reviewText = (order.customerReview != null &&
+            order.customerReview!.trim().isNotEmpty)
+        ? order.customerReview!
+        : l10n.orderReviewDefault;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -508,30 +518,40 @@ class _RatingSection extends StatelessWidget {
           children: List.generate(
             5,
             (index) {
-              if (index == 4) {
-                return Padding(
-                  padding: const EdgeInsetsDirectional.only(end: 4),
-                  child: Image.asset(
-                    'assets/images/orders/star_half.png',
-                    width: 20,
-                    height: 20,
-                  ),
+              final starValue = index + 1;
+              final Widget starWidget;
+              if (rating >= starValue) {
+                starWidget = Image.asset(
+                  'assets/images/orders/star_full.png',
+                  width: 20,
+                  height: 20,
+                );
+              } else if (rating >= starValue - 0.5) {
+                starWidget = Image.asset(
+                  'assets/images/orders/star_half.png',
+                  width: 20,
+                  height: 20,
+                );
+              } else {
+                starWidget = Image.asset(
+                  'assets/images/orders/star_full.png',
+                  width: 20,
+                  height: 20,
+                  color: isDark
+                      ? const Color(0xFF404040)
+                      : const Color(0xFFE0E0E0),
                 );
               }
               return Padding(
                 padding: const EdgeInsetsDirectional.only(end: 4),
-                child: Image.asset(
-                  'assets/images/orders/star_full.png',
-                  width: 20,
-                  height: 20,
-                ),
+                child: starWidget,
               );
             },
           ),
         ),
         const SizedBox(height: 8),
         Text(
-          l10n.orderReviewDefault,
+          reviewText,
           style: TextStyle(
             fontFamily: 'ExpoArabic',
             fontSize: 12,

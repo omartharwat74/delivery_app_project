@@ -52,4 +52,6 @@ class AppAssets {
   static const emptyNotifications =
       'assets/images/notifications/notification_bell.png';
   static const scooterMarker = 'assets/icons/scooter_marker.svg';
+  static const orderStatusIcon = 'assets/images/orders/order_status_icon.png';
+  static const driverStatusIcon = 'assets/images/orders/driver_status_icon.png';
 }
