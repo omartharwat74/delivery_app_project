@@ -9,6 +9,33 @@ import 'package:delivery_app_project/features/orders/domain/entities/order_entit
 import 'package:delivery_app_project/features/orders/domain/repositories/order_repository.dart';
 import 'package:delivery_app_project/features/orders/presentation/bloc/active_order_cubit.dart';
 import 'package:delivery_app_project/features/orders/presentation/bloc/active_order_state.dart';
+import 'package:delivery_app_project/core/services/order_alert_service.dart';
+
+class MockOrderAlertService implements OrderAlertService {
+  int startAlertCount = 0;
+  int stopAlertCount = 0;
+  bool _isAlerting = false;
+
+  @override
+  bool get isAlerting => _isAlerting;
+
+  @override
+  Future<void> startAlert() async {
+    startAlertCount++;
+    _isAlerting = true;
+  }
+
+  @override
+  Future<void> stopAlert() async {
+    stopAlertCount++;
+    _isAlerting = false;
+  }
+
+  @override
+  void dispose() {
+    stopAlert();
+  }
+}
 
 class MockTestOrderRepository implements OrderRepository {
   OrderOfferEntity? offerToReturn;
@@ -376,6 +403,37 @@ void main() {
       );
 
       localizedCubit.close();
+    });
+
+    test('ActiveOrderCubit triggers OrderAlertService startAlert on offer and stopAlert on accept', () async {
+      final mockAlertService = MockOrderAlertService();
+      final alertCubit = ActiveOrderCubit(
+        orderRepository: mockRepo,
+        alertService: mockAlertService,
+      );
+
+      mockRepo.offerToReturn = OrderOfferEntity(
+        id: 101,
+        secondsLeft: 30,
+        order: const OrderEntity(
+          id: 50,
+          code: 'ORD-50',
+          status: 'pending',
+        ),
+      );
+
+      await alertCubit.checkCurrentOffer();
+
+      expect(alertCubit.state, isA<ActiveOrderOfferReceived>());
+      expect(mockAlertService.startAlertCount, 1);
+      expect(mockAlertService.stopAlertCount, 0);
+
+      await alertCubit.acceptOffer();
+
+      expect(alertCubit.state, isA<ActiveOrderInProgress>());
+      expect(mockAlertService.stopAlertCount, 1);
+
+      alertCubit.close();
     });
   });
 }

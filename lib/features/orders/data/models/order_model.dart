@@ -200,6 +200,75 @@ class OrderModel extends OrderEntity {
           .toList();
     }
 
+    // Parse review object or flattened review fields safely
+    final rawReview = json['review'] ??
+        json['customer_review'] ??
+        json['driver_review'];
+
+    Map<String, dynamic>? reviewMap;
+    if (rawReview is Map<String, dynamic>) {
+      reviewMap = rawReview;
+    } else if (rawReview is Map) {
+      reviewMap = Map<String, dynamic>.from(rawReview);
+    }
+
+    final dynamic rawRating = reviewMap?['rating'] ??
+        reviewMap?['rate'] ??
+        reviewMap?['customer_rating'] ??
+        reviewMap?['driver_rating'] ??
+        json['customer_rating'] ??
+        json['customer_rate'] ??
+        json['driver_rating'] ??
+        json['driver_rate'] ??
+        json['rating'] ??
+        json['rate'];
+
+    final double? parsedRating =
+        rawRating != null ? _asDouble(rawRating) : null;
+
+    String? parsedReview;
+    if (reviewMap != null) {
+      final commentVal = reviewMap['comment'] ??
+          reviewMap['review'] ??
+          reviewMap['note'] ??
+          reviewMap['customer_comment'] ??
+          reviewMap['customer_review'];
+      if (commentVal != null) {
+        final commentStr = commentVal.toString().trim();
+        if (commentStr.isNotEmpty && commentStr != 'null') {
+          parsedReview = commentStr;
+        }
+      }
+    } else if (rawReview is String) {
+      final str = rawReview.trim();
+      if (str.isNotEmpty && str != 'null') {
+        parsedReview = str;
+      }
+    }
+
+    parsedReview ??= () {
+      final candidate = json['customer_comment'] ??
+          (json['customer_review'] is String ? json['customer_review'] : null) ??
+          (json['driver_review'] is String ? json['driver_review'] : null) ??
+          (json['comment'] is String ? json['comment'] : null);
+      if (candidate != null) {
+        final str = candidate.toString().trim();
+        if (str.isNotEmpty && str != 'null') {
+          return str;
+        }
+      }
+      return null;
+    }();
+
+    final bool parsedIsReviewed = json['is_reviewed'] == true ||
+        json['is_reviewed'] == 1 ||
+        json['is_reviewed']?.toString() == '1' ||
+        (reviewMap != null &&
+            (parsedRating != null ||
+                parsedReview != null ||
+                reviewMap.isNotEmpty)) ||
+        (parsedRating != null && parsedRating > 0);
+
     return OrderModel(
       id: _asInt(json['id']),
       code: json['code']?.toString() ?? json['id']?.toString() ?? '',
@@ -226,33 +295,9 @@ class OrderModel extends OrderEntity {
           : null,
       cancelReason: json['cancel_reason']?.toString(),
       note: json['note']?.toString(),
-      isReviewed: json['is_reviewed'] == true ||
-          json['is_reviewed'] == 1 ||
-          ((json['customer_rating'] ?? json['driver_rating'] ?? json['rating']) !=
-                  null &&
-              _asDouble(json['customer_rating'] ??
-                      json['driver_rating'] ??
-                      json['rating']) >
-                  0),
-      customerRating: (json['customer_rating'] ??
-              json['customer_rate'] ??
-              json['driver_rating'] ??
-              json['driver_rate'] ??
-              json['rating'] ??
-              json['rate']) !=
-          null
-          ? _asDouble(json['customer_rating'] ??
-              json['customer_rate'] ??
-              json['driver_rating'] ??
-              json['driver_rate'] ??
-              json['rating'] ??
-              json['rate'])
-          : null,
-      customerReview: json['customer_review']?.toString() ??
-          json['customer_comment']?.toString() ??
-          json['driver_review']?.toString() ??
-          json['review']?.toString() ??
-          json['comment']?.toString(),
+      isReviewed: parsedIsReviewed,
+      customerRating: parsedRating,
+      customerReview: parsedReview,
       // TODO(API): static for now
       estimatedDistance: '2.5',
       // TODO(API): static for now

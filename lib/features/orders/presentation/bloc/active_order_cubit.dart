@@ -4,12 +4,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/error/failures.dart';
 import '../../../../core/localization/locale_controller.dart';
+import '../../../../core/services/order_alert_service.dart';
 import '../../domain/repositories/order_repository.dart';
 import 'active_order_state.dart';
 
 class ActiveOrderCubit extends Cubit<ActiveOrderState> {
   final OrderRepository orderRepository;
   final LocaleController? localeController;
+  final OrderAlertService? alertService;
   VoidCallback? _localeListener;
 
   Timer? _pollingTimer;
@@ -25,6 +27,7 @@ class ActiveOrderCubit extends Cubit<ActiveOrderState> {
   ActiveOrderCubit({
     required this.orderRepository,
     this.localeController,
+    this.alertService,
   }) : super(const ActiveOrderIdle()) {
     if (localeController != null) {
       _localeListener = () => reloadActiveOrder();
@@ -267,8 +270,12 @@ class ActiveOrderCubit extends Cubit<ActiveOrderState> {
   }
 
   void _startOfferTimers(int secondsLeft) {
-    cancelOfferTimers();
+    _pollingTimer?.cancel();
+    _pollingTimer = null;
+    _countdownTimer?.cancel();
+    _countdownTimer = null;
     _remainingSeconds = secondsLeft;
+    alertService?.startAlert();
 
     // 1-second countdown timer: decrements remaining seconds and updates state
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -346,6 +353,7 @@ class ActiveOrderCubit extends Cubit<ActiveOrderState> {
   }
 
   void cancelOfferTimers() {
+    alertService?.stopAlert();
     _pollingTimer?.cancel();
     _pollingTimer = null;
     _countdownTimer?.cancel();

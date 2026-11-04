@@ -197,5 +197,65 @@ void main() {
       expect(serialized['customer_rating'], 4.5);
       expect(serialized['customer_review'], "المندوب كان في غاية من الاحترام ، والسرعة");
     });
+
+    test('OrderModel parses nested review object from backend API correctly', () {
+      final json = {
+        "id": 5,
+        "code": "OYTRJAX8",
+        "status": "delivered",
+        "payment_method": "cash",
+        "review": {
+          "id": 1,
+          "order_id": 5,
+          "rating": 5,
+          "comment": "ss",
+          "is_reported": false,
+        },
+      };
+
+      final order = OrderModel.fromJson(json);
+
+      expect(order.customerRating, 5.0);
+      expect(order.customerReview, "ss");
+      expect(order.hasCustomerRating, isTrue);
+      expect(order.isReviewed, isTrue);
+    });
+
+    test('OrderModel parses nested review object with null comment correctly', () {
+      final json = {
+        "id": 6,
+        "code": "ORD-6",
+        "status": "delivered",
+        "review": {
+          "id": 2,
+          "order_id": 6,
+          "rating": 4,
+          "comment": null,
+        },
+      };
+
+      final order = OrderModel.fromJson(json);
+
+      expect(order.customerRating, 4.0);
+      expect(order.customerReview, isNull);
+      expect(order.hasCustomerRating, isTrue);
+      expect(order.isReviewed, isTrue);
+    });
+
+    test('OrderModel handles null review correctly', () {
+      final json = {
+        "id": 7,
+        "code": "ORD-7",
+        "status": "delivered",
+        "review": null,
+      };
+
+      final order = OrderModel.fromJson(json);
+
+      expect(order.customerRating, isNull);
+      expect(order.customerReview, isNull);
+      expect(order.hasCustomerRating, isFalse);
+      expect(order.isReviewed, isFalse);
+    });
   });
 }

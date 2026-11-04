@@ -439,21 +439,6 @@ class _HomePageState extends State<HomePage>
             }
           },
         ),
-        BlocListener<ActiveOrderCubit, ActiveOrderState>(
-          listenWhen: (previous, current) =>
-              previous is ActiveOrderIdle && current is ActiveOrderOfferReceived,
-          listener: (context, state) {
-            final l10n = AppLocalizations.of(context)!;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(l10n.trackingNewOrderBody),
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-            // No navigation needed: offer card renders directly on HomePage map overlay!
-          },
-        ),
         BlocListener<HomeCubit, HomeState>(
           listener: (context, state) {
             _updateFallbackPolling();

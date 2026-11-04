@@ -39,6 +39,8 @@ dependencies:
   google_maps_flutter: ^2.17.1
   firebase_messaging: ^15.2.10
   url_launcher: ^6.3.3
+  audioplayers: ^6.8.1
+  vibration: ^3.2.1
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -69,6 +71,7 @@ flutter:
     - assets/images/notifications/
     - assets/images/notifications/2.0x/
     - assets/images/notifications/3.0x/
+    - assets/sounds/
 
   fonts:
     - family: ExpoArabic

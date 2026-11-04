@@ -53,6 +53,7 @@ import '../network/network_info.dart';
 import '../router/app_router.dart';
 import '../services/location_service.dart';
 import '../services/notification_service.dart';
+import '../services/order_alert_service.dart';
 import '../../features/working_hours/data/datasources/working_hours_remote_datasource.dart';
 import '../../features/working_hours/data/repositories/working_hours_repository_impl.dart';
 import '../../features/working_hours/domain/repositories/working_hours_repository.dart';
@@ -228,6 +229,7 @@ Future<void> init({required SharedPreferences prefs}) async {
 
   sl.registerLazySingleton<LocationService>(() => LocationServiceImpl());
   sl.registerLazySingleton<NotificationService>(() => NotificationServiceImpl());
+  sl.registerLazySingleton<OrderAlertService>(() => OrderAlertServiceImpl());
 
   sl.registerFactory(() => LookupsCubit(authRepository: sl()));
 
@@ -266,6 +268,9 @@ Future<void> init({required SharedPreferences prefs}) async {
       orderRepository: sl(),
       localeController: sl.isRegistered<LocaleController>()
           ? sl<LocaleController>()
+          : null,
+      alertService: sl.isRegistered<OrderAlertService>()
+          ? sl<OrderAlertService>()
           : null,
     ),
   );
